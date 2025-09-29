@@ -1,4 +1,4 @@
-public static void main(String[] args) {
+public static void main() {
     // Test 1: Arrays de enteros con valores específicos
     System.out.println("=== Test con arrays de enteros ===");
     int[] numeros = { 2, 5, 7, 8 };

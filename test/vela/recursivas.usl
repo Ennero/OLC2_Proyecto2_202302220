@@ -32,7 +32,7 @@ int potencia(int base, int exp) {
     return base * potencia(base, exp - 1);
 }
 
-public static void main(String[] args) {
+public static void main() {
     System.out.println("=== PRUEBAS DE FUNCIONES RECURSIVAS ===");
     
     // Probar factorial

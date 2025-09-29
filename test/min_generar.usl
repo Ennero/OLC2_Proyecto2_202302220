@@ -16,7 +16,7 @@ void generarReporte(String[] items, int[][] datos) {
     }
 }
 
-public static void main(String[] args) {
+public static void main() {
     String[] productos = {"CPU", "RAM", "SSD"};
     int[][] ventasPorTrimestre = {
         {150, 200, 250, 300},

@@ -65,7 +65,7 @@ void probarEstructurasDeControl() {
 // --- FUNCIÓN PRINCIPAL (PUNTO DE ENTRADA) ---
 // ====================================================================
 
-public static void main(String[] args) {
+public static void main() {
     System.out.println("====== INICIO: Rúbrica de Calificación del Intérprete ======");
 
     // --- 1. VARIABLES, TIPOS, CONSTANTES Y OPERADORES ---

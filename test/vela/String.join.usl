@@ -1,4 +1,4 @@
-    public static void main(String[] args) {
+    public static void main() {
         // Prueba 1: String.join con elementos individuales
         String fecha = String.join("-", "2025", "08", "03");
         System.out.println("Fecha formateada: " + fecha);

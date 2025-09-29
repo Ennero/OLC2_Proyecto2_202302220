@@ -1,4 +1,4 @@
-public static void main(String[] args) {
+public static void main() {
     int x = 1;
     System.out.println("x antes: ");
     System.out.println(x);

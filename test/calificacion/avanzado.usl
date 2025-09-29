@@ -187,7 +187,7 @@ String generarReporteInstitucional(String universidad, String pais) {
     return universidad + " " + pais;
 }
 
-public static void main(String[] args) {
+public static void main() {
     System.out.println("=== SISTEMA ACADÉMICO AVANZADO USAC ===");
     
     // Demostración de funciones sin parámetros

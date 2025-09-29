@@ -1,4 +1,4 @@
-public static void main(String[] args) {
+public static void main() {
     char r = '\u0082'; // decimal 82 => 'R'
     char currency = '\u00164'; // decimal 164 => '¤'
 

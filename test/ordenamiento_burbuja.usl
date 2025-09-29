@@ -14,7 +14,7 @@ void burbuja(int[] arr, int n) {
     burbuja(arr, n - 1);
 }
 
-public static void main(String[] args) {
+public static void main() {
     int[] numeros = { 5, 1, 4, 2, 8 };
 
     System.out.println("Antes: [");

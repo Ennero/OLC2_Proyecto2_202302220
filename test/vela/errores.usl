@@ -1,7 +1,7 @@
 1. Archivo para errores léxicos
 -----------------------------
 
-public static void main(String[] args) {
+public static void main() {
     // Error léxico: Caracter no válido @
     int numero = 5 @ 3;
     
@@ -27,7 +27,7 @@ public static void main(String[] args) {
 -------------------------------
 2. Archivo para errores sintácticos
 
-public static void main(String[] args) {
+public static void main() {
     // Error sintáctico: Falta punto y coma
     int numero = 5
     
@@ -71,7 +71,7 @@ public static void main(String[] args) {
 
 3. Archivo para errores semánticos
 
-public static void main(String[] args) {
+public static void main() {
     // Error semántico: Variable no declarada
     System.out.println(variableNoDeclarada);
     
@@ -118,7 +118,7 @@ public static void main(String[] args) {
 ----------------------------------------
 4. Archivo mixto con todos los tipos de errores
 
-public static void main(String[] args) {
+public static void main() {
     System.out.println("=== Prueba de errores mixtos ===");
     
     // ERRORES LÉXICOS
@@ -163,7 +163,7 @@ public static void main(String[] args) {
 -----------------------------------------
 5. Archivo para probar errores específicos en estructuras de control
 
-public static void main(String[] args) {
+public static void main() {
     System.out.println("=== Errores en estructuras de control ===");
     
     // Error: break fuera de ciclo o switch

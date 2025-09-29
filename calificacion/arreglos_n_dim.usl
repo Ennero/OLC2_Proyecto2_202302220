@@ -84,7 +84,7 @@ int calcularDeterminante3x3(int[][] matriz) {
     return (a * menor1) - (b * menor2) + (c * menor3);
 }
 
-public static void main(String[] args) {
+public static void main() {
     System.out.println("=== SISTEMA DE ANALISIS DE DATOS ACADEMICOS ===");
     
     // Declaración dos dimensiones

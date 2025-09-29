@@ -1,4 +1,4 @@
- public static void main(String[] args) {
+ public static void main() {
      // 1. Comillas dobles (\")
         System.out.println("El profesor dijo: \"Hola Mundo\"");
         // SALIDA: El profesor dijo: "Hola Mundo"

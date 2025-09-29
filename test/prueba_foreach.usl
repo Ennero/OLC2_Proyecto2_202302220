@@ -1,4 +1,4 @@
-public static void main(String[] args) {
+public static void main() {
 
     // ======================================================
     // PRUEBA 1: ITERACIÓN BÁSICA SOBRE UN ARREGLO DE PRIMITIVOS

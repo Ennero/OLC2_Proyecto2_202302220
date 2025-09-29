@@ -71,7 +71,7 @@ void ordenamientoSeleccion(int[] valores, String[] nombres) {
     System.out.println("Ordenamiento por selección completado");
 }
 
-public static void main(String[] args) {
+public static void main() {
     System.out.println("=== SISTEMA DE GESTION DE INVENTARIO ===");
     
     // Declaración

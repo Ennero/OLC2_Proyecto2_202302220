@@ -1,4 +1,4 @@
-    public static void main(String[] args) {
+    public static void main() {
         int altura = 5;
 
         // Figura 1: Triángulo rectángulo

@@ -1,4 +1,4 @@
-public static void main(String[] args) {
+public static void main() {
 // Ejemplo de uso de String.valueOf()
 int numero = 123;
 String cadena = String.valueOf(numero) + " mundo";

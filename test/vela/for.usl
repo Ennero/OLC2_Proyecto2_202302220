@@ -1,4 +1,4 @@
-  public static void main(String[] args) {
+  public static void main() {
 // Ejemplo simple de bucle for
 for (int i = 0; i < 3; i++) {
     System.out.println("Valor: " + i);

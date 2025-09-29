@@ -1,5 +1,5 @@
 
-public static void main(String[] args) {
+public static void main() {
 
     // ======================================================
     // PRUEBA 1: SINTAXIS DE DECLARACIÓN 1D

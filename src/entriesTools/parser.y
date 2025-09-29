@@ -164,7 +164,7 @@ parametro:  tipoPrimitivo corchetes_lista TOKEN_IDENTIFIER corchetes_lista {
             ;
 
 declaracion_main:   TOKEN_PUBLIC TOKEN_STATIC TOKEN_VOID TOKEN_MAIN 
-                    '(' TOKEN_DSTRING '[' ']' TOKEN_IDENTIFIER ')' bloque { $$ = nuevoMainFunctionNode($11, @1.first_line, @1.first_column);}
+                    '(' ')' bloque { $$ = nuevoMainFunctionNode($7, @1.first_line, @1.first_column);}
                     ;
 
 lista_argumentos_opt:   lista_Expr { $$ = $1; }

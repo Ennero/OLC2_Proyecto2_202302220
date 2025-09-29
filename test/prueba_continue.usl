@@ -1,4 +1,4 @@
-public static void main(String[] args) {
+public static void main() {
     System.out.println("--- Prueba de 'continue' ---");
 
     // Prueba 1: 'continue' en un ciclo 'for' para imprimir solo pares

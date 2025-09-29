@@ -1,5 +1,5 @@
 // Ejemplo de uso de Integer.parseInt
-public static void main(String[] args) {
+public static void main() {
     String texto = "42";
     int numero = Integer.parseInt(texto);
     System.out.println("El número es: " + numero);

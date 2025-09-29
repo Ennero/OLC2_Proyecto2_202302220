@@ -27,7 +27,7 @@ void funcionParaErrores() {
     // return 5; 
 }
 
-public static void main(String[] args) {
+public static void main() {
     System.out.println("--- Iniciando Prueba de Funciones ---");
 
     // --- Prueba de funciones que retornan valor ---

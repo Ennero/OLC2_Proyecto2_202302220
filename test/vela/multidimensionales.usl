@@ -1,4 +1,4 @@
-    public static void main(String[] args) {
+    public static void main() {
         // ===== ARRAY 2D =====
         int matriz2D[][] = {
             { 1, 2, 3 },

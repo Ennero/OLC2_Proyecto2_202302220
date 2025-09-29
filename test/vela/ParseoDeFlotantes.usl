@@ -1,5 +1,5 @@
 // Ejemplo de uso de Float.parseFloat y Double.parseDouble
-public static void main(String[] args) {
+public static void main() {
     // Prueba de Float.parseFloat
     String textoFloat = "36.5";
     float temperatura = Float.parseFloat(textoFloat);

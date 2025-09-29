@@ -69,7 +69,7 @@ void generarReporte(String[] items, int[][] datos) {
 
 
 // Función principal que orquesta todas las pruebas complejas.
-public static void main(String[] args) {
+public static void main() {
     System.out.println("====== INICIO DE LA PRUEBA DE TORTURA DEL INTÉRPRETE ======");
 
     // ====================================================================

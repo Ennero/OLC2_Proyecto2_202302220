@@ -81,7 +81,7 @@ Puede obtener licencia
 === FIN PRUEBAS BÁSICAS ===
 */
 
-public static void main(String[] args) {
+public static void main() {
     System.out.println("=== PRUEBAS BÁSICAS APLICADAS ===");
     
     // Calculadora básica con casos reales
