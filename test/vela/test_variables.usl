@@ -1,0 +1,29 @@
+    public static void main(String[] args){
+
+// Archivo de prueba para variables y constantes
+
+// 1. Declaración de variables sin inicializar
+int edad;
+String nombre;
+boolean activo;
+
+// 2. Declaración de variables con inicialización
+int numero = 42;
+String mensaje = "Hola Mundo";
+boolean estado = true;
+
+// 3. Declaración de constantes (deben inicializarse)
+final int MAX_USUARIOS = 100;
+final String NOMBRE_APP = "MiApp";
+final boolean DEBUG_MODE = false;
+
+// 4. Uso de variables en println
+System.out.println("El numero es: " + numero);
+System.out.println("Mensaje: " + mensaje);
+System.out.println("Estado: " + estado);
+
+// 5. Uso de constantes en println
+System.out.println("Maximo usuarios: " + MAX_USUARIOS);
+System.out.println("Nombre de la app: " + NOMBRE_APP);
+}
+

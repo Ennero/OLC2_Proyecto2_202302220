@@ -1,0 +1,17 @@
+ public static void main(String[] args) {
+// Esto debería funcionar
+while (true) {
+    System.out.println("Dentro del bucle");
+    break;
+}
+
+// Esto debería generar un error
+break;  // Break fuera de contexto
+
+// Esto debería funcionar
+switch(1) {
+    case 1:
+        System.out.println("Case 1");
+        break;
+}
+ }

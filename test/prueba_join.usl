@@ -1,0 +1,49 @@
+public static void main(String[] args) {
+
+    // ======================================================
+    // PRUEBA 1: String.join con Argumentos Variables (Varargs)
+    // ======================================================
+    System.out.println("--- Pruebas de String.join con Varargs ---");
+
+    // Caso 1: Unir varios strings literales
+    String csv = String.join(",", "manzana", "naranja", "banana");
+    System.out.println(csv); // Esperado: manzana,naranja,banana
+
+    // Caso 2: Unir con un delimitador más complejo
+    String path = String.join("/", "usr", "local", "bin", "programa");
+    System.out.println(path); // Esperado: usr/local/bin/programa
+    
+    // Caso 3: Mezclar tipos de datos (tu función los convierte a string)
+    // Se une un string, un entero, un booleano y un flotante.
+    String datosMezclados = String.join(" | ", "ID", 123, true, 99.5f);
+    System.out.println(datosMezclados); // Esperado: ID | 123 | true | 99.500000
+
+
+    // =================================================================
+    // PRUEBA 2: VERIFICAR QUE LA VERSIÓN CON ARREGLOS SIGUE FUNCIONANDO
+    // =================================================================
+    System.out.println("\n--- Verificación de String.join con Arreglos ---");
+
+    String[] colores = {"rojo", "verde", "azul"};
+    String listaColores = String.join(" - ", colores);
+    System.out.println(listaColores); // Esperado: rojo - verde - azul
+    
+
+    // =================================================================
+    // PRUEBA 3: CASOS LÍMITE
+    // =================================================================
+    System.out.println("\n--- Pruebas de Casos Límite ---");
+    
+    // Varargs con un solo elemento después del delimitador
+    String unElemento = String.join(":", "solo_uno");
+    System.out.println(unElemento); // Esperado: solo_uno
+    
+    // Arreglo con un solo elemento
+    String[] unElementoArr = {"unico"};
+    System.out.println(String.join(":", unElementoArr)); // Esperado: unico
+    
+    // Arreglo vacío
+    int[] arregloVacio = {};
+    String resultadoVacio = String.join("-", arregloVacio);
+    System.out.println("'" + resultadoVacio + "'"); // Esperado: '' (un string vacío)
+}

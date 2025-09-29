@@ -1,0 +1,401 @@
+/*
+=== SISTEMA ACADÉMICO AVANZADO USAC ===
+
+--- FUNCIONES BÁSICAS ---
+¡Bienvenido al sistema USAC!
+
+--- REGISTRO DE ESTUDIANTES ---
+Nuevo estudiante registrado: María González - ID: 2025001
+Nuevo estudiante registrado: Carlos Rodríguez - ID: 2025002
+Total de estudiantes registrados: 2
+
+--- CÁLCULOS ACADÉMICOS ---
+Estudiante: María González
+Promedio de 85, 92, 78: 85.0
+Ponderación final: 82.5
+
+Concatenación: Universidad San Carlos
+
+--- ANÁLISIS ESTADÍSTICO RECURSIVO ---
+Factorial de 0 = 1
+Factorial de 1 = 1
+Factorial de 2 = 2
+Factorial de 3 = 6
+Factorial de 4 = 24
+Factorial de 5 = 120
+
+Secuencia Fibonacci - Crecimiento de matrículas:
+Año 0: 0 estudiantes
+Año 1: 1 estudiantes
+Año 2: 1 estudiantes
+Año 3: 2 estudiantes
+Año 4: 3 estudiantes
+Año 5: 5 estudiantes
+Año 6: 8 estudiantes
+Año 7: 13 estudiantes
+Año 8: 21 estudiantes
+
+Función de Ackerman - Complejidad algoritmica:
+A(0,0) = 1
+A(0,1) = 2
+A(1,0) = 2
+A(1,1) = 3
+A(2,0) = 3
+A(2,1) = 5
+A(3,0) = 5
+A(3,1) = 13
+
+--- GESTIÓN DE CALIFICACIONES ---
+Notas del curso de Matemáticas:
+calificaciones[0] = 85
+calificaciones[1] = 92
+calificaciones[2] = 78
+calificaciones[3] = 96
+calificaciones[4] = 88
+
+Suma total recursiva: 439
+Promedio del curso: 87.8
+Curso después de agregar nota (90), total: 6 notas
+Posición de la nota 92: 1
+
+--- SISTEMA DE HORARIOS (MULTIDIMENSIONAL) ---
+Horarios por facultad y día:
+
+Facultad 0 (Ingeniería):
+Lunes: 8:00-10:00
+Martes: 10:00-12:00
+Miércoles: 14:00-16:00
+
+Facultad 1 (Medicina):
+Lunes: 7:00-9:00
+Martes: 9:00-11:00
+Miércoles: 13:00-15:00
+
+Facultad 2 (Derecho):
+Lunes: 16:00-18:00
+Martes: 18:00-20:00
+Miércoles: 19:00-21:00
+
+--- ANÁLISIS TRIDIMENSIONAL ---
+Rendimiento por facultad, semestre y materia:
+
+Facultad 0, Semestre 0, Materia 0: 85 puntos
+Facultad 0, Semestre 0, Materia 1: 90 puntos
+Facultad 0, Semestre 1, Materia 0: 88 puntos
+Facultad 0, Semestre 1, Materia 1: 92 puntos
+Facultad 1, Semestre 0, Materia 0: 78 puntos
+Facultad 1, Semestre 0, Materia 1: 82 puntos
+Facultad 1, Semestre 1, Materia 0: 95 puntos
+Facultad 1, Semestre 1, Materia 1: 87 puntos
+
+--- PROCESAMIENTO DE DATOS ---
+Código de estudiante parseado: 202301
+Promedio parseado: 87.56
+Factor de rendimiento parseado: 0.92
+
+Reporte generado: Estudiante 202301 | Promedio 87.56 | Factor 0.92
+Lista consolidada: 2023,2024,2025,2026,2027
+
+--- ANÁLISIS DE COHORTES ---
+Estudiantes por cohorte:
+Cohorte 1: Ana Pérez
+Cohorte 2: Luis García
+Cohorte 3: María López
+Cohorte 4: Carlos Díaz
+Cohorte 5: Sofia Morales
+Cohorte 6: Pedro Vásquez
+
+Constante institucional: 100
+Conversión int a float: 85.0
+Código ASCII de estudiante: A
+Resultado de operaciones combinadas: 23
+Arreglo de códigos final, total: 5 elementos                                               
+
+=== FIN ARCHIVO AVANZADO USAC ===
+*/
+
+// Función de bienvenida sin parámetros
+void mostrarBienvenida() {
+    System.out.println("¡Bienvenido al sistema USAC!");
+}
+
+// Función de registro con parámetros
+String registrarEstudiante(String nombre, int anio) {
+    int numeroConsecutivo = 1;  // Simplificado para el ejemplo
+    int codigoCompleto = anio * 1000 + numeroConsecutivo;
+    return "Nuevo estudiante registrado: " + nombre + " - ID: " + String.valueOf(codigoCompleto);
+}
+
+// Función para conteo de registros
+int contarRegistros(String nombre1, String nombre2) {
+    // Lógica simplificada: contar parámetros no nulos
+    int contador = 0;
+    if (nombre1 != null) {
+        contador++;
+    }
+    if (nombre2 != null) {
+        contador++;
+    }
+    return contador;
+}
+
+// Función recursiva - Factorial para cálculos estadísticos
+int factorial(int n) {
+    if (n == 0 || n == 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+// Función recursiva - Fibonacci para proyecciones
+int fibonacci(int n) {
+    if (n <= 1) {
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+// Función recursiva - Ackerman para análisis de complejidad
+int ackerman(int m, int n) {
+    if (m == 0) {
+        return n + 1;
+    }
+    if (n == 0) {
+        return ackerman(m - 1, 1);
+    }
+    return ackerman(m - 1, ackerman(m, n - 1));
+}
+
+// Función recursiva - Suma total de calificaciones
+int sumarCalificaciones(int[] notas, int indice) {
+    if (indice >= notas.length) {
+        return 0;
+    }
+    return notas[indice] + sumarCalificaciones(notas, indice + 1);
+}
+
+// Función para cálculo de promedios ponderados
+double calcularPromedioPonderado(int examen1, int examen2, int proyecto) {
+    // Exámenes 40% cada uno, proyecto 20%
+    double pesoExamen = 0.4;
+    double pesoProyecto = 0.2;
+    return (examen1 * pesoExamen) + (examen2 * pesoExamen) + (proyecto * pesoProyecto);
+}
+
+// Función para concatenación de datos institucionales
+String generarReporteInstitucional(String universidad, String pais) {
+    return universidad + " " + pais;
+}
+
+public static void main(String[] args) {
+    System.out.println("=== SISTEMA ACADÉMICO AVANZADO USAC ===");
+    
+    // Demostración de funciones sin parámetros
+    System.out.println("\n--- FUNCIONES BÁSICAS ---");
+    mostrarBienvenida();
+    
+    // Demostración de funciones con parámetros
+    System.out.println("\n--- REGISTRO DE ESTUDIANTES ---");
+    String registro1 = registrarEstudiante("María González", 2025);
+    String registro2 = registrarEstudiante("Carlos Rodríguez", 2025);
+    
+    System.out.println(registro1);
+    System.out.println(registro2);
+    
+    int totalRegistros = contarRegistros("María González", "Carlos Rodríguez");
+    System.out.println("Total de estudiantes registrados: " + String.valueOf(totalRegistros));
+    
+    // Cálculos académicos aplicados
+    System.out.println("\n--- CÁLCULOS ACADÉMICOS ---");
+    System.out.println("Estudiante: María González");
+    double promedioFinal = calcularPromedioPonderado(85, 92, 78);
+    System.out.println("Promedio de 85, 92, 78: " + String.valueOf(promedioFinal));
+    
+    double ponderacionFinal = calcularPromedioPonderado(80, 85, 85);
+    System.out.println("Ponderación final: " + String.valueOf(ponderacionFinal));
+    System.out.println();
+    
+    String reporteInstitucional = generarReporteInstitucional("Universidad", "San Carlos");
+    System.out.println("Concatenación: " + reporteInstitucional);
+    
+    // Análisis estadístico con funciones recursivas
+    System.out.println("\n--- ANÁLISIS ESTADÍSTICO RECURSIVO ---");
+    
+    // Factorial para cálculos de combinaciones en inscripciones
+    for (int i = 0; i <= 5; i++) {
+        int fact = factorial(i);
+        System.out.println("Factorial de " + String.valueOf(i) + " = " + String.valueOf(fact));
+    }
+    
+    System.out.println();
+    
+    // Fibonacci para proyecciones de crecimiento
+    System.out.println("Secuencia Fibonacci - Crecimiento de matrículas:");
+    for (int anio = 0; anio <= 8; anio++) {
+        int proyeccion = fibonacci(anio);
+        System.out.println("Año " + String.valueOf(anio) + ": " + String.valueOf(proyeccion) + " estudiantes");
+    }
+    
+    System.out.println();
+    
+    // Ackerman para análisis de complejidad algoritmica
+    System.out.println("Función de Ackerman - Complejidad algoritmica:");
+    int[][] paresAckerman = {{0,0}, {0,1}, {1,0}, {1,1}, {2,0}, {2,1}, {3,0}, {3,1}};
+    for (int[] par : paresAckerman) {
+        int m = par[0];
+        int n = par[1];
+        int resultado = ackerman(m, n);
+        System.out.println("A(" + String.valueOf(m) + "," + String.valueOf(n) + ") = " + String.valueOf(resultado));
+    }
+    
+    // Gestión avanzada de arreglos
+    System.out.println("\n--- GESTIÓN DE CALIFICACIONES ---");
+    int[] calificaciones = {85, 92, 78, 96, 88};
+    
+    System.out.println("Notas del curso de Matemáticas:");
+    for (int i = 0; i < calificaciones.length; i++) {
+        System.out.println("calificaciones[" + String.valueOf(i) + "] = " + String.valueOf(calificaciones[i]));
+    }
+    
+    System.out.println();
+    
+    // Suma recursiva de calificaciones
+    int sumaTotal = sumarCalificaciones(calificaciones, 0);
+    System.out.println("Suma total recursiva: " + String.valueOf(sumaTotal));
+    
+    double promedioCurso = (double)sumaTotal / calificaciones.length;
+    System.out.println("Promedio del curso: " + String.valueOf(promedioCurso));
+    
+    // Uso de Array.add()
+    int[] calificacionesActualizadas = calificaciones.add(90);
+    System.out.println("Curso después de agregar nota (90), total: " + String.valueOf(calificacionesActualizadas.length) + " notas");
+    
+    // Uso de Arrays.indexOf()
+    int posicionNota = Arrays.indexOf(calificaciones, 92);
+    System.out.println("Posición de la nota 92: " + String.valueOf(posicionNota));
+    
+    // Arreglos multidimensionales - Sistema de horarios
+    System.out.println("\n--- SISTEMA DE HORARIOS (MULTIDIMENSIONAL) ---");
+    String[][] horariosFacultades = {
+        {"8:00-10:00", "10:00-12:00", "14:00-16:00"},    // Ingeniería
+        {"7:00-9:00", "9:00-11:00", "13:00-15:00"},      // Medicina
+        {"16:00-18:00", "18:00-20:00", "19:00-21:00"}    // Derecho
+    };
+    
+    String[] nombresFacultades = {"Ingeniería", "Medicina", "Derecho"};
+    String[] diasSemana = {"Lunes", "Martes", "Miércoles"};
+    
+    System.out.println("Horarios por facultad y día:");
+    System.out.println();
+    
+    for (int facultad = 0; facultad < horariosFacultades.length; facultad++) {
+        System.out.println("Facultad " + String.valueOf(facultad) + " (" + nombresFacultades[facultad] + "):");
+        for (int dia = 0; dia < horariosFacultades[facultad].length; dia++) {
+            System.out.println(diasSemana[dia] + ": " + horariosFacultades[facultad][dia]);
+        }
+        System.out.println();
+    }
+    
+    // Arreglo tridimensional - Rendimiento académico
+    System.out.println("--- ANÁLISIS TRIDIMENSIONAL ---");
+    int[][][] rendimientoAcademico = new int[2][2][2]; // 2 facultades, 2 semestres, 2 materias
+    
+    // Llenar con datos de ejemplo
+    rendimientoAcademico[0][0][0] = 85;  // Facultad 0, Semestre 0, Materia 0
+    rendimientoAcademico[0][0][1] = 90;  // Facultad 0, Semestre 0, Materia 1
+    rendimientoAcademico[0][1][0] = 88;  // Facultad 0, Semestre 1, Materia 0
+    rendimientoAcademico[0][1][1] = 92;  // Facultad 0, Semestre 1, Materia 1
+    rendimientoAcademico[1][0][0] = 78;  // Facultad 1, Semestre 0, Materia 0
+    rendimientoAcademico[1][0][1] = 82;  // Facultad 1, Semestre 0, Materia 1
+    rendimientoAcademico[1][1][0] = 95;  // Facultad 1, Semestre 1, Materia 0
+    rendimientoAcademico[1][1][1] = 87;  // Facultad 1, Semestre 1, Materia 1
+    
+    System.out.println("Rendimiento por facultad, semestre y materia:");
+    System.out.println();
+    
+    for (int f = 0; f < 2; f++) {
+        for (int s = 0; s < 2; s++) {
+            for (int m = 0; m < 2; m++) {
+                System.out.println("Facultad " + String.valueOf(f) + 
+                                 ", Semestre " + String.valueOf(s) + 
+                                 ", Materia " + String.valueOf(m) + 
+                                 ": " + String.valueOf(rendimientoAcademico[f][s][m]) + " puntos");
+            }
+        }
+    }
+    
+    // Funciones embebidas aplicadas al contexto académico
+    System.out.println("\n--- PROCESAMIENTO DE DATOS ---");
+    
+    // Parseo de códigos de estudiantes
+    String codigoEstudiante = "202301";
+    String promedioTexto = "87.56";
+    String factorTexto = "0.92";
+    
+    int codigoParseado = Integer.parseInt(codigoEstudiante);
+    double promedioParseado = Double.parseDouble(promedioTexto);
+    float factorParseado = Float.parseFloat(factorTexto);
+    
+    System.out.println("Código de estudiante parseado: " + String.valueOf(codigoParseado));
+    System.out.println("Promedio parseado: " + String.valueOf(promedioParseado));
+    System.out.println("Factor de rendimiento parseado: " + String.valueOf(factorParseado));
+    System.out.println();
+    
+    // String.valueOf() para generar reportes
+    String reporteCompleto = "Estudiante " + String.valueOf(codigoParseado) + 
+                           " | Promedio " + String.valueOf(promedioParseado) + 
+                           " | Factor " + String.valueOf(factorParseado);
+    System.out.println("Reporte generado: " + reporteCompleto);
+    
+    // String.join() para consolidar datos
+    String[] aniosCohortes = {"2023", "2024", "2025", "2026", "2027"};
+    String listaConsolidada = String.join(",", aniosCohortes);
+    System.out.println("Lista consolidada: " + listaConsolidada);
+    
+    // ForEach aplicado con datos de cohortes
+    System.out.println("\n--- ANÁLISIS DE COHORTES ---");
+    String[] estudiantesPorCohorte = {"Ana Pérez", "Luis García", "María López", "Carlos Díaz", "Sofia Morales", "Pedro Vásquez"};
+    
+    System.out.println("Estudiantes por cohorte:");
+    int numeroCohorte = 1;
+    for (String estudiante : estudiantesPorCohorte) {
+        System.out.println("Cohorte " + String.valueOf(numeroCohorte) + ": " + estudiante);
+        numeroCohorte++;
+    }
+    
+    System.out.println();
+    
+    // Constantes institucionales y conversiones
+    final int CODIGO_INSTITUCIONAL = 100;
+    System.out.println("Constante institucional: " + String.valueOf(CODIGO_INSTITUCIONAL));
+    
+    // Casting aplicado
+    int notaEntero = 85;
+    float notaFlotante = (float) notaEntero;
+    char codigoAscii = (char) 65; // 'A' para estudiantes destacados
+    
+    System.out.println("Conversión int a float: " + String.valueOf(notaFlotante));
+    System.out.println("Código ASCII de estudiante: " + String.valueOf(codigoAscii));
+    
+    // Operadores de asignación compuestos aplicados
+    int creditos = 20;
+    creditos += 5;   // Agregar créditos por curso extra
+    creditos *= 2;   // Duplicar por semestre doble
+    creditos /= 3;   // Dividir por carga académica
+    creditos %= 15;  // Módulo para validación
+    
+    System.out.println("Resultado de operaciones combinadas: " + String.valueOf(creditos));
+    
+    // Array.length en contexto práctico
+    int[] codigosEstudiantes = {202301, 202302, 202303};
+    codigosEstudiantes = codigosEstudiantes.add(202304);
+    codigosEstudiantes = codigosEstudiantes.add(202305);
+    
+    System.out.println("Arreglo de códigos final, total: " + String.valueOf(codigosEstudiantes.length) + " elementos");
+    
+    // Visualización institucional con patrones avanzados
+    System.out.println("\n--- VISUALIZACIÓN INSTITUCIONAL ---");
+    System.out.println();
+    
+    System.out.println("\n=== FIN ARCHIVO AVANZADO USAC ===");
+}

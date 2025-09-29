@@ -1,0 +1,38 @@
+public static void main(String[] args) {
+    System.out.println("--- Prueba de 'continue' ---");
+
+    // Prueba 1: 'continue' en un ciclo 'for' para imprimir solo pares
+    System.out.println("Prueba 1: 'for' saltando los impares");
+    for (int i = 0; i < 10; i = i + 1) {
+        if (i % 2 != 0) { // Si es impar
+            continue; // Salta a la actualización (i=i+1)
+        }
+        System.out.println(i);
+    }
+    System.out.println("----------------------------------------");
+
+    // Prueba 2: 'continue' en un ciclo 'while'
+    System.out.println("Prueba 2: 'while' saltando el numero 5");
+    int j = 10;
+    while (j > 0) {
+        j = j - 1;
+        if (j == 5) {
+            continue;
+        }
+        System.out.println(j);
+    }
+    System.out.println("----------------------------------------");
+
+    // Prueba 3: 'continue' en bucles anidados
+    System.out.println("Prueba 3: 'continue' en bucle anidado");
+    for (int outer = 0; outer < 2; outer = outer + 1) {
+        System.out.println("Outer: " + outer);
+        for (int inner = 0; inner < 5; inner = inner + 1) {
+            if (inner == 2) {
+                continue; // <-- Este continue solo afecta al bucle 'inner'
+            }
+            System.out.println("  Inner: " + inner);
+        }
+    }
+    System.out.println("--- Fin de la prueba de 'continue' ---");
+}

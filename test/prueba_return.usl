@@ -1,0 +1,18 @@
+public static void main(String[] args) {
+    System.out.println("--- Prueba de 'return' ---");
+
+    // Prueba 1: 'return' dentro de un 'if'
+    // El programa debería terminar aquí.
+    if (true) {
+        System.out.println("Saliendo de la función desde un 'if'...");
+        return;
+    }
+
+    // Estas líneas NUNCA deberían ejecutarse.
+    System.out.println("ERROR: Este mensaje no deberia aparecer (1)");
+
+    for (int i = 0; i < 5; i = i + 1) {
+        System.out.println("ERROR: Este mensaje no deberia aparecer (2)");
+        return;
+    }
+}

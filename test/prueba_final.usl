@@ -1,0 +1,54 @@
+
+
+// --- Definición de la Función Recursiva ---
+int factorial(int n) {
+    // Caso base: la condición que detiene la recursividad.
+    if (n <= 1) {
+        return 1;
+    }
+    // Llamada recursiva: la función se llama a sí misma con un problema más pequeño.
+    return n * factorial(n - 1);
+}
+
+public static void main(String[] args) {
+
+    // ======================================================
+    // PRUEBA 1: FUNCIONES RECURSIVAS
+    // ======================================================
+    System.out.println("--- Prueba de Recursividad: Factorial ---");
+
+    int numero = 5;
+    int resultadoFactorial = factorial(numero);
+    // 5! = 5 * 4 * 3 * 2 * 1 = 120
+    System.out.println("El factorial de " + numero + " es: " + resultadoFactorial); // Esperado: 120
+    
+    // Prueba el caso base de la recursión para asegurar que se detiene correctamente.
+    System.out.println("El factorial de 0 es: " + factorial(0)); // Esperado: 1
+
+
+    // ======================================================
+    // PRUEBA 2: CONSTANTES 'final'
+    // ======================================================
+    System.out.println("\n--- Prueba de Constantes 'final' ---");
+
+    final int MI_CONSTANTE = 100;
+    System.out.println("Valor de la constante: " + MI_CONSTANTE); // Esperado: 100
+
+    // La siguiente línea, si se descomenta, debería generar un error semántico
+    // que diga "No se puede asignar un valor a una variable final".
+    // El programa debería reportarlo y continuar sin cambiar el valor.
+    // MI_CONSTANTE = 200; 
+
+    final String[] DIAS = {"Lunes", "Martes", "Miercoles"};
+    System.out.println("El segundo dia es: " + DIAS[1]); // Esperado: Martes
+
+    // IMPORTANTE: 'final' en un arreglo previene la reasignación del arreglo,
+    // pero NO previene la modificación de sus elementos. Este es el comportamiento correcto en Java.
+    // Esta línea SÍ debe funcionar.
+    DIAS[1] = "Martes-Modificado";
+    System.out.println("El segundo dia modificado es: " + DIAS[1]); // Esperado: Martes-Modificado
+
+    // La siguiente línea, si se descomenta, debería causar un error semántico
+    // porque se intenta reasignar el arreglo 'final' completo.
+    // DIAS = new String[3]; 
+}

@@ -1,0 +1,60 @@
+public static void main(String[] args) {
+
+    System.out.println("--- Prueba de Arreglos Irregulares (Jagged Arrays) ---");
+
+    // =================================================================
+    // PASO 1: DECLARACIÓN Y CREACIÓN IRREGULAR
+    // =================================================================
+    // Creamos un arreglo de 3 "filas", pero no especificamos el tamaño de las columnas.
+    // En este punto, es un arreglo que contiene 3 punteros a 'null'.
+    int[][] arregloIrregular = new int[3][];
+
+    // Ahora, instanciamos cada sub-arreglo (cada fila) con un tamaño diferente.
+    arregloIrregular[0] = new int[2]; // La primera fila tiene 2 columnas.
+    arregloIrregular[1] = new int[4]; // La segunda fila tiene 4 columnas.
+    arregloIrregular[2] = new int[3]; // La tercera fila tiene 3 columnas.
+
+    System.out.println("Instanciacion de arreglo irregular: OK");
+
+
+    // =================================================================
+    // PASO 2: ASIGNACIÓN DE VALORES
+    // =================================================================
+    
+    // Fila 0 (tamaño 2)
+    arregloIrregular[0][0] = 10;
+    arregloIrregular[0][1] = 20;
+
+    // Fila 1 (tamaño 4)
+    arregloIrregular[1][0] = 30;
+    arregloIrregular[1][1] = 40;
+    arregloIrregular[1][2] = 50;
+    arregloIrregular[1][3] = 60;
+
+    // Fila 2 (tamaño 3)
+    arregloIrregular[2][0] = 70;
+    arregloIrregular[2][1] = 80;
+    arregloIrregular[2][2] = 90;
+
+    System.out.println("Asignacion de valores en estructura irregular: OK");
+
+
+    // =================================================================
+    // PASO 3: LECTURA Y VERIFICACIÓN
+    // =================================================================
+
+    System.out.println("\n--- Verificacion de Valores ---");
+
+    // Leemos valores de los extremos de cada fila para confirmar.
+    System.out.println(arregloIrregular[0][1]); // Esperado: 20
+    System.out.println(arregloIrregular[1][3]); // Esperado: 60
+    System.out.println(arregloIrregular[2][2]); // Esperado: 90
+    
+    // También verificamos un valor por defecto que no fue asignado en la fila más larga.
+    int[][] matriz = new int[2][];
+    matriz[0] = new int[1];
+    matriz[1] = new int[2];
+    matriz[1][0] = 15;
+    
+    System.out.println(matriz[1][1]); // Esperado: 0 (valor por defecto)
+}

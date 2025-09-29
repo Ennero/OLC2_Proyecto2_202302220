@@ -1,0 +1,58 @@
+// Declaración de una función que retorna un valor
+int sumar(int a, int b) {
+    int resultado = a + b;
+    return resultado;
+}
+
+// Declaración de una función void sin parámetros
+void imprimirSaludo() {
+    System.out.println("Hola desde una función void!");
+    return; // Este return es opcional en funciones void
+}
+
+// Declaración de una función void con parámetros
+void imprimirRepetido(String texto, int veces) {
+    int i = 0;
+    while (i < veces) {
+        System.out.println(texto);
+        i = i + 1;
+    }
+}
+
+// Función para probar errores semánticos
+void funcionParaErrores() {
+    System.out.println("Esta función prueba los errores.");
+    // ERROR SEMÁNTICO 1: Una función void no puede retornar un valor.
+    // Descomenta la siguiente línea para probar.
+    // return 5; 
+}
+
+public static void main(String[] args) {
+    System.out.println("--- Iniciando Prueba de Funciones ---");
+
+    // --- Prueba de funciones que retornan valor ---
+    int resultadoSuma = sumar(10, 5);
+    System.out.println("El resultado de sumar(10, 5) es: " + resultadoSuma);
+    System.out.println("----------------------------------------");
+
+    // --- Prueba de funciones void ---
+    imprimirSaludo();
+    System.out.println("----------------------------------------");
+    imprimirRepetido("Repitiendo...", 3);
+    System.out.println("----------------------------------------");
+
+    // --- Prueba de Errores Semánticos (comentados) ---
+    
+    // ERROR SEMÁNTICO 2: No se puede asignar el resultado de una función void.
+    // La siguiente línea debería generar un error porque imprimirSaludo es void.
+    // int x = imprimirSaludo();
+    
+    // ERROR SEMÁNTICO 3: No se puede usar una función void en una expresión.
+    // La siguiente línea debería generar un error.
+    // int y = 10 + sumar(5, imprimirRepetido("a", 1));
+    
+    // Llamada a la función que contiene el error de return
+    funcionParaErrores();
+    
+    System.out.println("--- Pruebas de Funciones Finalizadas ---");
+}

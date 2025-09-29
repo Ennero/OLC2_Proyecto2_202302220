@@ -1,0 +1,364 @@
+public static void main(String[] args) {
+    System.out.println("=== SISTEMA DE GESTIÓN ESTUDIANTIL ===");
+    
+    // Variables globales del sistema
+    int totalEstudiantes = 1000;
+    int cuposPorCurso = 30;
+    final int EDAD_MINIMA = 16;
+    
+    // Sistema de inscripciones con condicionales aplicadas
+    System.out.println("\n--- SISTEMA DE INSCRIPCIONES ---");
+    
+    String nombreEstudiante1 = "Ana García";
+    int edadEstudiante1 = 20;
+    int cursosDisponibles = 5;
+    String cursoSeleccionado = "Matemáticas";
+    
+    System.out.println("Estudiante: " + nombreEstudiante1);
+    String mensaje = "Edad: " + String.valueOf(edadEstudiante1) + " años - ";
+    if (edadEstudiante1 >= 18) {
+        mensaje += "Puede inscribirse";
+    } else {
+        mensaje += "Requiere autorización";
+    }
+    System.out.println(mensaje);
+    
+    if (edadEstudiante1 >= 18) {
+        System.out.println("Cursos disponibles: " + String.valueOf(cursosDisponibles));
+        System.out.println("Seleccionó curso: " + cursoSeleccionado);
+        System.out.println("Estado: Inscrita exitosamente");
+    } else {
+        if (edadEstudiante1 >= EDAD_MINIMA) {
+            System.out.println("Cursos disponibles: " + String.valueOf(cursosDisponibles));
+            System.out.println("Seleccionó curso: " + cursoSeleccionado);
+            System.out.println("Estado: Pendiente autorización");
+        } else {
+            System.out.println("Estado: Rechazado por edad");
+        }
+    }
+    
+    System.out.println();
+    
+    // Segundo estudiante
+    String nombreEstudiante2 = "Luis Pérez";
+    int edadEstudiante2 = 16;
+    String cursoSeleccionado2 = "Historia";
+    
+    System.out.println("Estudiante: " + nombreEstudiante2);
+    String mensaje2 = "Edad: " + String.valueOf(edadEstudiante2) + " años - ";
+    if (edadEstudiante2 >= 18) {
+        mensaje2 += "Puede inscribirse";
+    } else {
+        mensaje2 += "Requiere autorización";
+    }
+    System.out.println(mensaje2);
+    
+    if (edadEstudiante2 >= 18) {
+        System.out.println("Estado: Inscrito exitosamente");
+    } else {
+        if (edadEstudiante2 >= EDAD_MINIMA) {
+            System.out.println("Cursos disponibles: " + String.valueOf(cursosDisponibles));
+            System.out.println("Seleccionó curso: " + cursoSeleccionado2);
+            System.out.println("Estado: Pendiente autorización");
+        } else {
+            System.out.println("Estado: Rechazado por edad");
+        }
+    }
+    
+    // Procesamiento por lotes con while
+    System.out.println("\n--- PROCESAMIENTO POR LOTES ---");
+    String[] estudiantes = {"María", "Juan", "Carmen", "Pedro", "Sofia"};
+    String[] carreras = {"Ingeniería", "Medicina", "Derecho", "Arquitectura", "Psicología"};
+    
+    int contador = 0;
+    while (contador < estudiantes.length) {
+        int numeroEstudiante = contador + 1;
+        System.out.println("Procesando estudiante " + String.valueOf(numeroEstudiante) + 
+                         ": " + estudiantes[contador] + " (" + carreras[contador] + ")");
+        contador++;
+    }
+    
+    System.out.println("Total procesados: " + String.valueOf(contador) + " estudiantes");
+    
+    // Sistema de evaluación con for
+    System.out.println("\n--- SISTEMA DE EVALUACIÓN ---");
+    String estudiante = "Roberto";
+    int[] examenes = {85, 92, 78};
+    int sumaNotas = 0;
+    
+    System.out.println("Estudiante: " + estudiante);
+    
+    for (int i = 0; i < examenes.length; i++) {
+        int numeroExamen = i + 1;
+        System.out.println("Examen " + String.valueOf(numeroExamen) + 
+                         ": " + String.valueOf(examenes[i]) + " puntos");
+        sumaNotas += examenes[i];
+    }
+    
+    double promedio = (double)sumaNotas / examenes.length;
+    System.out.println("Promedio: " + String.valueOf(promedio));
+    
+    if (promedio >= 90.0) {
+        System.out.println("Resultado: Aprobado con honores");
+    } else {
+        if (promedio >= 80.0) {
+            System.out.println("Resultado: Aprobado");
+        } else {
+            if (promedio >= 70.0) {
+                System.out.println("Resultado: Aprobado condicionalmente");
+            } else {
+                System.out.println("Resultado: Reprobado");
+            }
+        }
+    }
+    
+    // Control de acceso por horarios con switch
+    System.out.println("\n--- CONTROL DE ACCESO POR HORARIOS ---");
+    
+    int diaSemana = 2; // Martes
+    String mensaje3 = "Día de la semana: " + String.valueOf(diaSemana);
+    if (diaSemana == 2) {
+        mensaje3 += " (Martes)";
+    }
+    System.out.println(mensaje3);
+    
+    switch (diaSemana) {
+        case 1:
+            System.out.println("Horario: Clases matutinas");
+            System.out.println("Estado: Biblioteca abierta");
+            break;
+        case 2:
+            System.out.println("Horario: Clases matutinas");
+            System.out.println("Estado: Aula 101 disponible");
+            break;
+        case 3:
+            System.out.println("Horario: Laboratorios");
+            System.out.println("Estado: Equipos disponibles");
+            break;
+        case 4:
+            System.out.println("Horario: Clases vespertinas");
+            System.out.println("Estado: Cafetería abierta");
+            break;
+        case 5:
+            System.out.println("Horario: Exámenes");
+            System.out.println("Estado: Modo silencioso");
+            break;
+        default:
+            System.out.println("Horario: Fin de semana");
+            System.out.println("Estado: Campus cerrado");
+    }
+    
+    System.out.println();
+    
+    // Otro día para mostrar el default
+    int diaSemana2 = 6; // Sábado
+    System.out.println("Día de la semana: " + String.valueOf(diaSemana2) + " (Sábado)");
+    
+    switch (diaSemana2) {
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+            System.out.println("Estado: Campus operativo");
+            break;
+        default:
+            System.out.println("Horario: Fin de semana");
+            System.out.println("Estado: Campus cerrado");
+    }
+    
+    // Generación de horarios con for
+    System.out.println("\n--- GENERACIÓN DE HORARIOS ---");
+    String[] dias = {"Lunes", "Martes", "Miércoles", "Jueves", "Viernes"};
+    String[] materias = {"Cálculo I", "Física I", "Química General", "Programación", "Inglés Técnico"};
+    
+    System.out.println("Semana académica:");
+    for (int d = 0; d < dias.length; d++) {
+        System.out.println(dias[d] + ": " + materias[d]);
+    }
+    
+    // Control con break y continue
+    System.out.println("\n--- ANÁLISIS DE NOTAS ---");
+    int[] calificaciones = {95, 85, 75, 65, 55, 45, 35, 85, 90};
+    
+    for (int nota : calificaciones) {
+        System.out.println("Revisando calificación: " + String.valueOf(nota) + " - ");
+        
+        if (nota < 40) {
+            System.out.println("Muy baja, necesita tutoría");
+            break; // Detener si encuentra una nota crítica
+        }
+        
+        if (nota < 50) {
+            System.out.println("Muy baja, necesita tutoría");
+            continue; // Continúar con la siguiente nota
+        }
+        
+        if (nota >= 90) {
+            System.out.println("Excelente, continuar");
+        } else {
+            if (nota >= 80) {
+                System.out.println("Buena, continuar");
+            } else {
+                if (nota >= 70) {
+                    System.out.println("Regular, continuar");
+                } else {
+                    System.out.println("Baja, continuar");
+                }
+            }
+        }
+    }
+    
+    // ForEach aplicado a estadísticas
+    System.out.println("\n--- ESTADÍSTICAS DE CURSOS ---");
+    int[] notasMatematicas = {88, 76, 94, 82, 90};
+    
+    System.out.println("Curso de Matemáticas:");
+    int numeroEstudianteStat = 1;
+    for (int notaEst : notasMatematicas) {
+        System.out.println("Estudiante " + String.valueOf(numeroEstudianteStat) + 
+                         ": " + String.valueOf(notaEst) + " puntos");
+        numeroEstudianteStat++;
+    }
+    
+    // Manejo de entornos (ámbitos)
+    System.out.println("\n--- CONTROL DE AMBIENTES ---");
+    int variableGlobal = 100;
+    System.out.println("En ambiente global: variable = " + String.valueOf(variableGlobal));
+    
+    // Simulando función administrativa (ámbito local)
+    {
+        System.out.println("Entrando a función administrativa");
+        int presupuesto = 50000; // Variable local
+        System.out.println("En ambiente local: presupuesto = " + String.valueOf(presupuesto));
+        System.out.println("Acceso a variable global desde local: " + String.valueOf(variableGlobal));
+        System.out.println("Saliendo de función administrativa");
+    }
+    
+    // Ámbitos anidados
+    {
+        int capacidadAula = 30;
+        System.out.println("En ambiente de aula: capacidad = " + String.valueOf(capacidadAula));
+        
+        {
+            int equiposLab = 15;
+            System.out.println("En ambiente de laboratorio: equipos = " + String.valueOf(equiposLab));
+        }
+    }
+    
+    // ForEach con nombres de carreras
+    System.out.println("\n--- REGISTRO DE CARRERAS ---");
+    String[] carrerasDisponibles = {"Ingeniería en Sistemas", "Medicina", "Derecho", "Arquitectura", "Psicología"};
+    
+    for (String carrera : carrerasDisponibles) {
+        System.out.println("Carrera encontrada: " + carrera);
+    }
+    
+    // Cálculo de matrícula por créditos - bucles anidados útiles
+    System.out.println("\n--- CÁLCULO DE MATRÍCULA POR CRÉDITOS ---");
+    int[] creditos = {3, 4, 5, 2, 4}; // Créditos por materia
+    int costoPorCredito = 150; // Quetzales por crédito
+    
+    for (int semestre = 1; semestre <= 2; semestre++) {
+        System.out.println("Semestre " + String.valueOf(semestre) + ":");
+        int totalSemestre = 0;
+        
+        for (int materia = 0; materia < creditos.length; materia++) {
+            int costoMateria = creditos[materia] * costoPorCredito;
+            totalSemestre += costoMateria;
+            System.out.println("  Materia " + String.valueOf(materia + 1) + 
+                             ": " + String.valueOf(creditos[materia]) + " créditos = Q" + 
+                             String.valueOf(costoMateria));
+        }
+        System.out.println("  Total semestre: Q" + String.valueOf(totalSemestre));
+        System.out.println("");
+    }
+    
+    // Tabla de notas por estudiante y materia
+    System.out.println("--- REPORTE DE CALIFICACIONES ---");
+    String[] estudiantesReporte = {"Ana", "Luis", "María"};
+    String[] materiasReporte = {"Mate", "Física", "Química"};
+    int[][] notasTabla = {
+        {85, 92, 78},  // Ana
+        {90, 87, 82},  // Luis  
+        {88, 95, 91}   // María
+    };
+    
+    for (int est = 0; est < estudiantesReporte.length; est++) {
+        System.out.println("Estudiante: " + estudiantesReporte[est]);
+        for (int mat = 0; mat < materiasReporte.length; mat++) {
+            System.out.println("  " + materiasReporte[mat] + ": " + String.valueOf(notasTabla[est][mat]) + " pts");
+        }
+        System.out.println();
+    }
+    
+    // Análisis de rendimiento académico por período
+    System.out.println("--- ANÁLISIS DE RENDIMIENTO ACADÉMICO ---");
+    String[] periodos = {"Enero", "Febrero", "Marzo"};
+    int[] estudiantesInscritos = {150, 180, 200};
+    int[] estudiantesAprobados = {120, 160, 175};
+    
+    for (int periodo = 0; periodo < periodos.length; periodo++) {
+        System.out.println("Período: " + periodos[periodo]);
+        System.out.println("  Inscritos: " + String.valueOf(estudiantesInscritos[periodo]));
+        System.out.println("  Aprobados: " + String.valueOf(estudiantesAprobados[periodo]));
+        
+        double porcentajeAprobacion = (double)estudiantesAprobados[periodo] / estudiantesInscritos[periodo] * 100.0;
+        System.out.println("  Porcentaje de aprobación: " + String.valueOf(porcentajeAprobacion) + "%");
+        
+        // Crear gráfico de barras simple usando solo println
+        String barraCompleta = "  Progreso: ";
+        int barras = (int)(porcentajeAprobacion / 10); // Cada barra representa 10%
+        for (int barra = 0; barra < 10; barra++) {
+            if (barra < barras) {
+                barraCompleta += "█";
+            } else {
+                barraCompleta += "░";
+            }
+        }
+        System.out.println(barraCompleta);
+        System.out.println();
+    }
+    
+    // Comparación de promedios por facultad
+    System.out.println("--- COMPARACIÓN INTER-FACULTADES ---");
+    String[] facultades = {"Ingeniería", "Medicina", "Derecho"};
+    double[] promedios = {82.5, 88.3, 79.8};
+    
+    double mejorPromedio = 0.0;
+    String mejorFacultad = "";
+    
+    for (int f = 0; f < facultades.length; f++) {
+        System.out.println("Facultad de " + facultades[f] + ": " + String.valueOf(promedios[f]) + " pts");
+        
+        if (promedios[f] > mejorPromedio) {
+            mejorPromedio = promedios[f];
+            mejorFacultad = facultades[f];
+        }
+    }
+    
+    System.out.println("Mejor rendimiento: " + mejorFacultad + " con " + String.valueOf(mejorPromedio) + " pts");
+    System.out.println("");
+    
+    // Distribución de horarios de laboratorio
+    System.out.println("--- DISTRIBUCIÓN DE LABORATORIOS ---");
+    String[] laboratorios = {"Lab-A", "Lab-B", "Lab-C"};
+    String[] horarios = {"08:00", "10:00", "14:00", "16:00"};
+    
+    for (int lab = 0; lab < laboratorios.length; lab++) {
+        System.out.println(laboratorios[lab] + ":");
+        for (int hora = 0; hora < horarios.length; hora++) {
+            boolean ocupado = (lab + hora) % 2 == 0; // Patrón de ocupación simulado
+            String estado = "";
+            if (ocupado) {
+                estado = "OCUPADO";
+            }else{
+                estado = "LIBRE";
+            }
+            System.out.println("  " + horarios[hora] + " - " + estado);
+        }
+        System.out.println("");
+    }
+    
+    System.out.println("=== FIN SISTEMA ESTUDIANTIL ===");
+}

@@ -1,0 +1,74 @@
+     public static void main(String[] args) {
+    // Vector inicializado
+    int[] nums = {10, 20, 30, 40};
+
+    // Vector con tamaño fijo
+    char[] vocales = new char[5];
+    vocales[0] = 'A';
+    vocales[1] = 'E';
+    vocales[2] = 'I';
+    vocales[3] = 'O';
+    vocales[4] = 'U';
+
+    // Acceso e impresión
+    System.out.println("Primer número: " + nums[0]);
+    System.out.println("Último número: " + nums[3]);
+    System.out.println("Vocal en posición 2: " + vocales[2]);
+
+    // Modificación
+    nums[1] = 99;
+    System.out.println("Nuevo valor en nums[1]: " + nums[1]);
+
+
+    // Declaración con new
+    int[] numeros = new int[5];
+
+    // Asignar valores a elementos del vector
+    numeros[0] = 10;
+    numeros[1] = 20;
+    numeros[2] = 30;
+    numeros[3] = 40;
+    numeros[4] = 50;
+
+    // Imprimir elementos
+    System.out.println("numeros[0] = " + numeros[0]);
+    System.out.println("numeros[4] = " + numeros[4]);
+
+     int x = numeros[2]; // obtiene el valor en índice 2 (15)
+    System.out.println("x = " + x);
+
+    // Declaración con lista de elementos
+    int[] primos = { 2, 3, 5, 7, 11 };
+
+    // Acceder a elementos
+    System.out.println("primos[0] = " + primos[0]);
+    System.out.println("primos[4] = " + primos[4]);
+
+    // Error de índice (comenta esta línea para evitar el error)
+    // System.out.println("Error: " + numeros[10]);
+
+    // Vector de strings
+    String[] nombres = {"Ana", "Luis", "Elena"};
+    System.out.println("nombres[1] = " + nombres[1]);
+
+    // Vector inicializado
+    int nums1[] = {10, 20, 30, 40};
+
+    // Acceso e impresión
+    System.out.println("Primer número: " + nums1[0]);
+    System.out.println("Último número: " + nums1[3]);
+
+    // Declaración con new
+    int numeros1[] = new int[5];
+
+    // Asignar valores a elementos del vector
+    numeros1[0] = 10;
+    numeros1[1] = 20;
+    numeros1[2] = 30;
+    numeros1[3] = 40;
+    numeros1[4] = 50;
+
+    // Imprimir elementos
+    System.out.println("numeros[0] = " + numeros1[0]);
+    System.out.println("numeros[4] = " + numeros1[4]);
+     }

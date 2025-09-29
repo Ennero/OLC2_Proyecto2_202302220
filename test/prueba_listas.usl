@@ -1,0 +1,59 @@
+public static void main(String[] args) {
+
+    // --- Prueba 1: Arreglos Unidimensionales ---
+    System.out.println("--- Prueba de Arreglos 1D ---");
+
+    // Declaración e inicialización con lista
+    int[] arreglo1 = {10, 20, 30, 40, 50};
+    System.out.println(arreglo1[0]); // Debería imprimir 10
+    System.out.println(arreglo1[2]); // Debería imprimir 30
+
+    // Reasignación de un elemento
+    arreglo1[2] = 35;
+    System.out.println(arreglo1[2]); // Debería imprimir 35
+
+    // Declaración y creación con 'new'
+    String[] nombres = new String[3];
+    nombres[0] = "Ana";
+    nombres[1] = "Luis";
+    nombres[2] = "Eva";
+    
+    System.out.println(nombres[1]); // Debería imprimir "Luis"
+
+    // --- Prueba 2: Arreglos Multidimensionales (Matrices) ---
+    System.out.println("--- Prueba de Arreglos 2D ---");
+
+    // Declaración e inicialización con lista anidada
+    int[][] matriz1 = {
+        {1, 2, 3},
+        {4, 5, 6},
+        {7, 8, 9}
+    };
+
+    System.out.println(matriz1[0][0]); // Debería imprimir 1
+    System.out.println(matriz1[1][2]); // Debería imprimir 6
+    System.out.println(matriz1[2][1]); // Debería imprimir 8
+    
+    // Reasignación en una matriz
+    matriz1[1][1] = 99;
+    System.out.println(matriz1[1][1]); // Debería imprimir 99
+
+    // Declaración y creación con 'new'
+    // Sintaxis alternativa: int matriz2[][];
+    int matriz2 [][] = new int[2][4];
+    matriz2[0][3] = 77;
+    matriz2[1][0] = 88;
+
+    System.out.println(matriz2[0][0]); // Debería imprimir 0 (valor por defecto)
+    System.out.println(matriz2[0][3]); // Debería imprimir 77
+    System.out.println(matriz2[1][0]); // Debería imprimir 88
+    
+    // --- Prueba 3: Expresiones complejas ---
+    System.out.println("--- Prueba de Expresiones ---");
+    
+    // Usar un acceso de arreglo como parte de otra expresión
+    int a = 5;
+    int b = 2;
+    int resultado = arreglo1[a-b] + matriz1[0][b]; // arreglo1[3] + matriz1[0][2] -> 40 + 3
+    System.out.println(resultado); // Debería imprimir 43
+}

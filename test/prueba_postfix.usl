@@ -1,0 +1,18 @@
+public static void main(String[] args) {
+    int x = 1;
+    System.out.println("x antes: ");
+    System.out.println(x);
+    x++;
+    System.out.println("x despues x++: ");
+    System.out.println(x);
+    x--;
+    System.out.println("x despues x--: ");
+    System.out.println(x);
+
+    int[] a = { 1, 2 };
+    System.out.println("a[0] antes: ");
+    System.out.println(a[0]);
+    a[0]++;
+    System.out.println("a[0] despues: ");
+    System.out.println(a[0]);
+}

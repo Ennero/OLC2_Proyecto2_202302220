@@ -1,0 +1,28 @@
+void generarReporte(String[] items, int[][] datos) {
+    String[] reportes = {};
+
+    for (String item : items) {
+        int itemIdx = Arrays.indexOf(items, item);
+        int[] ventas = datos[itemIdx];
+        int totalVentas = 0;
+        for (int venta : ventas) { totalVentas = totalVentas + venta; }
+        double promedio = (double)totalVentas / ventas.length;
+        String lineaReporte = String.join(": ", item, "Total=" + totalVentas, "Promedio=" + promedio);
+    reportes = reportes.add(lineaReporte);
+    }
+    
+    for (String reporte : reportes){
+    	System.out.println(reporte);
+    }
+}
+
+public static void main(String[] args) {
+    String[] productos = {"CPU", "RAM", "SSD"};
+    int[][] ventasPorTrimestre = {
+        {150, 200, 250, 300},
+        {400, 450, 500, 600},
+        {300, 320, 350, 400}
+    };
+    generarReporte(productos, ventasPorTrimestre);
+    System.out.println("OK");
+}

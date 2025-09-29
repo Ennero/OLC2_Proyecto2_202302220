@@ -1,0 +1,22 @@
+public static void main(String[] args) {
+    // Vector unidimensional
+    int[] numeros = { 2, 5, 7, 8, 11, 12 };
+    int tam = numeros.length; // tam == 6
+    System.out.println("Tamaño del vector: " + tam);
+    
+    // Matriz bidimensional
+    int[][] matriz = { {1, 2, 3}, {4, 5, 6} };
+    int tamMatriz = matriz.length; // tamMatriz == 6 (total de elementos)
+    System.out.println("Elementos totales en matriz: " + tamMatriz);
+    
+    // Array multidimensional
+    int[][][] cubo = new int[2][3][4];
+    int tamCubo = cubo.length; // tamCubo == 24 (2*3*4)
+    System.out.println("Elementos totales en cubo: " + tamCubo);
+    
+    // Usando con Arrays.indexOf
+    int indice = Arrays.indexOf(numeros, 7);
+    if (indice >= 0 && indice < numeros.length) {
+        System.out.println("Elemento encontrado en posición válida");
+    }
+}

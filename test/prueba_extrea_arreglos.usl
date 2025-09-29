@@ -1,0 +1,44 @@
+public static void main(String[] args) {
+
+    // ======================================================
+    // PRUEBA 1: ARREGLO DE 10 DIMENSIONES
+    // ======================================================
+    System.out.println("--- Prueba de Arreglo de 10 Dimensiones ---");
+
+    // Declaramos un "hiper-cubo" de 10 dimensiones
+    int a10d[][][][][][][][][][] = new int[1][1][1][1][1][1][1][1][1][1];
+
+    // Asignamos un valor en la única coordenada que existe
+    a10d[0][0][0][0][0][0][0][0][0][0] = 10;
+
+    // Leemos el valor para confirmar
+    System.out.println(a10d[0][0][0][0][0][0][0][0][0][0]); // Esperado: 10
+
+
+    // ======================================================
+    // PRUEBA 2: ARREGLO DE 20 DIMENSIONES
+    // ======================================================
+    System.out.println("\n--- Prueba de Arreglo de 20 Dimensiones ---");
+
+    // Llevándolo más allá. La sintaxis se vuelve larga, pero debe ser válida.
+    int a20d[][][][][][][][][][][][][][][][][][][][] = new int[1][1][1][1][1][1][1][1][1][1][1][1][1][1][1][1][1][1][1][1];
+    
+    a20d[0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0] = 20;
+    
+    System.out.println(a20d[0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0][0]); // Esperado: 20
+
+
+    // ======================================================
+    // PRUEBA 3: DECLARACIÓN DE UN ARREGLO DE 101 DIMENSIONES
+    // ======================================================
+    System.out.println("\n--- Prueba de Declaración de 101 Dimensiones ---");
+    
+    // No lo vamos a instanciar para no consumir demasiada memoria.
+    // El simple hecho de que el parser acepte esta línea sin un error de sintaxis
+    // es la prueba definitiva de que la gramática recursiva funciona.
+    int a101d[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][];
+    
+    // Si el programa llega hasta aquí sin un error de sintaxis o un crash,
+    // la prueba ha sido un éxito.
+    System.out.println("Declaracion de arreglo de 101 dimensiones exitosa."); // Esperado
+}

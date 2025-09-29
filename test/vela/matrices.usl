@@ -1,0 +1,56 @@
+public static void main(String[] args) {
+int[][] matrizA = new int[3][3];
+float[][] matrizB = {
+    {1.5f, 2.5f, 3.5f},
+    {4.5f, 5.5f, 6.5f}
+};
+
+// Asignar valores a la matriz A
+matrizA[0][0] = 1;
+matrizA[0][1] = 2;
+matrizA[0][2] = 3;
+matrizA[1][0] = 4;
+matrizA[1][1] = 5;
+matrizA[1][2] = 6;
+matrizA[2][0] = 7;
+matrizA[2][1] = 8;
+matrizA[2][2] = 9;
+
+// Imprimir elementos
+System.out.println("matrizA[0][0] = " + matrizA[0][0]);
+System.out.println("matrizA[1][2] = " + matrizA[1][2]);
+System.out.println("matrizB[0][1] = " + matrizB[0][1]);
+
+// Obtener un valor y asignarlo a una variable
+int valor = matrizA[2][1];
+System.out.println("valor = " + valor); // Debería imprimir 8
+
+// Modificar un valor
+matrizA[1][1] = 50;
+System.out.println("matrizA[1][1] modificado = " + matrizA[1][1]);
+
+
+
+int matrizC[][] = new int[3][3];
+float matrizD[][] = {
+    {1.5f, 2.5f, 3.5f},
+    {4.5f, 5.5f, 6.5f}
+};
+
+// Asignar valores a la matriz A
+matrizC[0][0] = 1;
+matrizC[0][1] = 2;
+matrizC[0][2] = 3;
+matrizC[1][0] = 4;
+matrizC[1][1] = 5;
+matrizC[1][2] = 6;
+matrizC[2][0] = 7;
+matrizC[2][1] = 8;
+matrizC[2][2] = 9;
+
+// Imprimir elementos
+System.out.println("matrizA[0][0] = " + matrizC[0][0]);
+System.out.println("matrizA[1][2] = " + matrizC[1][2]);
+System.out.println("matrizB[0][1] = " + matrizD[0][1]);
+
+}

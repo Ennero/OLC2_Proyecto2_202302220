@@ -1,0 +1,41 @@
+public static void main(String[] args) {
+
+    System.out.println("--- Prueba Final de forEach Anidado con Control de Flujo ---");
+
+    String[][] equipos = {
+        {"Maria", "Pedro", "Ana"},
+        {"Luis", "Laura"},
+        {"Carlos", "Sofia", "David", "Elena"},
+        {"Jorge", "Eva"}
+    };
+    
+    String resultadoFinal = "";
+    int contadorMiembros = 0;
+
+    // Iteramos sobre cada equipo (que es un arreglo de strings)
+    for (String[] equipo : equipos) {
+        
+        // Si el equipo tiene más de 3 miembros, lo ignoramos y salimos del bucle principal.
+        if (equipo.length > 3) {
+            resultadoFinal = resultadoFinal + "Equipo grande encontrado. Deteniendo busqueda. ";
+            break;
+        }
+
+        resultadoFinal = resultadoFinal + "Procesando Equipo: ";
+        
+        // Iteramos sobre los miembros de cada equipo
+        for (String miembro : equipo) {
+            
+            // Si el nombre es "Pedro", lo saltamos.
+            if (miembro.equals("Pedro")) {
+                continue;
+            }
+            
+            resultadoFinal = resultadoFinal + miembro + " ";
+            contadorMiembros = contadorMiembros + 1;
+        }
+    }
+
+    System.out.println("Resultado: " + resultadoFinal);
+    System.out.println("Total de miembros procesados: " + contadorMiembros);
+}

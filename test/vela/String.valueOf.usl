@@ -1,0 +1,16 @@
+public static void main(String[] args) {
+// Ejemplo de uso de String.valueOf()
+int numero = 123;
+String cadena = String.valueOf(numero) + " mundo";
+System.out.println(cadena);  // Salida: 123 mundo
+
+boolean verdadero = true;
+String cadenaBoolean = String.valueOf(verdadero);
+System.out.println(cadenaBoolean);  // Salida: true
+
+float decimal = 3.14f;
+System.out.println(String.valueOf(decimal));  // Salida: 3.14
+
+String cadena1 = String.valueOf(123) + " mundo";
+System.out.println(cadena1); //Salida: 123 mundo
+}

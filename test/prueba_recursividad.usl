@@ -1,0 +1,48 @@
+// --- Declaración de Funciones Recursivas ---
+
+// 1. Factorial: Un ejemplo clásico de recursividad que retorna un valor.
+//    Calcula n! = n * (n-1) * (n-2) * ... * 1
+int factorial(int n) {
+    // Caso Base: Si n es 1 o menos, la recursión termina.
+    if (n <= 1) {
+        return 1;
+    } 
+    // Paso Recursivo: La función se llama a sí misma con un problema más pequeño.
+    else {
+        int resultado_anterior = factorial(n - 1);
+        return n * resultado_anterior;
+    }
+}
+
+// 2. Cuenta Regresiva: Un ejemplo de una función void recursiva.
+void cuentaRegresiva(int desde) {
+    // Caso Base: Si el número es negativo, la recursión para.
+    if (desde < 0) {
+        return; 
+    }
+    
+    // Acción y Paso Recursivo
+    System.out.println(desde);
+    cuentaRegresiva(desde - 1); // La función se llama a sí misma.
+}
+
+
+// --- Punto de Entrada Principal ---
+
+public static void main(String[] args) {
+    System.out.println("--- Probando Funciones Recursivas ---");
+    
+    // Prueba 1: Factorial
+    System.out.println("Calculando el factorial de 5...");
+    int resultado_fact = factorial(5); // Debería ser 5 * 4 * 3 * 2 * 1 = 120
+    System.out.println("El resultado del factorial es: " + resultado_fact);
+    
+    System.out.println("----------------------------------------");
+
+    // Prueba 2: Cuenta Regresiva Void
+    System.out.println("Iniciando cuenta regresiva desde 3...");
+    cuentaRegresiva(3);
+    System.out.println("¡Despegue!");
+
+    System.out.println("--- Pruebas de Recursividad Finalizadas ---");
+}

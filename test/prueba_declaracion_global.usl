@@ -1,0 +1,25 @@
+// Archivo de prueba para Variables Globales
+
+// 1. Declaramos una variable global.
+int contador_global = 100;
+
+// 2. Una función que accede y modifica la variable global.
+int modificarContador() {
+    System.out.println("Valor del contador dentro de la función (antes): " + contador_global);
+    contador_global = contador_global + 50; // Modificando la variable global
+    System.out.println("Valor del contador dentro de la función (después): " + contador_global);
+    return 0;
+}
+
+public static void main(String[] args) {
+    System.out.println("--- Probando Variables Globales ---");
+    
+    // 3. Leemos el valor inicial de la variable global desde main.
+    System.out.println("Valor inicial del contador en main: " + contador_global);
+    
+    // 4. Llamamos a la función que la modifica.
+    modificarContador();
+    
+    // 5. Leemos el valor final para confirmar que el cambio persiste.
+    System.out.println("Valor final del contador en main: " + contador_global);
+}

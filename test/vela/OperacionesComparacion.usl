@@ -1,0 +1,51 @@
+public static void main(String[] args) {
+  
+// Prueba de operadores de comparación
+
+// Comparación de enteros
+int a = 5;
+int b = 5;
+int c = 10;
+
+System.out.println("Comparación de enteros:");
+System.out.println("a == b: " + (a == b));  // true
+System.out.println("a != b: " + (a != b));  // false
+System.out.println("a < c: " + (a < c));    // true
+System.out.println("a > c: " + (a > c));    // false
+System.out.println("a <= b: " + (a <= b));  // true
+System.out.println("a >= c: " + (a >= c));  // false
+
+// Comparación de valores flotantes
+float f1 = 5.5f;
+float f2 = 5.5f;
+float f3 = 10.5f;
+
+System.out.println("\nComparación de valores flotantes:");
+System.out.println("f1 == f2: " + (f1 == f2));  // true
+System.out.println("f1 != f3: " + (f1 != f3));  // true
+System.out.println("f1 < f3: " + (f1 < f3));    // true
+System.out.println("f3 > f1: " + (f3 > f1));    // true
+
+// Comparación de strings
+String x = "hola";
+String y = "hola";
+String z = "mundo";
+
+System.out.println("\nComparación de strings:");
+System.out.println("x == y: " + (x == y));  // true
+System.out.println("x != z: " + (x != z));  // true
+
+// Método equals para strings
+System.out.println("\nMétodo equals para strings:");
+System.out.println("x.equals(y): " + x.equals(y));  // true
+System.out.println("x.equals(z): " + x.equals(z));  // false
+
+// Más pruebas con equals
+String mensaje1 = "Hola Mundo";
+String mensaje2 = "Hola Mundo";
+String mensaje3 = "Adiós";
+
+System.out.println("\nMás pruebas con equals:");
+System.out.println("mensaje1.equals(mensaje2): " + mensaje1.equals(mensaje2));  // true
+System.out.println("mensaje1.equals(mensaje3): " + mensaje1.equals(mensaje3));  // false
+}

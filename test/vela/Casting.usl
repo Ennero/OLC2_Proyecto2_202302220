@@ -1,0 +1,85 @@
+    public static void main(String[] args) {
+    System.out.println("=== Pruebas de Widening Casting (Automático) ===");
+
+    // char -> int
+    char letra = 'A';
+    int codigo = letra;  
+    System.out.println("char 'A' -> int: " + codigo);
+
+    // int -> float  
+    int entero = 42;
+    float flotante = entero;
+    System.out.println("int 42 -> float: " + flotante);
+
+    // float -> double
+    float decimal = 3.14f;
+    double doble = decimal;
+    System.out.println("float 3.14 -> double: " + doble);
+
+    // Cadena de conversiones: char -> int -> float -> double
+    char caracter = 'Z';
+    int codigoChar = caracter;
+    float flotanteChar = codigoChar;
+    double dobleChar = flotanteChar;
+    System.out.println("Cadena de conversiones:");
+    System.out.println("char 'Z': " + caracter);
+    System.out.println("-> int: " + codigoChar);
+    System.out.println("-> float: " + flotanteChar);
+    System.out.println("-> double: " + dobleChar);
+
+    System.out.println("=== Pruebas de Narrowing Casting (Manual) ===");
+
+    // double -> float
+    double dobleNum = 3.14159265359;
+    float flotanteNum = (float) dobleNum;
+    System.out.println("double 3.14159265359 -> float: " + flotanteNum);
+
+    // float -> int
+    float decimal2 = 5.9f;
+    int entero2 = (int) decimal2;  
+    System.out.println("float 5.9 -> int: " + entero2);
+
+    // int -> char
+    int codigoAscii = 65;
+    char letra2 = (char) codigoAscii;
+    System.out.println("int 65 -> char: " + letra2);
+
+    // Ejemplos con truncamiento
+    float positivo = 7.8f;
+    int enteroPositivo = (int) positivo;
+    System.out.println("float 7.8 -> int: " + enteroPositivo);
+
+    float negativo = -2.3f;
+    int enteroNegativo = (int) negativo;
+    System.out.println("float -2.3 -> int: " + enteroNegativo);
+
+    // Cadena de conversiones hacia abajo: double -> float -> int -> char
+    double granNumero = 72.99;
+    float medioNumero = (float) granNumero;
+    int pequenoNumero = (int) medioNumero;
+    char caracterFinal = (char) pequenoNumero;
+    System.out.println("Cadena de conversiones hacia abajo:");
+    System.out.println("double 72.99: " + granNumero);
+    System.out.println("-> float: " + medioNumero);
+    System.out.println("-> int: " + pequenoNumero);
+    System.out.println("-> char: " + caracterFinal);
+
+    System.out.println("=== Casos adicionales ===");
+
+    // Casting redundante válido
+    int redundante = (int) 100;
+    double redundante2 = (double) 25.0;
+    System.out.println("Casting redundante int->int: " + redundante);
+    System.out.println("Casting redundante double->double: " + redundante2);
+
+    // Boolean (no debe ser convertible a otros tipos)
+    boolean bandera = true;
+    System.out.println("Boolean: " + bandera);
+
+    // String parseo válido, pero no casting
+    String numeroStr = "123";
+    int numParse = Integer.parseInt(numeroStr);
+    float numParseF = Float.parseFloat("45.6");
+    System.out.println("String \"123\" -> int: " + numParse);
+    System.out.println("String \"45.6\" -> float: " + numParseF);
+}

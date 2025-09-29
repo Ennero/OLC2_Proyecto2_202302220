@@ -1,0 +1,21 @@
+// Este System.out.println está fuera de la función main.
+// Tu parser debería rechazar este archivo, o si lo permitiera,
+// el intérprete no debería ejecutar esta línea.
+// System.out.println("Esta línea no debería imprimirse.");
+
+public static void main(String[] args) {
+    System.out.println("¡La función main se está ejecutando!");
+    System.out.println("------------------------------------");
+
+    int a = 15;
+    String resultado = "";
+
+    if (a > 10) {
+        resultado = "La condición del if fue verdadera.";
+    } else {
+        resultado = "La condición del if fue falsa.";
+    }
+
+    System.out.println("Probando una sentencia if dentro de main:");
+    System.out.println(resultado);
+}

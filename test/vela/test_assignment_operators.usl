@@ -1,0 +1,63 @@
+public static void main(String[] args) {
+  
+// Prueba de operadores de asignación compuestos
+
+// Operadores aritméticos
+int a = 10;
+System.out.println("Inicial a = " + a);
+
+a += 5;   // a = a + 5
+System.out.println("a += 5 -> " + a);  // 15
+
+a -= 3;   // a = a - 3
+System.out.println("a -= 3 -> " + a);  // 12
+
+a *= 2;   // a = a * 2
+System.out.println("a *= 2 -> " + a);  // 24
+
+a /= 4;   // a = a / 4
+System.out.println("a /= 4 -> " + a);  // 6
+
+a %= 4;   // a = a % 4
+System.out.println("a %= 4 -> " + a);  // 2
+
+// Operadores bit a bit
+int b = 6;   // binario: 110
+System.out.println("Inicial b = " + b);
+
+b &= 3;      // 110 & 011 = 010 (2)
+System.out.println("b &= 3 -> " + b);
+
+b |= 8;      // 010 | 1000 = 1010 (10)
+System.out.println("b |= 8 -> " + b);
+
+b ^= 2;      // 1010 ^ 0010 = 1000 (8)
+System.out.println("b ^= 2 -> " + b);
+
+// Desplazamientos
+int c = 16; // binario: 10000
+System.out.println("Inicial c = " + c);
+
+c >>= 2;    // 10000 >> 2 = 100 (4)
+System.out.println("c >>= 2 -> " + c);
+
+c <<= 3;    // 100 << 3 = 100000 (32)
+System.out.println("c <<= 3 -> " + c);
+
+// Pruebas con otros tipos
+float f = 10.5f;
+System.out.println("Inicial f = " + f);
+
+f += 5.5;
+System.out.println("f += 5.5 -> " + f);  // 16.0
+
+f /= 2.0;
+System.out.println("f /= 2.0 -> " + f);  // 8.0
+
+// Prueba con strings
+String mensaje = "Hola";
+System.out.println("Inicial mensaje = " + mensaje);
+
+mensaje += " Mundo";
+System.out.println("mensaje += \" Mundo\" -> " + mensaje);  // Hola Mundo
+}

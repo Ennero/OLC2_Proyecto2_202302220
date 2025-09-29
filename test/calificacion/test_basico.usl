@@ -1,0 +1,263 @@
+
+public static void main(String[] args) {
+    System.out.println("=== PRUEBAS BÁSICAS APLICADAS ===");
+    
+    // Calculadora básica con casos reales
+    System.out.println("\n--- CALCULADORA BÁSICA ---");
+    int num1 = 25;
+    int num2 = 17;
+    
+    int suma = num1 + num2;
+    System.out.println("Operación: " + String.valueOf(num1) + " + " + String.valueOf(num2));
+    System.out.println("Resultado: " + String.valueOf(suma));
+    System.out.println();
+    
+    int cantidad = 100;
+    int gastado = 35;
+    int restante = cantidad - gastado;
+    System.out.println("Operación: " + String.valueOf(cantidad) + " - " + String.valueOf(gastado));
+    System.out.println("Resultado: " + String.valueOf(restante));
+    System.out.println();
+    
+    int docenas = 12;
+    int huevos = 8;
+    int totalHuevos = docenas * huevos;
+    System.out.println("Operación: " + String.valueOf(docenas) + " * " + String.valueOf(huevos));
+    System.out.println("Resultado: " + String.valueOf(totalHuevos));
+    System.out.println();
+    
+    float totalPagar = 144.0f;
+    int personas = 12;
+    double porPersona = totalPagar / personas;
+    System.out.println("Operación: " + String.valueOf(totalPagar) + " / " + String.valueOf(personas));
+    System.out.println("Resultado: " + String.valueOf(porPersona));
+    System.out.println();
+    
+    int diasMes = 29;
+    int semana = 7;
+    int sobrante = diasMes % semana;
+    System.out.println("Operación: " + String.valueOf(diasMes) + " % " + String.valueOf(semana));
+    System.out.println("Resultado: " + String.valueOf(sobrante));
+    System.out.println();
+
+    char letraCalc = '\u0082'; //R
+    char letracalc2 = '\u00164'; //¤
+    char resultadoLetras = letracalc2 - letraCalc; //R
+    System.out.println("Operación: " + String.valueOf(letracalc2) + " - " + String.valueOf(letraCalc));
+    System.out.println("Resultado: " + String.valueOf(resultadoLetras));
+    System.out.println();
+
+    int a = -3;  // 1101 
+    int b = 1;  // 0001
+    int resultadoBitABit = a >> b;
+    System.out.println("Operación: " + String.valueOf(a) + " >> " + String.valueOf(b));
+    System.out.println("Resultado: " + String.valueOf(resultadoBitABit) + " (1110)");
+    System.out.println();
+
+    // Conversiones de temperatura
+    System.out.println("\n--- CONVERSIONES DE TEMPERATURA ---");
+    
+    // Fahrenheit a Celsius: C = (F - 32) * 5/9
+    double fahrenheit = 32.0;
+    double celsius = (fahrenheit - 32.0) * 5.0 / 9.0;
+    System.out.println(String.valueOf(fahrenheit) + "°F = " + String.valueOf(celsius) + "°C");
+    
+    // Celsius a Fahrenheit: F = C * 9/5 + 32
+    double tempCelsius = 100.0;
+    double tempFahrenheit = tempCelsius * 9.0 / 5.0 + 32.0;
+    System.out.println(String.valueOf(tempCelsius) + "°C = " + String.valueOf(tempFahrenheit) + "°F");
+    
+    double temperatura = 25.0;
+    double enFahrenheit = temperatura * 9.0 / 5.0 + 32.0;
+    System.out.println(String.valueOf(temperatura) + "°C = " + String.valueOf(enFahrenheit) + "°F");
+    
+    // Cálculos geométricos
+    System.out.println("\r--- CÁLCULOS GEOMÉTRICOS ---");
+    
+    // Rectángulo
+    double largo = 5.0;
+    double ancho;
+    ancho += 8.0;
+    double area = largo * ancho;
+    double perimetro = 2.0 * (largo + ancho);
+    
+    System.out.println("Rectángulo: " + String.valueOf(largo) + "m x " + String.valueOf(ancho) + "m");
+    System.out.println("Área: " + String.valueOf(area) + " m²");
+    System.out.println("Perímetro: " + String.valueOf(perimetro) + " m");
+    System.out.println();
+    
+    // Círculo (π ≈ 3.14159)
+    double radio = 3.5;
+    double pi = 3.14159;
+    double areaCirculo = pi * radio * radio;
+    double circunferencia = 2.0 * pi * radio;
+    
+    System.out.println("Círculo: radio " + String.valueOf(radio) + "m");
+    System.out.println("Área: " + String.valueOf(areaCirculo) + " m²");
+    System.out.println("Circunferencia: " + String.valueOf(circunferencia) + " m");
+    
+    // Validaciones numéricas con casos prácticos
+    System.out.println("\r\n--- VALIDACIONES NUMÉRICAS ---");
+    
+    // Verificar si un número es par o impar
+    int numero = 15;
+    boolean esPar = numero % 2 == 0;
+    if (esPar) {
+        System.out.println("El número " + String.valueOf(numero) + " es par");
+    } else {
+        System.out.println("El número " + String.valueOf(numero) + " es impar");
+    }
+    
+    // Verificar signo de un número
+    int valor = -5;
+    if (valor > 0) {
+        System.out.println("El número " + String.valueOf(valor) + " es positivo");
+    } else {
+        if (valor < 0) {
+            System.out.println("El número " + String.valueOf(valor) + " es negativo");
+        } else {
+            System.out.println("El número " + String.valueOf(valor) + " es neutro");
+        }
+    }
+    
+    // Verificar año bisiesto
+    int anio = 2024;
+    boolean bisiesto = anio % 4 == 0;
+    if (bisiesto) {
+        System.out.println("El año " + String.valueOf(anio) + " es bisiesto");
+    } else {
+        System.out.println("El año " + String.valueOf(anio) + " no es bisiesto");
+    }
+    
+    // Sistema de calificaciones
+    System.out.println("\r\n\r\n--- SISTEMA DE CALIFICACIONES ---");
+    
+    // Estudiante 1
+    String nombre1 = "Juan";
+    int puntos1 = 85;
+    char letra1;
+    String estado1;
+    
+    if (puntos1 >= 90) {
+        letra1 = '\u0065'; //A
+    } else if (puntos1 >= 80) {
+        letra1 = '\u0066'; //B
+    } else if (puntos1 >= 70) {
+        letra1 = '\u0067'; //C
+    } else if (puntos1 >= 60) {
+        letra1 = '\u0068'; //D 
+    } else {
+        letra1 = '\u0070'; //F
+    }
+    
+    if (puntos1 >= 60) {
+        estado1 = "Aprobado";
+    } else {
+        estado1 = "Reprobado";
+    }
+    
+    System.out.println("Estudiante " + nombre1 + ": " + String.valueOf(puntos1) + " puntos");
+    System.out.println("Calificación: " + String.valueOf(letra1));
+    System.out.println("Estado: " + estado1);
+    System.out.println();
+    
+    // Estudiante 2
+    String nombre2 = "María";
+    int puntos2 = 72;
+    char letra2 = '\u0067';  //C Directamente asignado para este caso
+    String estado2 = "Aprobado";
+    
+    System.out.println("Estudiante " + nombre2 + ": " + String.valueOf(puntos2) + " puntos");
+    System.out.println("Calificación: " + String.valueOf(letra2));
+    System.out.println("Estado: " + estado2);
+    System.out.println();
+    
+    // Estudiante 3
+    String nombre3 = "Pedro";
+    int puntos3 = 55;
+    char letra3 = '\u0070'; //F
+    String estado3 = "Reprobado";
+    
+    System.out.println("Estudiante " + nombre3 + ": " + String.valueOf(puntos3) + " puntos");
+    System.out.println("Calificación: " + String.valueOf(letra3));
+    System.out.println("Estado: " + estado3);
+    
+    // Cálculo de compra con descuentos e impuestos
+    System.out.println("\n--- CÁLCULO DE COMPRA ---");
+    
+    String producto = "Laptop";
+    double precio = 800.0;
+    double descuentoPorcentaje = 15.0;
+    double ivaPorcentaje = 12.0;
+    
+    double montoDescuento = precio * descuentoPorcentaje / 100.0;
+    double precioConDescuento = precio - montoDescuento;
+    double montoIva = precioConDescuento * ivaPorcentaje / 100.0;
+    double total = precioConDescuento + montoIva;
+    
+    System.out.println("Producto: " + producto);
+    System.out.println("Precio: $" + String.valueOf(precio));
+    System.out.println("Descuento: " + String.valueOf(descuentoPorcentaje) + "%");
+    System.out.println("Precio final: $" + String.valueOf(precioConDescuento));
+    System.out.println("IVA (" + String.valueOf(ivaPorcentaje) + "%): $" + String.valueOf(montoIva));
+    System.out.println("Total a pagar: $" + String.valueOf(total));
+    System.out.println();
+    
+    // Cálculo de cambio
+    double dineroEntregado = 800.0;
+    double cambio = dineroEntregado - total;
+    System.out.println("Dinero entregado: $" + String.valueOf(dineroEntregado));
+    System.out.println("Cambio: $" + String.valueOf(cambio));
+    
+    // Análisis de edad con validaciones prácticas
+    System.out.println("\n--- ANÁLISIS DE EDAD ---");
+    
+    // Persona 1
+    String nombrePersona1 = "Ana";
+    int edad1 = 17;
+    boolean mayorEdad1 = edad1 >= 18;
+    boolean puedeVotar1 = edad1 >= 18;
+    boolean puedeEstudiar1 = edad1 >= 15;
+    
+    System.out.println("Persona: " + nombrePersona1 + ", " + String.valueOf(edad1) + " años");
+    if (mayorEdad1) {
+        System.out.println("Es mayor de edad");
+    } else {
+        System.out.println("Es menor de edad");
+    }
+    
+    if (puedeEstudiar1) {
+        System.out.println("Puede estudiar preparatoria");
+    }
+    
+    if (puedeVotar1) {
+        System.out.println("Puede votar");
+    } else {
+        System.out.println("No puede votar");
+    }
+    System.out.println();
+    
+    // Persona 2
+    String nombrePersona2 = "Carlos";
+    int edad2 = 25;
+    boolean mayorEdad2 = edad2 >= 18;
+    boolean puedeTrabajar2 = edad2 >= 18;
+    boolean puedeLicencia2 = edad2 >= 18;
+    
+    System.out.println("Persona: " + nombrePersona2 + ", " + String.valueOf(edad2) + " años");
+    if (mayorEdad2) {
+        System.out.println("Es mayor de edad");
+    } else {
+        System.out.println("Es menor de edad");
+    }
+    
+    if (puedeTrabajar2 && mayorEdad2) {
+        System.out.println("Puede votar y trabajar");
+    }
+    
+    if (puedeLicencia2) {
+        System.out.println("Puede obtener licencia");
+    }
+    
+    System.out.println("\n=== FIN PRUEBAS BÁSICAS ===");
+}

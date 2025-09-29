@@ -1,0 +1,146 @@
+// ====================================================================
+// --- SECCIÓN DE FUNCIONES AUXILIARES Y DE PRUEBA ---
+// Declaradas aquí para que 'main' pueda llamarlas.
+// ====================================================================
+
+// Función para probar Recursividad
+int factorial(int n) {
+    if (n <= 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+// Función void para probar llamadas sin retorno
+void imprimirSeparador() {
+    System.out.println("----------------------------------------");
+}
+
+// Función que prueba todas las estructuras de control
+void probarEstructurasDeControl() {
+    System.out.println("\n--- 2. Pruebas de Estructuras de Control ---");
+    
+    // Prueba de IF-ELSE IF-ELSE
+    int calificacion = 85;
+    if (calificacion > 90) {
+        System.out.println("Resultado: Excelente");
+    } else if (calificacion > 70) {
+        System.out.println("Resultado: Bueno"); // <-- Debería imprimir esto
+    } else {
+        System.out.println("Resultado: Necesita mejorar");
+    }
+
+    // Prueba de SWITCH con CASE, BREAK y DEFAULT
+    char opcion = 'B';
+    switch (opcion) {
+        case 'A': System.out.println("Switch: Opcion A"); break;
+        case 'B': System.out.println("Switch: Opcion B"); break; // <-- Debería imprimir esto
+        default: System.out.println("Switch: Opcion Default"); break;
+    }
+
+    // Prueba de WHILE con CONTINUE
+    int i = 0;
+    String resultadoWhile = "";
+    while (i < 5) {
+        i = i + 1;
+        if (i == 3) {
+            continue; // Saltar el número 3
+        }
+        resultadoWhile = resultadoWhile + i;
+    }
+    System.out.println("While (sin el 3): " + resultadoWhile); // Esperado: 1245
+
+    // Prueba de FOR CLÁSICO con BREAK
+    int ultimoI = 0;
+    for (int j = 0; j < 10; j = j + 1) {
+        if (j == 5) {
+            break; // Detener en 5
+        }
+        ultimoI = j;
+    }
+    System.out.println("For clasico se detuvo en: " + ultimoI); // Esperado: 4
+}
+
+// ====================================================================
+// --- FUNCIÓN PRINCIPAL (PUNTO DE ENTRADA) ---
+// ====================================================================
+
+public static void main(String[] args) {
+    System.out.println("====== INICIO: Rúbrica de Calificación del Intérprete ======");
+
+    // --- 1. VARIABLES, TIPOS, CONSTANTES Y OPERADORES ---
+    imprimirSeparador();
+    System.out.println("--- 1. Variables, Tipos, Constantes y Operadores ---");
+    final int CONSTANTE_FINAL = 100;
+    int a = 20;
+    double b = 5.5;
+    boolean c = true;
+    String d = "Hola";
+    char e = 'A';
+    
+    // Aritméticos y Relacionales
+    double calculo = (a + CONSTANTE_FINAL) / 10.0 * (b - 0.5); // (120 / 10.0) * 5.0 = 12.0 * 5.0 = 60.0
+    System.out.println("Calculo aritmetico: " + calculo);
+    System.out.println("Comparacion: " + (calculo == 60.0));
+
+    // Lógicos y Bitwise
+    int flags = 12; // 1100
+    int mascara = 10; // 1010
+    if ((flags & mascara) == 8 && (flags | mascara) == 14) { // AND=1000 (8), OR=1110 (14)
+        System.out.println("Operadores Bitwise OK.");
+    }
+
+    // --- 2. ESTRUCTURAS DE CONTROL ---
+    imprimirSeparador();
+    probarEstructurasDeControl();
+
+    // --- 3. ARREGLOS (MULTIDIMENSIONALES Y PROPIEDADES) ---
+    imprimirSeparador();
+    System.out.println("\n--- 3. Arreglos (Multidimensionales y Propiedades) ---");
+    final String[][] agenda = {{"Juan", "555-1234"}, {"Ana", "555-5678"}};
+    agenda[1][1] = "555-8765"; // Modificar contenido de arreglo final (DEBE funcionar)
+    System.out.println("Nuevo telefono de Ana: " + agenda[1][1]);
+    
+    // Prueba de .length en arreglo multidimensional
+    System.out.println("Numero de contactos: " + agenda.length);
+    
+    // Prueba de forEach anidado
+    String contactos = "";
+    for (String[] contacto : agenda) {
+        contactos = contactos + contacto[0] + "; ";
+    }
+    System.out.println("Nombres: " + contactos);
+
+    // --- 4. FUNCIONES (LLAMADAS Y RECURSIVIDAD) ---
+    imprimirSeparador();
+    System.out.println("\n--- 4. Funciones (Llamadas y Recursividad) ---");
+    System.out.println("Llamada a factorial(5): " + factorial(5));
+
+    // --- 5. FUNCIONES EMBEBIDAS ---
+    imprimirSeparador();
+    System.out.println("\n--- 5. Funciones Embebidas ---");
+    String[] partes = {"Prueba", "de", "Join"};
+    String joined = String.join("-", partes);
+    System.out.println("String.join: " + joined);
+
+    int[] numeros = {10, 20, 30, 20, 40};
+    System.out.println("Arrays.indexOf(20): " + Arrays.indexOf(numeros, 20));
+    
+    numeros = numeros.add(50);
+    System.out.println("add(): Nuevo tamaño: " + numeros.length);
+
+    // --- 6. CASTEO Y STRINGS ---
+    imprimirSeparador();
+    System.out.println("\n--- 6. Casteo y Strings ---");
+    double valorDoble = 99.9;
+    int valorEntero = (int)valorDoble; // Casteo explícito
+    System.out.println("Casteo de 99.9 a int: " + valorEntero);
+
+    String str1 = "Java";
+    String str2 = "Lang";
+    String str3 = str1 + str2;
+    System.out.println("Concatenacion: " + str3);
+    System.out.println("Comparacion .equals(): " + str3.equals("JavaLang"));
+
+    System.out.println("\n====== FIN: Rúbrica de Calificación del Intérprete ======");
+}

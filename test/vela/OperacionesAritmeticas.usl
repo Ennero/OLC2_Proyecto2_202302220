@@ -1,0 +1,51 @@
+public static void main(String[] args) {
+    System.out.println("=== Pruebas de Operaciones Aritméticas ===");
+
+    // ----- int -----
+    int a = 10;
+    int b = 3;
+    System.out.println("int suma: " + (a + b));        // 13
+    System.out.println("int resta: " + (a - b));       // 7
+    System.out.println("int multiplicación: " + (a * b)); // 30
+    System.out.println("int división: " + (a / b));    // 3 (entera)
+    System.out.println("int módulo: " + (a % b));      // 1
+
+    // ----- float -----
+    float f1 = 7.5f;
+    float f2 = 2.5f;
+    System.out.println("float suma: " + (f1 + f2));        // 10.0
+    System.out.println("float resta: " + (f1 - f2));       // 5.0
+    System.out.println("float multiplicación: " + (f1 * f2)); // 18.75
+    System.out.println("float división: " + (f1 / f2));    // 3.0
+
+    // ----- double -----
+    double d1 = 5.123;
+    double d2 = 2.0;
+    System.out.println("double suma: " + (d1 + d2));        // 7.123
+    System.out.println("double resta: " + (d1 - d2));       // 3.123
+    System.out.println("double multiplicación: " + (d1 * d2)); // 10.246
+    System.out.println("double división: " + (d1 / d2));    // 2.5615
+
+    // ----- char -----
+    char c1 = 'A';  // 65 en ASCII
+    char c2 = 'C';  // 67 en ASCII
+    System.out.println("char suma: " + (c1 + c2));       // 132
+    System.out.println("char resta: " + (c2 - c1));      // 2
+    System.out.println("char multiplicación: " + (c1 * 2)); // 130
+    System.out.println("char división: " + (c2 / 2));    // 33
+
+    // Mezcla int + float
+    int entero = 5;
+    float flotante = 2.5f;
+    System.out.println("int + float: " + (entero + flotante)); // 7.5
+
+    // Mezcla float + double
+    double resultadoMix = d1 + f1;
+    System.out.println("float + double: " + resultadoMix);
+
+    // ----- Errores esperados (descomentar para probar tabla de errores) -----
+    // boolean flag = true;
+    // int x = 1 + flag;  // ❌ no permitido
+    // String s = "hola";
+    // int y = s + 5;     // ❌ no permitido
+}

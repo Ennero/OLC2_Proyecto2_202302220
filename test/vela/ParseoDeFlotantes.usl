@@ -1,0 +1,27 @@
+// Ejemplo de uso de Float.parseFloat y Double.parseDouble
+public static void main(String[] args) {
+    // Prueba de Float.parseFloat
+    String textoFloat = "36.5";
+    float temperatura = Float.parseFloat(textoFloat);
+    System.out.println("Temperatura: " + temperatura + "°C");
+    System.out.println("Temperatura + 1.5 = " + (temperatura + 1.5));
+    
+    // Prueba de Double.parseDouble
+    String textoDouble = "3.14159265359";
+    double pi = Double.parseDouble(textoDouble);
+    System.out.println("Valor de Pi: " + pi);
+    System.out.println("Pi * 2 = " + (pi * 2));
+    
+    // Prueba con número científico
+    String cientificoFloat = "6.022E23";
+    float numeroAvogadro = Float.parseFloat(cientificoFloat);
+    System.out.println("Número de Avogadro (aprox): " + numeroAvogadro);
+    
+    // Prueba con número negativo
+    String negativo = "-273.15";
+    double ceroAbsoluto = Double.parseDouble(negativo);
+    System.out.println("Cero absoluto: " + ceroAbsoluto + "°C");
+    
+    // Esto generará un error:
+    // Double.parseDouble("3.14abc");
+}

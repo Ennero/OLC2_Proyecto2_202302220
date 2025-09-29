@@ -1,0 +1,23 @@
+public static void main(String[] args) {
+    System.out.println("--- Edge doubles ---");
+    System.out.println(Double.parseDouble("NaN"));
+    System.out.println(Double.parseDouble("Infinity"));
+    System.out.println(Double.parseDouble("-Infinity"));
+
+    // Signed zeros
+    double nz = -0.0;
+    double pz = 0.0;
+    System.out.println(nz);
+    System.out.println(pz);
+
+    // Magnitude thresholds
+    System.out.println(1e10);
+    System.out.println(1e-10);
+
+    // Representative values
+    System.out.println(3.141592653589793);
+    System.out.println(2.718281828459045);
+    System.out.println(1.2345678901234567);
+    System.out.println(1.0000000000000002);
+    System.out.println(0.9999999999999999);
+}

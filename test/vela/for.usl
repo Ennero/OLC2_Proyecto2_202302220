@@ -1,0 +1,14 @@
+  public static void main(String[] args) {
+// Ejemplo simple de bucle for
+for (int i = 0; i < 3; i++) {
+    System.out.println("Valor: " + i);
+}
+
+// Prueba con break
+for (int j = 0; j < 10; j++) {
+    System.out.println("j = " + j);
+    if (j == 5) {
+        break;
+    }
+}
+  }

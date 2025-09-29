@@ -1,0 +1,44 @@
+public static void main(String[] args) {
+    // Test 1: Arrays de enteros con valores específicos
+    System.out.println("=== Test con arrays de enteros ===");
+    int[] numeros = { 2, 5, 7, 8 };
+    System.out.println("Array original longitud: " + numeros.length);
+    
+    int nuevoVal = 11;
+    int[] ampliado = numeros.add(nuevoVal);
+    System.out.println("Array ampliado longitud: " + ampliado.length);
+    
+    // Mostrar el contenido de ambos arrays para verificar
+    System.out.println("Original: [" + numeros[0] + ", " + numeros[1] + ", " + numeros[2] + ", " + numeros[3] + "]");
+    System.out.println("Ampliado: [" + ampliado[0] + ", " + ampliado[1] + ", " + ampliado[2] + ", " + ampliado[3] + ", " + ampliado[4] + "]");
+    
+    // Test 2: Arrays de strings
+    System.out.println("");
+    System.out.println("=== Test con arrays de strings ===");
+    String[] palabras = {"hola", "mundo"};
+    String[] masPalabras = palabras.add("programación");
+    System.out.println("Longitud original: " + palabras.length);
+    System.out.println("Longitud ampliada: " + masPalabras.length);
+    
+    // Mostrar el contenido de ambos arrays para verificar
+    System.out.println("Original: [" + palabras[0] + ", " + palabras[1] + "]");
+    System.out.println("Ampliado: [" + masPalabras[0] + ", " + masPalabras[1] + ", " + masPalabras[2] + "]");
+    
+    // Test 3: Múltiples operaciones add() encadenadas
+    System.out.println("");
+    System.out.println("=== Test con múltiples add() encadenados ===");
+    double[] decimales = {1.5};
+    decimales = decimales.add(2.7);
+    decimales = decimales.add(3.9);
+    System.out.println("Longitud final: " + decimales.length); // Debería ser 3
+    System.out.println("Valores: [" + decimales[0] + ", " + decimales[1] + ", " + decimales[2] + "]");
+    
+    // Test 4: Array vacío
+    System.out.println("");
+    System.out.println("=== Test con array vacío ===");
+    int[] vacio = {};
+    System.out.println("Longitud inicial (vacío): " + vacio.length);
+    vacio = vacio.add(99);
+    System.out.println("Longitud después de add: " + vacio.length);
+    System.out.println("Valor añadido: " + vacio[0]);
+}

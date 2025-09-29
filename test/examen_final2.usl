@@ -1,0 +1,124 @@
+
+// --- FUNCIONES AUXILIARES COMPLEJAS ---
+
+// Busca un arreglo 1D (patron) dentro de un arreglo 2D (matriz).
+int buscarPatron(int[][] matriz, int[] patron) {
+    int filaEncontrada = -1;
+    int filaActual = 0;
+    
+    for (int[] fila : matriz) {
+        if (fila.length == patron.length) {
+            boolean coincidencia = true;
+            for (int i = 0; i < fila.length; i = i + 1) {
+                if (fila[i] != patron[i]) {
+                    coincidencia = false;
+                    break; // Salir del bucle interno si un elemento no coincide
+                }
+            }
+            if (coincidencia) {
+                filaEncontrada = filaActual;
+                break; // Salir del bucle externo si encontramos el patrón
+            }
+        }
+        filaActual = filaActual + 1;
+    }
+    return filaEncontrada;
+}
+
+
+// Dos funciones que se llaman mutuamente para probar la pila de llamadas.
+boolean esImpar(int n) {
+    if (n == 0) {
+        return false;
+    }
+    return esPar(n - 1);
+}
+boolean esPar(int n) {
+    if (n == 0){
+        return true;
+    }
+    return esImpar(n - 1);
+}
+
+
+// Genera un reporte usando múltiples funciones embebidas.
+void generarReporte(String[] items, int[][] datos) {
+    String[] reportes = {};
+
+    for (String item : items) {
+        int itemIdx = Arrays.indexOf(items, item);
+        int[] ventas = datos[itemIdx];
+        
+        int totalVentas = 0;
+        for(int venta : ventas){
+            totalVentas = totalVentas + venta;
+        }
+
+        // Uso de casteo y operaciones
+        double promedio = (double)totalVentas / ventas.length;
+        
+    // Uso de add y String.join
+        String lineaReporte = String.join(": ", item, "Total=" + totalVentas, "Promedio=" + promedio);
+    reportes = reportes.add(lineaReporte);
+    }
+    
+    for (String reporte : reportes) {
+        System.out.println("- " + reporte);
+    }
+}
+
+
+// Función principal que orquesta todas las pruebas complejas.
+public static void main(String[] args) {
+    System.out.println("====== INICIO DE LA PRUEBA DE TORTURA DEL INTÉRPRETE ======");
+
+    // ====================================================================
+    // PRUEBA 1: BÚSQUEDA DE PATRONES EN MATRICES (Control de Flujo)
+    // ====================================================================
+    System.out.println("\n--- Prueba 1: Busqueda de patrones en matriz ---");
+
+    final int[][] laberinto = {
+        {0, 1, 0, 0},
+        {0, 1, 1, 0},
+        {0, 0, 1, 1}, // <- El patrón a buscar
+        {1, 0, 0, 0}
+    };
+    int[] patron = {0, 0, 1, 1};
+
+    int filaEncontrada = buscarPatron(laberinto, patron);
+    System.out.println("El patron fue encontrado en la fila: " + filaEncontrada); // Esperado: 2
+
+    int[] patronInexistente = {1, 1, 1, 1};
+    System.out.println("Busqueda de patron inexistente: " + buscarPatron(laberinto, patronInexistente)); // Esperado: -1
+
+
+    // ====================================================================
+    // PRUEBA 2: RECURSIVIDAD MUTUA (Llamadas a Funciones)
+    // ====================================================================
+    System.out.println("\n--- Prueba 2: Recursividad Mutua (Par/Impar) ---");
+
+    boolean sieteEsImpar = esImpar(7);
+    boolean seisEsImpar = esImpar(6);
+
+    System.out.println("¿Es 7 impar? " + String.valueOf(sieteEsImpar));   // Esperado: true
+    System.out.println("¿Es 6 impar? " + String.valueOf(seisEsImpar));   // Esperado: false
+
+
+    // ====================================================================
+    // PRUEBA 3: GENERACIÓN DE REPORTES DINÁMICOS (Integración Total)
+    // ====================================================================
+    System.out.println("\n--- Prueba 3: Generacion de Reportes Dinamicos ---");
+
+    String[] productos = {"CPU", "RAM", "SSD"};
+    int[][] ventasPorTrimestre = {
+        {150, 200, 250, 300}, // Ventas de CPU
+        {400, 450, 500, 600}, // Ventas de RAM
+        {300, 320, 350, 400}  // Ventas de SSD
+    };
+
+    // Llamamos a una función que usa casi todo lo que hemos construido.
+    generarReporte(productos, ventasPorTrimestre);
+
+    System.out.println("\n====== PRUEBA DE TORTURA FINALIZADA CON EXITO ======");
+}
+

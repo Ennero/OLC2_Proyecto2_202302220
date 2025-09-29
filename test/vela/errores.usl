@@ -1,0 +1,218 @@
+1. Archivo para errores léxicos
+-----------------------------
+
+public static void main(String[] args) {
+    // Error léxico: Caracter no válido @
+    int numero = 5 @ 3;
+    
+    // Error léxico: Caracter especial no reconocido
+    String mensaje = "Hola mundo" # "Concatenar";
+    
+    // Error léxico: Símbolo no reconocido &
+    double precio = 15.50 & 2.0;
+    
+    // Error léxico: Uso de símbolo inválido
+    boolean estado = true $ false;
+    
+    // Error léxico: Caracter extraño en identificador
+    int variable$ = 10;
+    
+    // Error léxico: Símbolo no definido
+    float resultado = 3.14 ^ 2;
+    
+    System.out.println("Este código tiene errores léxicos");
+}
+
+
+-------------------------------
+2. Archivo para errores sintácticos
+
+public static void main(String[] args) {
+    // Error sintáctico: Falta punto y coma
+    int numero = 5
+    
+    // Error sintáctico: Paréntesis no cerrado
+    if (numero > 3 {
+        System.out.println("Mayor");
+    }
+    
+    // Error sintáctico: Llave no cerrada
+    while (numero < 10) {
+        numero = numero + 1;
+    
+    // Error sintáctico: Falta paréntesis de cierre
+    System.out.println("Numero: " + numero;
+    
+    // Error sintáctico: Operador incompleto
+    int suma = 5 + ;
+    
+    // Error sintáctico: Declaración incorrecta
+    String = "mensaje";
+    
+    // Error sintáctico: Asignación sin variable
+    = 15;
+    
+    // Error sintáctico: For incompleto
+    for (int i = 0; i < 5) {
+        System.out.println(i);
+    }
+    
+    // Error sintáctico: Switch sin llaves
+    switch (numero)
+        case 1:
+            System.out.println("Uno");
+        break;
+    
+    // Error sintáctico: Array mal declarado
+    int[] numeros = {1, 2, 3;
+}
+
+--------------------------------------
+
+3. Archivo para errores semánticos
+
+public static void main(String[] args) {
+    // Error semántico: Variable no declarada
+    System.out.println(variableNoDeclarada);
+    
+    // Error semántico: División por cero
+    int resultado = 10 / 0;
+    
+    // Error semántico: Variable declarada dos veces
+    int numero = 5;
+    int numero = 10;
+    
+    // Error semántico: Uso de variable antes de declararla
+    suma = numero + 5;
+    int suma;
+    
+    // Error semántico: Tipo incompatible en asignación
+    String texto = 123;
+    
+    // Error semántico: Operación inválida entre tipos
+    String mensaje = "Hola";
+    int longitud = mensaje + 5;
+    
+    // Error semántico: Break fuera de ciclo
+    break;
+    
+    // Error semántico: Continue fuera de ciclo
+    continue;
+    
+    // Error semántico: Return en main (si no está permitido)
+    return 10;
+    
+    // Error semántico: Acceso a array con índice no entero
+    int[] numeros = {1, 2, 3, 4, 5};
+    int valor = numeros["texto"];
+    
+    // Error semántico: Variable constante modificada
+    final int CONSTANTE = 10;
+    CONSTANTE = 20;
+    
+    // Error semántico: Uso de variable no inicializada
+    int sinInicializar;
+    int otro = sinInicializar + 5;
+}
+
+----------------------------------------
+4. Archivo mixto con todos los tipos de errores
+
+public static void main(String[] args) {
+    System.out.println("=== Prueba de errores mixtos ===");
+    
+    // ERRORES LÉXICOS
+    int numero@ = 5;  // Caracter inválido
+    String texto# = "hola";  // Símbolo no reconocido
+    
+    // ERRORES SINTÁCTICOS
+    int suma = 5 +   // Expresión incompleta
+    
+    if (numero > 0 {  // Paréntesis no cerrado
+        System.out.println("Positivo");
+    
+    // ERRORES SEMÁNTICOS
+    int division = 15 / 0;  // División por cero
+    System.out.println(variableInexistente);  // Variable no declarada
+    
+    // Variable declarada dos veces
+    double precio = 10.50;
+    double precio = 15.75;
+    
+    // Break fuera de contexto
+    break;
+    
+    // Tipo incompatible
+    boolean estado = "verdadero";
+    
+    // Array con índice inválido
+    int[] lista = {1, 2, 3};
+    int elemento = lista[3.14];  // Índice no entero
+    
+    // Operación inválida entre tipos
+    String mensaje = "Número: ";
+    int resultado = mensaje * 5;
+    
+    // Constante modificada
+    final String SALUDO = "Hola";
+    SALUDO = "Adiós";
+    
+    System.out.println("Fin del programa con errores");
+}
+
+-----------------------------------------
+5. Archivo para probar errores específicos en estructuras de control
+
+public static void main(String[] args) {
+    System.out.println("=== Errores en estructuras de control ===");
+    
+    // Error: break fuera de ciclo o switch
+    if (true) {
+        break;  // Error semántico
+    }
+    
+    // Error: continue fuera de ciclo
+    continue;  // Error semántico
+    
+    // Error sintáctico en for
+    for (int i = 0; i < 5; i+) {  // Incremento mal formado
+        System.out.println(i);
+    }
+    
+    // Error sintáctico en while
+    while numero > 0) {  // Falta paréntesis de apertura
+        numero = numero - 1;
+    }
+    
+    // Error en switch: case duplicado
+    int opcion = 1;
+    switch (opcion) {
+        case 1:
+            System.out.println("Uno");
+            break;
+        case 1:  // Error semántico: caso duplicado
+            System.out.println("Uno de nuevo");
+            break;
+        default:
+            System.out.println("Otro");
+    }
+    
+    // Error: variable de control no declarada
+    for (j = 0; j < 10; j++) {  // j no está declarada
+        System.out.println(j);
+    }
+    
+    // Error: condición no booleana en if
+    int valor = 5;
+    if (valor) {  // Error semántico: valor no es boolean
+        System.out.println("Verdadero");
+    }
+    
+    // Error: array en switch (si no está permitido)
+    int[] numeros = {1, 2, 3};
+    switch (numeros) {  // Error semántico
+        case {1, 2, 3}:
+            System.out.println("Array");
+            break;
+    }
+}

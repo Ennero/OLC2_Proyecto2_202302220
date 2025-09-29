@@ -1,0 +1,38 @@
+    public static void main(String[] args){
+        System.out.println("=== Pruebas con null ===");
+    
+        // String con null
+        String texto = null;
+        System.out.println("Texto inicial: " + texto);
+    
+        // Reasignación posterior
+        texto = "Hola mundo";
+        System.out.println("Texto reasignado: " + texto);
+    
+        // Array con null
+        int[] numeros = null;
+        System.out.println("Array numeros: " + numeros);
+    
+        // Asignar un nuevo arreglo después
+        numeros = new int[3];
+        numeros[0] = 10;
+        numeros[1] = 20;
+        numeros[2] = 30;
+    
+        System.out.println("Array numeros inicializado:");
+        for (int i = 0; i < numeros.length; i++) {
+            System.out.println("Elemento " + i + ": " + numeros[i]);
+        }
+    
+        // Comparaciones con null
+        if (texto != null) {
+            System.out.println("Texto no es null");
+        }
+    
+        if (numeros != null) {
+            System.out.println("Array numeros no es null");
+        }
+    
+        // Caso no permitido (debe dar error semántico en tu lenguaje)
+        // int x = null;   // ❌ no válido, null no puede asignarse a primitivos
+    }

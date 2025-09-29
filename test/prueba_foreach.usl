@@ -1,0 +1,73 @@
+public static void main(String[] args) {
+
+    // ======================================================
+    // PRUEBA 1: ITERACIÓN BÁSICA SOBRE UN ARREGLO DE PRIMITIVOS
+    // ======================================================
+    System.out.println("--- Prueba 1: forEach con Enteros ---");
+
+    int[] numeros = {10, 20, 30, 40, 50};
+    String resultado = "";
+    
+    for (int num : numeros) {
+        resultado = resultado + String.valueOf(num) + " ";
+    }
+    System.out.println(resultado); // Esperado: 10 20 30 40 50 
+
+
+    // ======================================================
+    // PRUEBA 2: ITERACIÓN SOBRE UN ARREGLO DE STRINGS
+    // ======================================================
+    System.out.println("\n--- Prueba 2: forEach con Strings ---");
+
+    String[] palabras = {"Hola", "a", "todos"};
+    
+    for (String palabra : palabras) {
+        System.out.println(palabra);
+    }
+    // Esperado:
+    // Hola
+    // a
+    // todos
+
+
+    // =================================================================
+    // PRUEBA 3: ITERACIÓN AVANZADA SOBRE UNA MATRIZ (ARREGLO DE ARREGLOS)
+    // =================================================================
+    System.out.println("\n--- Prueba 3: forEach anidado en una Matriz ---");
+    
+    int[][] matriz = {
+        {1, 2, 3},
+        {4, 5},
+        {6, 7, 8, 9}
+    };
+    
+    // El forEach externo itera sobre las filas.
+    // La variable 'fila' es de tipo int[], lo que prueba la nueva gramática.
+    for (int[] fila : matriz) {
+        // El forEach interno itera sobre los elementos de cada fila.
+        String filaStr = "Fila: ";
+        for (int elemento : fila) {
+            filaStr = filaStr + elemento + ",";
+        }
+        System.out.println(filaStr);
+    }
+    // Esperado:
+    // Fila: 1,2,3,
+    // Fila: 4,5,
+    // Fila: 6,7,8,9,
+
+
+    // ======================================================
+    // PRUEBA 4: CASOS LÍMITE (ARREGLO VACÍO)
+    // ======================================================
+    System.out.println("\n--- Prueba 4: forEach con Arreglo Vacío ---");
+    
+    String[] vacio = {};
+    int contador = 0;
+    
+    for (String item : vacio) {
+        contador = contador + 1; // Este código nunca se debería ejecutar
+    }
+    
+    System.out.println("El bucle se ejecuto " + contador + " veces."); // Esperado: 0
+}

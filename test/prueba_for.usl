@@ -1,0 +1,38 @@
+public static void main(String[] args) {
+    System.out.println("--- Iniciando Prueba de Ciclo For ---");
+
+    // Prueba 1: Ciclo for estándar
+    System.out.println("Prueba 1: Conteo de 0 a 4");
+    for (int i = 0; i < 5; i = i + 1) {
+        System.out.println(i);
+    }
+    System.out.println("----------------------------------------");
+    
+    // Prueba 2: Visibilidad de la variable 'i' (scope test)
+    // La siguiente línea debería dar un error semántico si la descomentas,
+    // porque 'i' no existe fuera del 'for'. ¡Esto es bueno!
+    // System.out.println(i); 
+
+    // Prueba 3: Ciclo for con 'break'
+    System.out.println("Prueba 3: 'break' en el ciclo for");
+    for (int j = 0; j < 10; j = j + 1) {
+        if (j == 3) {
+            System.out.println("Break en j=3");
+            break;
+        }
+        System.out.println(j);
+    }
+    System.out.println("----------------------------------------");
+
+    // Prueba 4: Ciclo for con 'continue'
+    System.out.println("Prueba 4: 'continue' en el ciclo for (imprimir pares)");
+    for (int k = 0; k < 10; k = k + 1) {
+        if (k % 2 != 0) { // Si es impar
+            continue; // Salta a la actualización (k=k+1)
+        }
+        System.out.println(k); // Solo se ejecuta para los pares
+    }
+    System.out.println("----------------------------------------");
+    
+    System.out.println("--- Pruebas de Ciclo For Finalizadas ---");
+}

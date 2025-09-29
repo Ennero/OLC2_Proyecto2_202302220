@@ -1,0 +1,52 @@
+    public static void main(String[] args) {
+        int dia = 3;
+        int categoria = 2;
+
+        // Primer switch
+        switch (dia) {
+            case 1:
+                System.out.println("Lunes");
+                break;
+            case 2:
+                System.out.println("Martes");
+                break;
+            case 3:
+                System.out.println("Miércoles");
+                // Switch anidado
+                switch (categoria) {
+                    case 1:
+                        System.out.println("Categoría Básica");
+                        break;
+                    case 2:
+                        System.out.println("Categoría Intermedia");
+                        break;
+                    case 3:
+                        System.out.println("Categoría Avanzada");
+                        break;
+                    default:
+                        System.out.println("Categoría Desconocida");
+                }
+                break;
+            case 4:
+                System.out.println("Jueves");
+                break;
+            case 5:
+                System.out.println("Viernes");
+                break;
+            default:
+                System.out.println("Fin de semana");
+        }
+
+        // Segundo switch para probar default
+        int opcion = 99;
+        switch (opcion) {
+            case 10:
+                System.out.println("Opción 10");
+                break;
+            case 20:
+                System.out.println("Opción 20");
+                break;
+            default:
+                System.out.println("Opción no reconocida");
+        }
+    }

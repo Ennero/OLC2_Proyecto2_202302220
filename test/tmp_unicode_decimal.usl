@@ -1,0 +1,11 @@
+public static void main(String[] args) {
+    char r = '\u0082'; // decimal 82 => 'R'
+    char currency = '\u00164'; // decimal 164 => '¤'
+
+    System.out.println("R esperado: " + String.valueOf(r));
+    System.out.println("¤ esperado: " + String.valueOf(currency));
+
+    int d = currency - r; // 164 - 82 => 82
+    char diff = d; // ahora permitido: int -> char implícito
+    System.out.println("R esperado tras resta: " + String.valueOf(diff));
+}

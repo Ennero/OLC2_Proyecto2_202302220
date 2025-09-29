@@ -1,0 +1,26 @@
+// Ejemplo de prueba con funciones
+int suma(int a, int b) {
+    return a + b;
+}
+
+void saludar(String nombre) {
+    System.out.println("Hola, " + nombre + "!");
+}
+
+int obtenerConstante() {
+    return 42;
+}
+
+public static void main(String[] args) {
+    System.out.println("=== PRUEBA DE FUNCIONES ===");
+    
+    int resultado = suma(5, 10);
+    System.out.println("5 + 10 = " + resultado);
+    
+    saludar("Desarrollador");
+    
+    int constante = obtenerConstante();
+    System.out.println("Constante: " + constante);
+    
+    System.out.println("=== FIN PRUEBA ===");
+}

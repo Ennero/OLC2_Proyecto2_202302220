@@ -1,0 +1,66 @@
+public static void main(String[] args) {
+  
+// Prueba de operadores lógicos
+
+// Declarar variables booleanas
+boolean x = true;
+boolean y = false;
+boolean z = true;
+
+System.out.println("Variables iniciales:");
+System.out.println("x = " + x);
+System.out.println("y = " + y);
+System.out.println("z = " + z);
+
+// Operador AND (&&)
+System.out.println("\nOperador AND (&&):");
+System.out.println("x && y: " + (x && y));  // false (true && false)
+System.out.println("x && z: " + (x && z));  // true (true && true)
+System.out.println("y && x: " + (y && x));  // false (false && true)
+System.out.println("y && y: " + (y && y));  // false (false && false)
+
+// Operador OR (||)
+System.out.println("\nOperador OR (||):");
+System.out.println("x || y: " + (x || y));  // true (true || false)
+System.out.println("x || z: " + (x || z));  // true (true || true)
+System.out.println("y || x: " + (y || x));  // true (false || true)
+System.out.println("y || y: " + (y || y));  // false (false || false)
+
+// Operador NOT (!)
+System.out.println("\nOperador NOT (!):");
+System.out.println("!x: " + (!x));  // false (NOT true)
+System.out.println("!y: " + (!y));  // true (NOT false)
+System.out.println("!z: " + (!z));  // false (NOT true)
+
+// Combinaciones complejas
+System.out.println("\nCombinaciones complejas:");
+System.out.println("x && !y: " + (x && !y));      // true (true && true)
+System.out.println("!x || y: " + (!x || y));      // false (false || false)
+System.out.println("!(x && y): " + (!(x && y)));  // true (NOT false)
+System.out.println("!x && !y: " + (!x && !y));    // false (false && true)
+
+// Operadores lógicos con comparaciones
+int a = 5;
+int b = 10;
+int c = 5;
+
+System.out.println("\nOperadores lógicos con comparaciones:");
+System.out.println("(a == c) && (b > a): " + ((a == c) && (b > a)));    // true && true = true
+System.out.println("(a == b) || (a == c): " + ((a == b) || (a == c)));  // false || true = true
+System.out.println("!(a == b): " + (!(a == b)));                        // NOT false = true
+System.out.println("(a < b) && (c >= a): " + ((a < b) && (c >= a)));    // true && true = true
+
+// Evaluación de cortocircuito
+System.out.println("\nEvaluación de cortocircuito:");
+System.out.println("false && (cualquier cosa): " + (false && (a == b))); // false
+System.out.println("true || (cualquier cosa): " + (true || (a == b)));   // true
+
+// Con strings (strings no vacías son true, vacías son false)
+String str1 = "hola";
+String str2 = "";
+
+System.out.println("\nOperadores lógicos con strings:");
+System.out.println("str1 (no vacía): " + str1);  // "hola"
+System.out.println("str2 (vacía): [" + str2 + "]");    // ""
+
+}

@@ -1,0 +1,15 @@
+// Ejemplo de uso de Integer.parseInt
+public static void main(String[] args) {
+    String texto = "42";
+    int numero = Integer.parseInt(texto);
+    System.out.println("El número es: " + numero);
+    System.out.println("El número + 8 = " + (numero + 8));
+    
+    // Prueba con número negativo
+    String negativo = "-10";
+    int numNegativo = Integer.parseInt(negativo);
+    System.out.println("Número negativo: " + numNegativo);
+    
+    // Esto generará un error:
+    // Integer.parseInt("12a3");
+}

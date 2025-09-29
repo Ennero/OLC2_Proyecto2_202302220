@@ -1,0 +1,115 @@
+
+// --- FUNCIONES AUXILIARES ---
+
+void procesarReporte(String[] nombres, int[][] notas) {
+    
+    String[] resumenGeneral = {};
+
+    // PRUEBA DE forEach ANIDADO
+    // --- LÍNEA CORREGIDA ---
+    for (int[] notasEstudiante : notas) {
+        
+        int estudianteIdx = Arrays.indexOf(notas, notasEstudiante);
+        String nombre = nombres[estudianteIdx];
+        int suma = 0;
+        int notaMinima = 101;
+        
+        // PRUEBA DE for CLÁSICO CON .length
+        for (int i = 0; i < notasEstudiante.length; i = i + 1) {
+            int nota = notasEstudiante[i];
+            suma = suma + nota;
+            if (nota < notaMinima) {
+                notaMinima = nota;
+            }
+        }
+        
+        double promedio = (double)suma / notasEstudiante.length;
+        String estado = "";
+        int notaEntera = (int)promedio;
+
+        // PRUEBA DE SWITCH y WHILE
+        int j = 0;
+        while(j < 1){
+            switch (notaEntera / 10) {
+                case 10:
+                case 9:
+                    estado = "Excelente";
+                    break;
+                case 8:
+                case 7:
+                    estado = "Bueno";
+                    break;
+                case 6:
+                    estado = "Aprobado";
+                    break;
+                default:
+                    estado = "Reprobado";
+            }
+            j = j+1;
+        }
+
+        String reporte = String.join(" - ", nombre, "Prom: " + promedio, "Min: " + notaMinima, "Estado: " + estado);
+    resumenGeneral = resumenGeneral.add(reporte);
+    }
+    
+    System.out.println("--- Reporte Final de Estudiantes ---");
+    for(String linea : resumenGeneral){
+        System.out.println(linea);
+    }
+}
+
+int factorial(int n) {
+    if (n <= 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+public static void main(String[] args) {
+    System.out.println("====== INICIO DEL EXAMEN FINAL DEL INTÉRPRETE ======");
+
+    // ======================================================
+    // PRUEBA 1: DECLARACIONES, CONSTANTES Y OPERADORES
+    // ======================================================
+    System.out.println("\n--- Prueba 1: Fundamentos ---");
+    final String CURSO = "Compiladores 2";
+    int anio = 2024;
+    double version = 1.0;
+    boolean esPruebaFinal = true;
+    char seccion = 'A';
+
+    String titulo = CURSO + " - " + String.valueOf(anio) + " - v" + String.valueOf(version);
+    System.out.println("Ejecutando: " + titulo);
+
+    if ((esPruebaFinal && anio > 2020) || seccion != 'B') {
+        System.out.println("Las condiciones basicas son correctas.");
+    }
+
+    // ======================================================
+    // PRUEBA 2: ESTRUCTURAS DE DATOS Y FUNCIONES EMBEBIDAS
+    // ======================================================
+    System.out.println("\n--- Prueba 2: Estructura de Datos ---");
+    
+    String[] estudiantes = {"Ana", "Luis", "Eva"};
+    int[][] notasPorEstudiante = {
+        {90, 85, 95}, // Notas de Ana
+        {70, 65, 75}, // Notas de Luis
+        {100, 95, 98}  // Notas de Eva
+    };
+
+    estudiantes = estudiantes.add("Carlos");
+    int[] notasCarlos = {Integer.parseInt("88"), 92, 79};
+    notasPorEstudiante = notasPorEstudiante.add(notasCarlos);
+    
+    System.out.println("Numero total de estudiantes: " + estudiantes.length);
+
+    // ======================================================
+    // PRUEBA 3: FUNCIONES, RECURSIVIDAD Y LÓGICA COMPLEJA
+    // ======================================================
+    System.out.println("\n--- Prueba 3: Procesamiento con Funciones ---");
+    
+    procesarReporte(estudiantes, notasPorEstudiante);
+    
+    int numPruebas = 4;
+    System.out.println("Numero de combinaciones de pruebas (recursivo): " + factorial(numPruebas));
+}

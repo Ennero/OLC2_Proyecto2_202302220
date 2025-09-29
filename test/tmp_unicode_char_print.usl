@@ -1,0 +1,8 @@
+// Prueba de impresión de char con escape Unicode decimal a UTF-8
+// Debe imprimir el símbolo ¤ dos veces y sin errores GTK
+
+public static void main(String[] args) {
+    char c = '\u00164'; // 164 decimal -> '¤'
+    System.out.println(c);                 // imprime como char
+    System.out.println(String.valueOf(c)); // imprime vía String.valueOf
+}

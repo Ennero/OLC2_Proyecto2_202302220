@@ -1,0 +1,47 @@
+public static void main(String[] args) {
+
+    // ======================================================
+    // PRUEBA 1: Double.parseDouble
+    // ======================================================
+    System.out.println("--- Pruebas de Double.parseDouble ---");
+
+    // Caso básico con un string
+    double d1 = Double.parseDouble("123.456789");
+    System.out.println(d1); // Expected: 123.456789
+
+    // Usado en una expresión y con un número negativo
+    double d2 = 100.0 + Double.parseDouble("-25.5");
+    System.out.println(d2); // Expected: 74.5
+
+
+    // ======================================================
+    // PRUEBA 2: String.valueOf
+    // ======================================================
+    System.out.println("\n--- Pruebas de String.valueOf ---");
+
+    // Convertir diferentes tipos de datos a String
+    String intStr = String.valueOf(100);
+    String doubleStr = String.valueOf(3.14159);
+    String boolStr = String.valueOf(true);
+    String charStr = String.valueOf('A');
+
+    // Concatenamos los strings para verificar la conversión
+    String resultado = intStr + " " + doubleStr + " " + boolStr + " " + charStr;
+    System.out.println(resultado); // Expected: 100 3.141590 true A
+
+
+    // ======================================================
+    // PRUEBA 3: String.join
+    // ======================================================
+    System.out.println("\n--- Pruebas de String.join ---");
+    
+    // Unir un arreglo de Strings
+    String[] palabras = {"Hola", "Mundo", "desde", "el", "interprete"};
+    String frase = String.join(" ", palabras);
+    System.out.println(frase); // Expected: Hola Mundo desde el interprete
+
+    // Unir un arreglo de enteros con un delimitador diferente
+    int[] numeros = {1, 2, 3, 4, 5};
+    String listaNumeros = String.join(", ", numeros);
+    System.out.println(listaNumeros); // Expected: 1, 2, 3, 4, 5
+}

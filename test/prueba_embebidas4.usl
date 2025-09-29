@@ -1,0 +1,50 @@
+public static void main(String[] args) {
+
+    // ======================================================
+    // PRUEBA 1: Propiedad .length
+    // ======================================================
+    System.out.println("--- Pruebas de .length ---");
+
+    int[] numeros = {10, 20, 30, 40};
+    System.out.println("Longitud de 'numeros': " + numeros.length); // Esperado: 4
+
+    String[] palabras = new String[7];
+    System.out.println("Longitud de 'palabras': " + palabras.length); // Esperado: 7
+    
+    // Prueba con un arreglo vacío
+    int[] vacio = {};
+    System.out.println("Longitud de 'vacio': " + vacio.length); // Esperado: 0
+    
+    // Usando .length en un ciclo for
+    for (int i = 0; i < numeros.length; i = i + 1) {
+        numeros[i] = numeros[i] * 2;
+    }
+    System.out.println("Valor de numeros[3] despues del bucle: " + numeros[3]); // Esperado: 80
+
+
+    // ======================================================
+    // PRUEBA 2: Arrays.indexOf()
+    // ======================================================
+    System.out.println("\n--- Pruebas de Arrays.indexOf() ---");
+    
+    // Arreglo de prueba
+    String[] frutas = {"manzana", "banana", "naranja", "mango", "banana"};
+
+    // Caso 1: Encontrar un elemento que existe
+    int indiceBanana = Arrays.indexOf(frutas, "banana");
+    System.out.println("Primer indice de 'banana': " + indiceBanana); // Esperado: 1
+
+    // Caso 2: Encontrar un elemento que NO existe
+    int indicePera = Arrays.indexOf(frutas, "pera");
+    System.out.println("Indice de 'pera': " + indicePera); // Esperado: -1
+    
+    // Caso 3: Buscar un elemento en un arreglo de enteros
+    int[] edades = {15, 22, 18, 40, 22};
+    System.out.println("Indice de edad 40: " + Arrays.indexOf(edades, 40)); // Esperado: 3
+    System.out.println("Indice de edad 99: " + Arrays.indexOf(edades, 99)); // Esperado: -1
+
+    // Caso 4: Usar indexOf en una condición
+    if (Arrays.indexOf(frutas, "mango") > -1) {
+        System.out.println("El mango si existe en el arreglo."); // Esperado
+    }
+}

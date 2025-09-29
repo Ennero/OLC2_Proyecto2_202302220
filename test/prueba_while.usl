@@ -1,0 +1,65 @@
+public static void main(String[] args) {
+
+    System.out.println("--- Iniciando Prueba de Ciclo While ---");
+
+    // -----------------------------------------------------------------
+    // Prueba 1: Un ciclo simple de cuenta regresiva.
+    // Debería imprimir los números del 5 al 1.
+    // -----------------------------------------------------------------
+    System.out.println("Prueba 1: Cuenta regresiva basica");
+    int contador = 5;
+    while (contador > 0) {
+        System.out.println(contador);
+        contador = contador - 1; // o contador -= 1;
+    }
+    System.out.println("Despegue!");
+    System.out.println("----------------------------------------");
+
+
+    // -----------------------------------------------------------------
+    // Prueba 2: Uso de la sentencia 'break'.
+    // El ciclo debería detenerse cuando el contador llegue a 7.
+    // -----------------------------------------------------------------
+    System.out.println("Prueba 2: Salida del bucle con 'break'");
+    int buscador = 10;
+    while (buscador > 0) {
+        if (buscador == 7) {
+            System.out.println("Numero 7 encontrado. Saliendo del bucle...");
+            break;
+        }
+        System.out.println(buscador);
+        buscador -= 1;
+    }
+    System.out.println("----------------------------------------");
+
+
+    // -----------------------------------------------------------------
+    // Prueba 3: Uso de la sentencia 'continue'.
+    // El ciclo debería imprimir solo los números impares,
+    // saltándose los pares.
+    // -----------------------------------------------------------------
+    System.out.println("Prueba 3: Saltando iteraciones con 'continue'");
+    int impares = 10;
+    while (impares > 0) {
+        impares = impares - 1;
+        // Si el número es par...
+        if (impares % 2 == 0) {
+            continue; // ... no imprimas y salta al siguiente ciclo.
+        }
+        System.out.println(impares);
+    }
+    System.out.println("----------------------------------------");
+
+
+    // -----------------------------------------------------------------
+    // Prueba 4: Bucle cuya condición es falsa desde el inicio.
+    // El cuerpo de este bucle no debería ejecutarse ni una sola vez.
+    // -----------------------------------------------------------------
+    System.out.println("Prueba 4: Bucle que nunca se ejecuta");
+    while (false) {
+        System.out.println("Este mensaje NO deberia aparecer.");
+    }
+    System.out.println("El bucle no se ejecuto. Correcto.");
+
+    System.out.println("--- Pruebas de Ciclo While Finalizadas ---");
+}

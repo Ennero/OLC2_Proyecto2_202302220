@@ -1,0 +1,67 @@
+
+public static void main(String[] args) {
+
+    // ======================================================
+    // PRUEBA 1: SINTAXIS DE DECLARACIÓN 1D
+    // ======================================================
+    System.out.println("--- Prueba de Sintaxis 1D ---");
+
+    // Estilo Java (corchetes con el tipo)
+    int[] arregloJava = new int[3];
+    arregloJava[1] = 10;
+    System.out.println(arregloJava[1]); // Esperado: 10
+    System.out.println(arregloJava[2]); // Esperado: 0
+
+    // Estilo "C" (corchetes con el nombre)
+    int arregloC[] = {99, 88, 77};
+    System.out.println(arregloC[0]); // Esperado: 99
+    System.out.println(arregloC[2]); // Esperado: 77
+
+
+    // ======================================================
+    // PRUEBA 2: SINTAXIS DE DECLARACIÓN 2D (MATRICES)
+    // ======================================================
+    System.out.println("\n--- Prueba de Sintaxis 2D ---");
+
+    // Estilo Java: int[][] matriz
+    int[][] matrizJava = { {1, 2}, {3, 4} };
+    System.out.println(matrizJava[1][0]); // Esperado: 3
+    
+    // Estilo C: int matriz[][]
+    int matrizC[][] = new int[2][2];
+    matrizC[0][1] = 25;
+    System.out.println(matrizC[0][1]); // Esperado: 25
+
+    // Estilo Mixto: int[] matriz[]
+    int[] matrizMixta[] = { {10}, {20}, {30} };
+    System.out.println(matrizMixta[2][0]); // Esperado: 30
+
+
+    // ======================================================
+    // PRUEBA 3: ARREGLOS DE MÁS DIMENSIONES (3D)
+    // ======================================================
+    System.out.println("\n--- Prueba de Arreglos 3D ---");
+    
+    int cubo[][][] = new int[3][3][3];
+    cubo[1][1][1] = 55; // Asignar un valor en el centro del cubo
+    System.out.println(cubo[1][1][1]); // Esperado: 55
+    System.out.println(cubo[0][0][0]); // Esperado: 0 (valor por defecto)
+
+
+    // ======================================================
+    // PRUEBA 4: EXPRESIONES ANIDADAS
+    // ======================================================
+    System.out.println("\n--- Prueba de Expresiones Anidadas ---");
+    
+    int[] indices = {2, 0, 1};
+    int[][] datos = {
+        {100, 200, 300}, // Fila 0
+        {400, 500, 600}, // Fila 1
+        {700, 800, 900}  // Fila 2
+    };
+
+    // Acceso anidado: datos[ indices[2] ][ indices[0] ]
+    // Se resuelve a:    datos[    1     ][     2    ]
+    int valorAnidado = datos[indices[2]][indices[0]];
+    System.out.println(valorAnidado); // Esperado: 600
+}

@@ -1,0 +1,132 @@
+
+// --- FUNCIONES AUXILIARES PARA LAS PRUEBAS ---
+
+// Prueba Switch, While, Continue y Break.
+void procesarCodigos(int nivel) {
+    int i = 0;
+    while (i < nivel) {
+        String tipo = "";
+        switch (i) {
+            case 0:
+                tipo = "Admin";
+                break;
+            case 1:
+                tipo = "User";
+                break;
+            default:
+                tipo = "Guest";
+        }
+        
+        i = i + 1;
+        if (tipo.equals("User")) {
+            System.out.println("Saltando usuario estandar...");
+            continue; // Prueba de sentencia de transferencia
+        }
+        System.out.println("Procesando nivel: " + tipo);
+    }
+}
+
+// Función recursiva para la secuencia de Fibonacci.
+int fibonacci(int n) {
+    if (n <= 1) {
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+// Función que integra todo: arreglos, bucles, funciones embebidas y recursividad.
+String[] generarReporteFibonacci(int terminos) {
+    String[] reporteFinal = {}; // Arreglo vacío
+    
+    reporteFinal = reporteFinal.add("Reporte de Secuencia Fibonacci");
+    reporteFinal = reporteFinal.add("--------------------------------");
+
+    for (int i = 0; i < terminos; i = i + 1) {
+        int resultado = fibonacci(i);
+        String linea = "Termino " + String.valueOf(i) + ": " + String.valueOf(resultado);
+        
+        // Añadir una marca si el número es par
+        if (resultado % 2 == 0) {
+            linea = linea + " (Par)";
+        }
+        
+    reporteFinal = reporteFinal.add(linea);
+    }
+    
+    // Añadimos una línea final usando String.join
+    String[] footerItems = {"Calculo", "finalizado"};
+    String footer = String.join(" ", footerItems);
+    reporteFinal = reporteFinal.add("--------------------------------");
+    reporteFinal = reporteFinal.add(footer);
+
+    return reporteFinal;
+}
+
+
+public static void main(String[] args) {
+    System.out.println("====== INICIO DE LA PRUEBA INTEGRAL DEL SISTEMA ======");
+    
+    // ====================================================================
+    // PRUEBA 1: PRIMITIVOS, CONSTANTES Y OPERADORES DE TODO TIPO
+    // ====================================================================
+    System.out.println("\n--- Bloque 1: Primitivos, Constantes y Operadores ---");
+    final int MASCARA_BITS = 15; // 00001111 en binario
+    int flags = 10;              // 00001010 en binario
+    double PI = 3.14159;
+    char inicial = 'J';
+    boolean activado = true;
+
+    // Operaciones Bitwise
+    int bits_comunes = flags & MASCARA_BITS;   // Debería ser 10 (00001010)
+    int bits_combinados = flags | MASCARA_BITS;  // Debería ser 15 (00001111)
+    int bits_invertidos = ~flags;              // Inversión de bits de 10
+    
+    System.out.println("Bits comunes (AND): " + bits_comunes);
+    System.out.println("Bits combinados (OR): " + bits_combinados);
+
+    // Operaciones Relacionales y Lógicas complejas
+    if ((bits_comunes == 10 && bits_combinados > 14) || !activado) {
+        System.out.println("Logica de operadores funciona correctamente.");
+    }
+
+    // ====================================================================
+    // PRUEBA 2: ESTRUCTURAS DE CONTROL DE FLUJO ANIDADAS
+    // ====================================================================
+    System.out.println("\n--- Bloque 2: Control de Flujo Anidado ---");
+    procesarCodigos(3);
+
+    // ====================================================================
+    // PRUEBA 3: ARREGLOS MULTIDIMENSIONALES Y FUNCIONES EMBEBIDAS
+    // ====================================================================
+    System.out.println("\n--- Bloque 3: Manejo Avanzado de Arreglos ---");
+    
+    // Arreglo de 4 dimensiones para simular un "hipercubo" de datos
+    int[][][][] hipercubo = new int[2][2][2][2];
+    int contador_init = 0;
+    for(int i=0; i < 2; i=i+1) {
+        for(int j=0; j < 2; j=j+1) {
+            for(int k=0; k < 2; k=k+1) {
+                for(int l=0; l < 2; l=l+1) {
+                    hipercubo[i][j][k][l] = contador_init;
+                    contador_init = contador_init + 1;
+                }
+            }
+        }
+    }
+    
+    System.out.println("Valor en hipercubo[1][1][1][0]: " + hipercubo[1][1][1][0]); // Esperado: 14
+
+    // ====================================================================
+    // PRUEBA 4: RECURSIVIDAD Y LLAMADAS A FUNCIONES INTEGRADAS
+    // ====================================================================
+    System.out.println("\n--- Bloque 4: Recursividad y Sistema de Funciones ---");
+    
+    String[] reporte = generarReporteFibonacci(5);
+    System.out.println("Reporte generado:");
+    for(String linea : reporte){
+        System.out.println(linea);
+    }
+
+    System.out.println("\n====== PRUEBA INTEGRAL FINALIZADA CON EXITO ======");
+}
+

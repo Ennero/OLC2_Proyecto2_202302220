@@ -1,0 +1,55 @@
+// Prueba de funciones recursivas con operaciones aritméticas
+
+// Función factorial recursiva
+int factorial(int n) {
+    if (n <= 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+// Función fibonacci recursiva
+int fibonacci(int n) {
+    if (n <= 1) {
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+// Función suma recursiva (con acumulador)
+int sumaRecursiva(int n, int acumulado) {
+    if (n == 0) {
+        return acumulado;
+    }
+    return sumaRecursiva(n - 1, acumulado + n);
+}
+
+// Función potencia recursiva
+int potencia(int base, int exp) {
+    if (exp == 0) {
+        return 1;
+    }
+    return base * potencia(base, exp - 1);
+}
+
+public static void main(String[] args) {
+    System.out.println("=== PRUEBAS DE FUNCIONES RECURSIVAS ===");
+    
+    // Probar factorial
+    int fact5 = factorial(5);
+    System.out.println("Factorial de 5: " + fact5);
+    
+    // Probar fibonacci
+    int fib7 = fibonacci(7);
+    System.out.println("Fibonacci de 7: " + fib7);
+    
+    // Probar suma recursiva
+    int suma5 = sumaRecursiva(5, 0);
+    System.out.println("Suma recursiva de 5: " + suma5);
+    
+    // Probar potencia
+    int potencia2_4 = potencia(2, 4);
+    System.out.println("2 elevado a 4: " + potencia2_4);
+    
+    System.out.println("=== FIN DE PRUEBAS ===");
+}

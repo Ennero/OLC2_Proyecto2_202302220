@@ -1,0 +1,68 @@
+    public static void main(String[] args) {
+        // Prueba 1: String.join con elementos individuales
+        String fecha = String.join("-", "2025", "08", "03");
+        System.out.println("Fecha formateada: " + fecha);
+        // Salida esperada: 2025-08-03
+
+        // Prueba 2: String.join con diferentes delimitadores
+        String numeros = String.join(" | ", "10", "20", "30");
+        System.out.println("Números separados: " + numeros);
+        // Salida esperada: 10 | 20 | 30
+
+        // Prueba 3: String.join con arreglo de strings
+        String[] frutas = {"manzana", "banana", "cereza"};
+        String csv = String.join(",", frutas);
+        System.out.println("CSV de frutas: " + csv);
+        // Salida esperada: manzana,banana,cereza
+
+        // Prueba 4: String.join con más elementos
+        String path = String.join("/", "home", "usuario", "documentos", "archivo.txt");
+        System.out.println("Ruta completa: " + path);
+        // Salida esperada: home/usuario/documentos/archivo.txt
+
+        // Prueba 5: String.join con espacios
+        String[] palabras = {"Hola", "mundo", "desde", "Java"};
+        String frase = String.join(" ", palabras);
+        System.out.println("Frase unida: " + frase);
+        // Salida esperada: Hola mundo desde Java
+
+        // Prueba 6: String.join con delimitador vacío
+        String[] letras = {"J", "a", "v", "a"};
+        String palabra = String.join("", letras);
+        System.out.println("Palabra formada: " + palabra);
+        // Salida esperada: Java
+
+        // Prueba 7: String.join con un solo elemento
+        String solo = String.join("-", "único");
+        System.out.println("Elemento único: " + solo);
+        // Salida esperada: único
+
+        // Prueba 8: Combinando con otras operaciones de string
+        String[] nombres = {"Ana", "Luis", "María"};
+        String listaNombres = String.join(", ", nombres);
+        String mensaje = "Los participantes son: " + listaNombres;
+        System.out.println(mensaje);
+        // Salida esperada: Los participantes son: Ana, Luis, María
+
+        // Prueba 9: String.join con números convertidos a string
+        String num1 = String.valueOf(100);
+        String num2 = String.valueOf(200);
+        String num3 = String.valueOf(300);
+        String sumaTexto = String.join(" + ", num1, num2, num3);
+        System.out.println("Operación: " + sumaTexto);
+        // Salida esperada: 100 + 200 + 300
+
+        // Pruebas adicionales para Java estándar
+        
+        // Prueba 10: Con lista vacía
+        String[] vacio = {};
+        String resultado_vacio = String.join(",", vacio);
+        System.out.println("Arreglo vacío: '" + resultado_vacio + "'");
+        // Salida esperada: ''
+
+        // Prueba 11: Con elementos que contienen el delimitador
+        String[] elementos_especiales = {"a,b", "c,d", "e,f"};
+        String con_comas = String.join("|", elementos_especiales);
+        System.out.println("Elementos con comas: " + con_comas);
+        // Salida esperada: a,b|c,d|e,f
+    }

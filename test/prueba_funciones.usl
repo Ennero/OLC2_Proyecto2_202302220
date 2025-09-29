@@ -1,0 +1,42 @@
+// Archivo de prueba para Declaración y Llamada de Funciones
+
+// Declaración de una función con parámetros y valor de retorno
+int sumar(int a, int b) {
+    System.out.println(" >> Dentro de la función sumar(a, b)");
+    int resultado = a + b;
+    return resultado;
+}
+
+// Declaración de una función sin parámetros
+int imprimirSeparador() {
+    System.out.println("====================================");
+    return 0; // Las funciones no-void deben retornar algo
+}
+
+// Declaración de una función recursiva
+int factorial(int n) {
+    if (n <= 1) {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
+    }
+}
+
+public static void main(String[] args) {
+    System.out.println("--- Probando llamada a funciones ---");
+    
+    imprimirSeparador();
+
+    // Prueba 1: Llamada a la función 'sumar'
+    int resultado_suma = sumar(40, 2);
+    System.out.println("El resultado de la suma es: " + resultado_suma);
+
+    imprimirSeparador();
+
+    // Prueba 2: Llamada a la función recursiva 'factorial'
+    System.out.println("Calculando el factorial de 5...");
+    int resultado_fact = factorial(5); // 5 * 4 * 3 * 2 * 1 = 120
+    System.out.println("El resultado del factorial es: " + resultado_fact);
+    
+    imprimirSeparador();
+}

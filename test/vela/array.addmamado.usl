@@ -1,0 +1,132 @@
+public static void main(String[] args) {
+    // Prueba 1: Add básico (caso del enunciado)
+    int[] numeros = {2, 5, 7, 8};
+    int nuevoVal = 11;
+    int[] ampliado = numeros.add(nuevoVal);
+    System.out.println("Array original: [2,5,7,8]");
+    System.out.println("Agregando: " + String.valueOf(nuevoVal));
+    System.out.println("Array resultante: [");
+    for (int i = 0; i < ampliado.length; i++) {
+        System.out.println(String.valueOf(ampliado[i]));
+        if (i < ampliado.length - 1) {
+            System.out.println(",");
+        }
+    }
+    System.out.println("]");
+    // Salida esperada: [2,5,7,8,11]
+
+    // Prueba 2: Add a array de un solo elemento
+    int[] solo = {42};
+    int[] dos_elementos = solo.add(100);
+    System.out.println("Array [42] + 100 = longitud: " + String.valueOf(dos_elementos.length));
+    System.out.println("Elementos: " + String.valueOf(dos_elementos[0]) + ", " + String.valueOf(dos_elementos[1]));
+    // Salida esperada: longitud 2, elementos: 42, 100
+
+    // Prueba 3: Add múltiple en secuencia
+    int[] inicial = {1, 2};
+    int[] paso1 = inicial.add(3);
+    int[] paso2 = paso1.add(4);
+    int[] paso3 = paso2.add(5);
+    System.out.println("Agregando secuencialmente 3, 4, 5:");
+    System.out.println("Resultado final: [");
+    for (int i = 0; i < paso3.length; i++) {
+        System.out.println(String.valueOf(paso3[i]));
+        if (i < paso3.length - 1) {
+            System.out.println(",");
+        }
+    }
+    System.out.println("]");
+    // Salida esperada: [1,2,3,4,5]
+
+    // Prueba 4: Add con diferentes tipos - float
+    float[] decimales = {1.5f, 2.5f};
+    float[] con_nuevo = decimales.add(3.7f);
+    System.out.println("Array float: longitud " + String.valueOf(con_nuevo.length));
+    System.out.println("Último elemento: " + String.valueOf(con_nuevo[con_nuevo.length - 1]));
+    // Salida esperada: longitud 3, último elemento 3.7
+
+    // Prueba 5: Add con char
+    char[] letras = {'A', 'B', 'C'};
+    char[] con_letra = letras.add('D');
+    System.out.println("Array de chars después de add:");
+    for (int i = 0; i < con_letra.length; i++) {
+        System.out.println("Posición " + String.valueOf(i) + ": " + con_letra[i]);
+    }
+    // Salida esperada: A, B, C, D
+
+    // Prueba 6: Add con boolean
+    boolean[] flags = {true, false};
+    boolean[] con_flag = flags.add(true);
+    System.out.println("Array boolean longitud: " + String.valueOf(con_flag.length));
+    System.out.println("Último valor: " + String.valueOf(con_flag[2]));
+    // Salida esperada: longitud 3, último valor true
+
+    // Prueba 7: Add con String
+    String[] palabras = {"Hola", "mundo"};
+    String[] con_palabra = palabras.add("JavaLang");
+    System.out.println("Array de strings:");
+    for (int i = 0; i < con_palabra.length; i++) {
+        System.out.println(String.valueOf(i) + ": " + con_palabra[i]);
+    }
+    // Salida esperada: 0: Hola, 1: mundo, 2: JavaLang
+
+    // Prueba 8: Add con double
+    double[] precisos = {3.14159, 2.71828};
+    double[] con_pi = precisos.add(1.41421);
+    System.out.println("Array double con " + String.valueOf(con_pi.length) + " elementos");
+    // Salida esperada: 3 elementos
+
+    // Prueba 9: Verificar que array original no cambia
+    int[] original = {10, 20, 30};
+    int[] nuevo = original.add(40);
+    System.out.println("Array original longitud: " + String.valueOf(original.length));
+    System.out.println("Array nuevo longitud: " + String.valueOf(nuevo.length));
+    System.out.println("Original[0]: " + String.valueOf(original[0]) + ", Nuevo[0]: " + String.valueOf(nuevo[0]));
+    // Salida esperada: original longitud 3, nuevo longitud 4, ambos [0] = 10
+
+    // Prueba 10: Add números negativos
+    int[] positivos = {1, 2, 3};
+    int[] con_negativo = positivos.add(-5);
+    System.out.println("Agregando número negativo:");
+    System.out.println("Último elemento: " + String.valueOf(con_negativo[con_negativo.length - 1]));
+    // Salida esperada: -5
+
+    // Prueba 11: Add cero
+    int[] datos = {100, 200};
+    int[] con_cero = datos.add(0);
+    System.out.println("Agregando cero, último elemento: " + String.valueOf(con_cero[2]));
+    // Salida esperada: 0
+
+    // Prueba 12: Add en bucle
+    int[] base = {1};
+    System.out.println("Agregando elementos en bucle:");
+    for (int i = 2; i <= 5; i++) {
+        base = base.add(i);
+        System.out.println("Paso " + String.valueOf(i-1) + ": longitud " + String.valueOf(base.length));
+    }
+    System.out.println("Array final: [");
+    for (int i = 0; i < base.length; i++) {
+        System.out.println(String.valueOf(base[i]));
+        if (i < base.length - 1) {
+            System.out.println(",");
+        }
+    }
+    System.out.println("]");
+    // Salida esperada: [1,2,3,4,5]
+
+    // Prueba 13: Add con valores calculados
+    int[] calculos = {5, 10};
+    int suma = 15 + 5;
+    int[] con_calculo = calculos.add(suma);
+    System.out.println("Agregando resultado de cálculo (15+5):");
+    System.out.println("Último elemento: " + String.valueOf(con_calculo[2]));
+    // Salida esperada: 20
+
+    // Prueba 14: Uso combinado con length
+    int[] test = {7, 14, 21};
+    int[] expandido = test.add(28);
+    System.out.println("Longitud antes: " + String.valueOf(test.length));
+    System.out.println("Longitud después: " + String.valueOf(expandido.length));
+    System.out.println("Nuevo elemento en posición: " + String.valueOf(expandido.length - 1));
+    // Salida esperada: antes 3, después 4, posición 3
+}

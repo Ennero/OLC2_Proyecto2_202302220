@@ -1,0 +1,45 @@
+ public static void main(String[] args) {
+     // 1. Comillas dobles (\")
+        System.out.println("El profesor dijo: \"Hola Mundo\"");
+        // SALIDA: El profesor dijo: "Hola Mundo"
+        
+        // 2. Barra invertida (\\)
+        System.out.println("La ruta del archivo es: C:\\Users\\Usuario\\Documents");
+        // SALIDA: La ruta del archivo es: C:\Users\Usuario\Documents
+        
+        // 3. Salto de línea (\n)
+        System.out.println("Primera línea\nSegunda línea");
+        // SALIDA: Primera línea
+        //         Segunda línea
+        
+        System.out.println("Hola\nMundo");
+        // SALIDA: Hola
+        //         Mundo
+        
+        // 4. Retorno de carro (\r) - menos común
+        System.out.println("Texto con retorno\rNuevo texto");
+        // SALIDA: Nuevo texto (sobrescribe "Texto con retorno")
+        
+        // 5. Tabulación (\t)
+        System.out.println("Nombre:\tJuan");
+        // SALIDA: Nombre:    Juan
+        
+        System.out.println("Edad:\t25");
+        // SALIDA: Edad:      25
+        
+        System.out.println("Ciudad:\tGuatemala");
+        // SALIDA: Ciudad:    Guatemala
+        
+        // Combinando múltiples secuencias de escape
+        System.out.println("Datos del estudiante:\n\tNombre:\t\"María López\"\n\tCarrera:\tIngeniería");
+        // SALIDA: Datos del estudiante:
+        //             Nombre:    "María López"
+        //             Carrera:   Ingeniería
+        
+        // Ejemplo con tu código original modificado
+        System.out.println("\"Hola Mundo\" se imprime con comillas");
+        // SALIDA: "Hola Mundo" se imprime con comillas
+        
+        System.out.println("Hola\t-\tEste texto está separado por tabulaciones");
+        // SALIDA: Hola    -    Este texto está separado por tabulaciones
+}

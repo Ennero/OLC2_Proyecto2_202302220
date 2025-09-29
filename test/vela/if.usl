@@ -1,0 +1,37 @@
+public static void main(String[] args) {
+        int numero = 15;
+        boolean bandera = true;
+
+        // Primer condicional
+        if (numero > 20) {
+            System.out.println("Mayor a 20");
+        } else if (numero > 10 && numero <= 20) {
+            System.out.println("Entre 11 y 20");
+            // Condicional anidado
+            if (numero % 2 == 0) {
+                System.out.println("El número es par");
+            } else {
+                System.out.println("El número es impar");
+            }
+        } else {
+            System.out.println("10 o menor");
+        }
+
+        // Condicional con boolean
+        if (bandera || numero < 5) {
+            System.out.println("Se cumple la condición lógica");
+        } else {
+            System.out.println("No se cumple la condición lógica");
+        }
+
+        // Condicional múltiple encadenado
+        if (numero < 0) {
+            System.out.println("Negativo");
+        } else if (numero == 0) {
+            System.out.println("Cero");
+        } else if (numero > 0 && numero < 100) {
+            System.out.println("Positivo menor que 100");
+        } else {
+            System.out.println("Positivo mayor o igual a 100");
+        }
+    }

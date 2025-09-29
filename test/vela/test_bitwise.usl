@@ -1,0 +1,59 @@
+public static void main(String[] args) {
+    System.out.println("=== Pruebas de Operadores Bitwise ===");
+
+    // Operador AND (&)
+    int a = 5;  // 0101 en binario
+    int b = 3;  // 0011 en binario
+    System.out.println("Operador AND (&):");
+    System.out.println("a = " + a + " (0101)");
+    System.out.println("b = " + b + " (0011)");
+    System.out.println("a & b = " + (a & b) + " (debería ser 1)");
+    System.out.println();
+
+    // Operador OR (|)
+    System.out.println("Operador OR (|):");
+    System.out.println("a = " + a + " (0101)");
+    System.out.println("b = " + b + " (0011)");
+    System.out.println("a | b = " + (a | b) + " (debería ser 7)");
+    System.out.println();
+
+    // Operador XOR (^)
+    System.out.println("Operador XOR (^):");
+    System.out.println("a = " + a + " (0101)");
+    System.out.println("b = " + b + " (0011)");
+    System.out.println("a ^ b = " + (a ^ b) + " (debería ser 6)");
+    System.out.println();
+
+    // Operador desplazamiento izquierda (<<)
+    int c = 3;  // 0011
+    int d = 1;  // 0001
+    System.out.println("Operador desplazamiento izquierda (<<):");
+    System.out.println("c = " + c + " (0011)");
+    System.out.println("d = " + d + " (0001)");
+    System.out.println("c << d = " + (c << d) + " (debería ser 6)");
+    System.out.println();
+
+    // Operador desplazamiento derecha (>>) - positivo
+    System.out.println("Operador desplazamiento derecha (>>) - positivo:");
+    System.out.println("c = " + c + " (0011)");
+    System.out.println("d = " + d + " (0001)");
+    System.out.println("c >> d = " + (c >> d) + " (debería ser 1)");
+    System.out.println();
+
+    // Operador desplazamiento derecha (>>) - negativo
+    int e = -3; // representación en complemento a 2
+    System.out.println("Operador desplazamiento derecha (>>) - negativo:");
+    System.out.println("e = " + e + " (negativo)");
+    System.out.println("d = " + d + " (0001)");
+    System.out.println("e >> d = " + (e >> d) + " (debería ser -2)");
+
+    // Pruebas adicionales
+    System.out.println();
+    System.out.println("=== Pruebas Adicionales ===");
+    int x = 12;  // 1100
+    int y = 10;  // 1010
+    System.out.println("x = " + x + ", y = " + y);
+    System.out.println("x & y = " + (x & y) + " (debería ser 8)");
+    System.out.println("x | y = " + (x | y) + " (debería ser 14)");
+    System.out.println("x ^ y = " + (x ^ y) + " (debería ser 6)");
+}

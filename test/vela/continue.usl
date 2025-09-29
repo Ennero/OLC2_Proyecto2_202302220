@@ -1,0 +1,20 @@
+  public static void main(String[] args) {
+int i = 0;
+while (i < 10) {
+    i++;
+    if (i % 2 == 0) {
+        continue; // Saltarse los números pares
+    }
+    System.out.println("i = " + i);
+}
+
+for (int j = 0; j < 10; j++) {
+    if (j % 3 == 0) {
+        continue; // Saltarse los múltiplos de 3
+    }
+    System.out.println("j = " + j);
+}
+
+// Esto debería generar un error
+continue;
+  }

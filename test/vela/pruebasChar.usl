@@ -1,0 +1,36 @@
+public static void main(String[] args) {
+
+// Pruebas completas de operaciones aritméticas entre CHAR y CHAR
+
+char a = '\u0041';        // 65
+char b = '\u0042';        // 66
+
+System.out.println("a: " + a);            // imprime 'A'
+System.out.println("b: " + b);            // imprime 'B'
+
+// Suma CHAR + CHAR -> result numérico (int) o char si se castea
+int suma_int = a + b;                     // 65 + 66 = 131
+System.out.println("a + b (int): " + suma_int);
+
+char suma_char = (char)(a + 1);           // 'A' + 1 -> 'B'
+System.out.println("a + 1 (char): " + suma_char);
+
+// Resta CHAR - CHAR
+int resta_int = a - b;                    // 65 - 66 = -1
+System.out.println("a - b (int): " + resta_int);
+
+char resta_char = (char)(b - 1);          // 'B' - 1 -> 'A'
+System.out.println("b - 1 (char): " + resta_char);
+
+// Multiplicación CHAR * CHAR
+int mult_int = a * b;                     // 65 * 66 = 4290
+System.out.println("a * b (int): " + mult_int);
+
+// División CHAR / CHAR
+int div_int = b / a;                      // 66 / 65 = 1 (entero)
+System.out.println("b / a (int): " + div_int);
+
+// Módulo CHAR % CHAR
+int mod_int = b % a;                      // 66 % 65 = 1
+System.out.println("b % a (int): " + mod_int);
+}

@@ -1,0 +1,82 @@
+public static void main(String[] args) {
+    // Prueba 1: Buscar elemento que existe (caso del enunciado)
+    int[] numeros = {2, 5, 7, 8, 11, 12};
+    int clave = 7;
+    int indice = Arrays.indexOf(numeros, clave);
+    System.out.println("Buscando " + String.valueOf(clave) + " en [2,5,7,8,11,12]");
+    System.out.println("Índice encontrado: " + String.valueOf(indice));
+    // Salida esperada: 2
+
+    // Prueba 2: Buscar elemento que NO existe
+    int clave2 = 99;
+    int indice2 = Arrays.indexOf(numeros, clave2);
+    System.out.println("Buscando " + String.valueOf(clave2) + " en [2,5,7,8,11,12]");
+    System.out.println("Índice encontrado: " + String.valueOf(indice2));
+    // Salida esperada: -1
+
+    // Prueba 3: Buscar el primer elemento
+    int clave3 = 2;
+    int indice3 = Arrays.indexOf(numeros, clave3);
+    System.out.println("Buscando primer elemento " + String.valueOf(clave3));
+    System.out.println("Índice encontrado: " + String.valueOf(indice3));
+    // Salida esperada: 0
+
+    // Prueba 4: Buscar el último elemento
+    int clave4 = 12;
+    int indice4 = Arrays.indexOf(numeros, clave4);
+    System.out.println("Buscando último elemento " + String.valueOf(clave4));
+    System.out.println("Índice encontrado: " + String.valueOf(indice4));
+    // Salida esperada: 5
+
+    // Prueba 5: Primera ocurrencia en arreglo con duplicados
+    int[] con_duplicados = {1, 3, 5, 3, 7, 3, 9};
+    int clave5 = 3;
+    int indice5 = Arrays.indexOf(con_duplicados, clave5);
+    System.out.println("Buscando " + String.valueOf(clave5) + " en [1,3,5,3,7,3,9]");
+    System.out.println("Primera ocurrencia en índice: " + String.valueOf(indice5));
+    // Salida esperada: 1 (primera ocurrencia)
+
+    // Prueba 6: Arreglo de un solo elemento - elemento existe
+    int[] solo_elemento = {42};
+    int clave6 = 42;
+    int indice6 = Arrays.indexOf(solo_elemento, clave6);
+    System.out.println("Buscando " + String.valueOf(clave6) + " en [42]");
+    System.out.println("Índice encontrado: " + String.valueOf(indice6));
+    // Salida esperada: 0
+
+    // Prueba 7: Arreglo de un solo elemento - elemento NO existe
+    int clave7 = 100;
+    int indice7 = Arrays.indexOf(solo_elemento, clave7);
+    System.out.println("Buscando " + String.valueOf(clave7) + " en [42]");
+    System.out.println("Índice encontrado: " + String.valueOf(indice7));
+    // Salida esperada: -1
+
+    // Prueba 8: Con números negativos
+    int[] negativos = {-5, -2, 0, 3, 8};
+    int clave8 = -2;
+    int indice8 = Arrays.indexOf(negativos, clave8);
+    System.out.println("Buscando " + String.valueOf(clave8) + " en [-5,-2,0,3,8]");
+    System.out.println("Índice encontrado: " + String.valueOf(indice8));
+    // Salida esperada: 1
+
+    // Prueba 9: Buscar cero
+    int clave9 = 0;
+    int indice9 = Arrays.indexOf(negativos, clave9);
+    System.out.println("Buscando " + String.valueOf(clave9) + " en [-5,-2,0,3,8]");
+    System.out.println("Índice encontrado: " + String.valueOf(indice9));
+    // Salida esperada: 2
+
+    // Prueba 10: Usando el resultado para acceso a arreglo
+    int[] datos = {100, 200, 300, 400, 500};
+    int buscar = 300;
+    int pos = Arrays.indexOf(datos, buscar);
+    
+    if (pos != -1) {
+        System.out.println("Elemento " + String.valueOf(buscar) + " encontrado en posición " + String.valueOf(pos));
+        System.out.println("Valor en esa posición: " + String.valueOf(datos[pos]));
+    } else {
+        System.out.println("Elemento " + String.valueOf(buscar) + " no encontrado");
+    }
+    // Salida esperada: Elemento 300 encontrado en posición 2
+    //                  Valor en esa posición: 300
+}

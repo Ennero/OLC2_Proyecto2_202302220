@@ -1,0 +1,51 @@
+public static void main(String[] args) {
+    System.out.println("--- Prueba de 'break' ---");
+
+    // Prueba 1: 'break' en un ciclo 'for'
+    System.out.println("Prueba 1: Saliendo de un 'for' en i=3");
+    for (int i = 0; i < 10; i = i + 1) {
+        if (i == 3) {
+            System.out.println("Break activado.");
+            break;
+        }
+        System.out.println(i);
+    }
+    System.out.println("----------------------------------------");
+
+    // Prueba 2: 'break' en un ciclo 'while'
+    System.out.println("Prueba 2: Saliendo de un 'while' en j=7");
+    int j = 10;
+    while (j > 0) {
+        if (j == 7) {
+            break;
+        }
+        j = j - 1;
+    }
+    System.out.println(j); // Debería imprimir 7
+    System.out.println("----------------------------------------");
+
+    // Prueba 3: 'break' en un 'switch' (comportamiento estándar)
+    System.out.println("Prueba 3: Saliendo de un 'case' con break");
+    int dia = 2;
+    switch (dia) {
+        case 1: System.out.println("Lunes"); break;
+        case 2: System.out.println("Martes"); break; // Debe imprimir esto y parar
+        case 3: System.out.println("Miércoles"); break;
+        default: System.out.println("Otro día");
+    }
+    System.out.println("----------------------------------------");
+
+    // Prueba 4: 'break' en bucles anidados
+    // El 'break' solo debe salir del bucle interno.
+    System.out.println("Prueba 4: 'break' en bucle anidado");
+    for (int outer = 0; outer < 3; outer = outer + 1) {
+        System.out.println("Outer: " + outer);
+        for (int inner = 0; inner < 5; inner = inner + 1) {
+            if (inner == 2) {
+                break; // <-- Este break solo afecta al bucle 'inner'
+            }
+            System.out.println("  Inner: " + inner);
+        }
+    }
+    System.out.println("--- Fin de la prueba de 'break' ---");
+}

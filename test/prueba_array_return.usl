@@ -1,0 +1,19 @@
+String[] generarReporteFibonacci(int n) {
+    String[] arr = new String[n];
+    int a = 0;
+    int b = 1;
+    int i = 0;
+    while (i < n) {
+        arr[i] = String.valueOf(a);
+        int tmp = b;
+        b = a + b;
+        a = tmp;
+        i = i + 1;
+    }
+    return arr;
+}
+
+public static void main(String[] args) {
+    String[] reporte = generarReporteFibonacci(10);
+    System.out.println(String.join(", ", reporte));
+}

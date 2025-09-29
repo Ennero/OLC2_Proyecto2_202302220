@@ -1,0 +1,56 @@
+public static void main(String[] args) {
+
+    // ======================================================
+    // PRUEBA 1: Integer.parseInt
+    // ======================================================
+    System.out.println("--- Pruebas de Integer.parseInt ---");
+
+    // Caso básico
+    int numero1 = Integer.parseInt("250");
+    System.out.println(numero1); // Esperado: 250
+
+    // Uso en una expresión
+    int resultado = 100 + Integer.parseInt("-50");
+    System.out.println(resultado); // Esperado: 50
+
+    // Parseo desde una variable de tipo String
+    String textoNumero = "1024";
+    int numeroParseado = Integer.parseInt(textoNumero);
+    System.out.println(numeroParseado * 2); // Esperado: 2048
+
+
+    // ======================================================
+    // PRUEBA 2: Float.parseFloat
+    // ======================================================
+    System.out.println("\n--- Pruebas de Float.parseFloat ---");
+
+    // Caso básico con decimales
+    float flotante1 = Float.parseFloat("123.456");
+    System.out.println(flotante1); // Esperado: 123.456
+
+    // Uso en una expresión
+    float resultadoFloat = 0.5f + Float.parseFloat("99.5");
+    System.out.println(resultadoFloat); // Esperado: 100.0
+
+
+    // ======================================================
+    // PRUEBA 3: MANEJO DE ERRORES
+    // ======================================================
+    System.out.println("\n--- Pruebas de Manejo de Errores ---");
+    
+    // Estos casos deberían generar errores semánticos, pero el programa no debería detenerse.
+    // La salida de estas líneas puede ser 0, null, o simplemente nada, 
+    // dependiendo de cómo tu intérprete maneje el valor de retorno de una expresión fallida.
+    
+    // Intentar parsear un texto no numérico
+    //int error1 = Integer.parseInt("Hola Mundo");
+    //System.out.println("Si ves este mensaje, el programa continuo despues de un error de parseo de entero.");
+
+    // Intentar parsear un flotante con formato incorrecto
+    //float error2 = Float.parseFloat("99.99.99");
+    //System.out.println("Si ves este mensaje, el programa continuo despues de un error de parseo de flotante.");
+    
+    // Intentar pasar un tipo de dato incorrecto (un entero en lugar de un string)
+    // int error3 = Integer.parseInt(123); // Esto debería generar un error semántico
+    // System.out.println("Si ves este mensaje, el programa continuo despues de un error de tipo de argumento.");
+}

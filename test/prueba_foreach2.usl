@@ -1,0 +1,69 @@
+public static void main(String[] args) {
+
+    // ======================================================
+    // PRUEBA 1: INTERACCIÓN CON BREAK Y CONTINUE
+    // ======================================================
+    System.out.println("--- Prueba 1: forEach con break y continue ---");
+
+    int[] datos = {10, 20, -1, 30, -2, 40, 50};
+    int suma = 0;
+
+    for (int dato : datos) {
+        if (dato < 0) {
+            // Si el dato es negativo, saltamos a la siguiente iteración
+            continue;
+        }
+        if (dato == 40) {
+            // Si encontramos el 40, detenemos el bucle por completo
+            break;
+        }
+        suma = suma + dato;
+    }
+    // El bucle debería procesar: 10, 20, (salta -1), 30, (salta -2), y se detiene en 40.
+    // La suma debería ser 10 + 20 + 30 = 60.
+    System.out.println("Suma con break/continue: " + suma); // Esperado: 60
+
+
+    // ====================================================================
+    // PRUEBA 2: MODIFICACIÓN DE LA VARIABLE DE ITERACIÓN (INMUTABILIDAD)
+    // ====================================================================
+    System.out.println("\n--- Prueba 2: Inmutabilidad del arreglo original ---");
+
+    int[] miArreglo = {1, 2, 3};
+
+    // Intentamos modificar el arreglo a través de la variable de iteración
+    for (int num : miArreglo) {
+        num = num * 10; // Esta modificación solo afecta a la copia local 'num'
+    }
+
+    // Verificamos que el arreglo original NO ha cambiado
+    System.out.println("Contenido original despues del bucle: " + String.join(", ", miArreglo));
+    // Esperado: 1, 2, 3
+
+
+    // ====================================================================
+    // PRUEBA 3: ITERACIÓN SOBRE UN ARREGLO DE 3 DIMENSIONES
+    // ====================================================================
+    System.out.println("\n--- Prueba 3: forEach en un arreglo 3D ---");
+    
+    int[][][] cubo = {
+        { {1, 2}, {3} },
+        { {4, 5, 6}, {7, 8} },
+        { {9} }
+    };
+    
+    int sumaTotalCubo = 0;
+    
+    // Iteramos sobre cada "plano" 2D del cubo
+    for (int[][] plano : cubo) {
+        // Iteramos sobre cada "fila" 1D del plano
+        for (int[] fila : plano) {
+            // Iteramos sobre cada elemento de la fila
+            for (int elemento : fila) {
+                sumaTotalCubo = sumaTotalCubo + elemento;
+            }
+        }
+    }
+    // Suma total = 1+2+3+4+5+6+7+8+9 = 45
+    System.out.println("Suma total de los elementos del cubo: " + sumaTotalCubo); // Esperado: 45
+}

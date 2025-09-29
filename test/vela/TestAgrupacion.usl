@@ -1,0 +1,37 @@
+    public static void main(String[] args){    
+        System.out.println("--- Pruebas de Jerarquía de Operaciones ---");
+        
+        // Ejemplo del enunciado
+        System.out.println("(1 + 3) * 32 / 90 = " + ((1 + 3) * 32 / 90));
+        
+        // Prueba sin paréntesis
+        System.out.println("5 + 2 * 10 = " + (5 + 2 * 10));
+        
+        // Prueba con paréntesis
+        System.out.println("(5 + 2) * 10 = " + ((5 + 2) * 10));
+        
+        // Prueba de división y resta
+        System.out.println("100 / 10 - 5 = " + (100 / 10 - 5));
+        
+        // Prueba con paréntesis anidados
+        System.out.println("10 * (5 + (10 / 2)) = " + (10 * (5 + (10 / 2))));
+
+        System.out.println("\n--- Pruebas de Concatenación vs. Suma ---");
+        
+        int a = 10;
+        int b = 20;
+        String s1 = "Hola";
+        String s2 = "Mundo";
+        
+        // Suma de enteros
+        System.out.println("Suma de enteros: " + (a + b));
+        
+        // Concatenación de strings
+        System.out.println("Concatenación de strings: " + s1 + s2);
+        
+        // Concatenación de String y entero
+        System.out.println("String + entero: " + s1 + a);
+        
+        // Concatenación con suma entre paréntesis
+        System.out.println("String + (entero + entero): " + s1 + (a + b));
+    }
