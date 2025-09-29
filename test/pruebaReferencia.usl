@@ -1,0 +1,21 @@
+// Declaración de una función que retorna un valor
+int sumar(int a, int b) {
+     a = a + b;
+    return a;
+}
+
+ public static  void main() {
+    System.out.println("--- Iniciando Prueba de Funciones ---");
+
+    // --- Prueba de funciones que retornan valor ---
+    int diez=12;
+    int cinco=5;
+    
+    int resultadoSuma = sumar(diez, cinco);
+    System.out.println("El resultado de sumar(10, 5) es: " + resultadoSuma);
+    
+    System.out.println("----------------------------------------");
+
+
+    System.out.println("--- Pruebas de Funciones Finalizadas ---");
+}
