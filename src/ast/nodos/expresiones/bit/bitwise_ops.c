@@ -20,6 +20,35 @@ static inline int aplicar_operacion_bitwise(int v1, int v2, char op)
     }
 }
 
+typedef enum
+{
+    SHIFT_LEFT,
+    SHIFT_RIGHT,
+    SHIFT_UNSIGNED_RIGHT
+} ShiftTipo;
+
+static inline int normalizar_entero(const Result *operando)
+{
+    if (!operando || !operando->valor)
+    {
+        return 0;
+    }
+
+    switch (operando->tipo)
+    {
+    case BOOLEAN:
+    {
+        int valor = *((int *)operando->valor);
+        return valor ? 1 : 0;
+    }
+    case CHAR:
+    case INT:
+        return *((int *)operando->valor);
+    default:
+        return 0;
+    }
+}
+
 // Función genérica para operaciones binarias
 static Result bitwiseOperacion(ExpresionLenguaje *self, char op, TipoDato tipo_resultado)
 {
@@ -59,34 +88,47 @@ static Result opBitwiseAndBoolean(ExpresionLenguaje *self) { return bitwiseOpera
 static Result opBitwiseOrBoolean(ExpresionLenguaje *self) { return bitwiseOperacion(self, '|', BOOLEAN); }
 static Result opBitwiseXorBoolean(ExpresionLenguaje *self) { return bitwiseOperacion(self, '^', BOOLEAN); }
 
+static Result shiftOperacion(ExpresionLenguaje *self, ShiftTipo tipo)
+{
+    int valor_izquierdo = normalizar_entero(&self->izquierda);
+    int valor_derecho = normalizar_entero(&self->derecha);
+
+    int *res_val = malloc(sizeof(int));
+    if (!res_val)
+    {
+        return nuevoValorResultadoVacio();
+    }
+
+    switch (tipo)
+    {
+    case SHIFT_LEFT:
+        *res_val = valor_izquierdo << valor_derecho;
+        break;
+    case SHIFT_RIGHT:
+        *res_val = valor_izquierdo >> valor_derecho;
+        break;
+    case SHIFT_UNSIGNED_RIGHT:
+        *res_val = (unsigned int)valor_izquierdo >> valor_derecho;
+        break;
+    }
+
+    return nuevoValorResultado(res_val, INT);
+}
+
 // Operaciones de desplazamiento -----------
 static Result opLeftShift(ExpresionLenguaje *self)
 {
-    int v1 = *(int *)self->izquierda.valor;
-    int v2 = *(int *)self->derecha.valor;
-    int *res_val = malloc(sizeof(int));
-    *res_val = v1 << v2;
-    return nuevoValorResultado(res_val, INT);
+    return shiftOperacion(self, SHIFT_LEFT);
 }
 
 static Result opRightShift(ExpresionLenguaje *self)
 {
-    int v1 = *(int *)self->izquierda.valor;
-    int v2 = *(int *)self->derecha.valor;
-    int *res_val = malloc(sizeof(int));
-    *res_val = v1 >> v2;
-    return nuevoValorResultado(res_val, INT);
+    return shiftOperacion(self, SHIFT_RIGHT);
 }
 
 static Result opUnsignedRightShift(ExpresionLenguaje *self)
 {
-    int v1 = *(int *)self->izquierda.valor;
-    int v2 = *(int *)self->derecha.valor;
-    int *res_val = malloc(sizeof(int));
-
-    // Para simular >>>, casteamos el operando izquierdo a unsigned antes de desplazar
-    *res_val = (unsigned int)v1 >> v2;
-    return nuevoValorResultado(res_val, INT);
+    return shiftOperacion(self, SHIFT_UNSIGNED_RIGHT);
 }
 
 // Tablas de Operaciones ----------------------------------
@@ -106,16 +148,19 @@ Operacion tablaOperacionesBitwiseXor[TIPO_COUNT][TIPO_COUNT] = {
     [CHAR] = {[INT] = opBitwiseXorNumerico, [CHAR] = opBitwiseXorNumerico}};
 
 Operacion tablaOperacionesLeftShift[TIPO_COUNT][TIPO_COUNT] = {
-    [INT] = {[INT] = opLeftShift, [CHAR] = opLeftShift},
-    [CHAR] = {[INT] = opLeftShift, [CHAR] = opLeftShift}};
+    [BOOLEAN] = {[BOOLEAN] = opLeftShift, [INT] = opLeftShift, [CHAR] = opLeftShift},
+    [INT] = {[BOOLEAN] = opLeftShift, [INT] = opLeftShift, [CHAR] = opLeftShift},
+    [CHAR] = {[BOOLEAN] = opLeftShift, [INT] = opLeftShift, [CHAR] = opLeftShift}};
 
 Operacion tablaOperacionesRightShift[TIPO_COUNT][TIPO_COUNT] = {
-    [INT] = {[INT] = opRightShift, [CHAR] = opRightShift},
-    [CHAR] = {[INT] = opRightShift, [CHAR] = opRightShift}};
+    [BOOLEAN] = {[BOOLEAN] = opRightShift, [INT] = opRightShift, [CHAR] = opRightShift},
+    [INT] = {[BOOLEAN] = opRightShift, [INT] = opRightShift, [CHAR] = opRightShift},
+    [CHAR] = {[BOOLEAN] = opRightShift, [INT] = opRightShift, [CHAR] = opRightShift}};
 
 Operacion tablaOperacionesUnsignedRightShift[TIPO_COUNT][TIPO_COUNT] = {
-    [INT] = {[INT] = opUnsignedRightShift, [CHAR] = opUnsignedRightShift},
-    [CHAR] = {[INT] = opUnsignedRightShift, [CHAR] = opUnsignedRightShift}};
+    [BOOLEAN] = {[BOOLEAN] = opUnsignedRightShift, [INT] = opUnsignedRightShift, [CHAR] = opUnsignedRightShift},
+    [INT] = {[BOOLEAN] = opUnsignedRightShift, [INT] = opUnsignedRightShift, [CHAR] = opUnsignedRightShift},
+    [CHAR] = {[BOOLEAN] = opUnsignedRightShift, [INT] = opUnsignedRightShift, [CHAR] = opUnsignedRightShift}};
 
 // Operador NOT (~)
 Result interpretBitwiseNotExpresion(AbstractExpresion *self, Context *context)

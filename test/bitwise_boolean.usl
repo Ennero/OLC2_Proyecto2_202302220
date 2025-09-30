@@ -17,4 +17,31 @@ public static void main() {
     boolean e = true;
     e ^= true;
     System.out.println(e);           // false
+
+    int base = 3;
+    boolean shift = true;
+    System.out.println(base << shift);   // 6
+    System.out.println(base >> shift);   // 1
+    System.out.println(base >>> shift);  // 1
+
+    int negativo = -4;
+    System.out.println(negativo >>> shift); // 2147483646
+
+    int fromBool = true << 2;
+    System.out.println(fromBool);        // 4
+
+    int zeroFromBool = false << true;
+    System.out.println(zeroFromBool);    // 0
+
+    int compuesto = 1;
+    compuesto <<= true;
+    System.out.println(compuesto);       // 2
+
+    int compuestoRight = 8;
+    compuestoRight >>= true;
+    System.out.println(compuestoRight);  // 4
+
+    int compuestoUnsigned = -2;
+    compuestoUnsigned >>>= true;
+    System.out.println(compuestoUnsigned); // 2147483647
 }
