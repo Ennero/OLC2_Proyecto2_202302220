@@ -1,0 +1,44 @@
+public static void main(String[] args) {
+    System.out.println("--- Iniciando Prueba de System.out.println ---");
+    System.out.println(""); // Línea en blanco para separar
+
+    // --- Prueba 1: Impresión de todos los tipos de datos ---
+    System.out.println("--- Prueba de Tipos Individuales ---");
+    int    mi_entero = 2025;
+    double mi_double = 3.14159;
+    boolean mi_bool_v = true;
+    boolean mi_bool_f = false;
+    char   mi_char = 'A';
+    String mi_string = "Hola Mundo!";
+
+    System.out.println(mi_entero);
+    System.out.println(mi_double);
+    System.out.println(mi_bool_v);
+    System.out.println(mi_bool_f);
+    System.out.println(mi_char);
+    System.out.println(mi_string);
+    System.out.println("");
+
+    // --- Prueba 2: Múltiples expresiones en una llamada ---
+    System.out.println("--- Prueba de Múltiples Expresiones ---");
+    System.out.println("Mezcla: " + mi_entero + " " + mi_bool_v + " " + mi_char + " " + mi_string);
+    System.out.println("");
+
+    // --- Prueba 3: Expresiones complejas y llamadas a función ---
+    System.out.println("--- Prueba de Expresiones Complejas ---");
+    System.out.println("El resultado de 100+50 es: " + sumar(100, 50));
+    System.out.println("El resultado de 10*5 es: " + (10 * 5));
+    System.out.println("");
+
+    // --- Prueba 4: Secuencias de escape ---
+    System.out.println("--- Prueba de Secuencias de Escape ---");
+    // Prueba de tabulador y comilla simple en chars
+    System.out.println("(" + " " + "'" + " " + ")" + " " + "\t" + " " + "(" + " " + "\\" + " " + ")"); 
+    
+    // Prueba de comillas dobles, tabulador y salto de línea en un string
+    String str_escapes = "Línea 1.\n\tLínea 2 con \"comillas\" y una diagonal: \\";
+    System.out.println(str_escapes);
+
+    System.out.println("");
+    System.out.println("--- Pruebas de System.out.println Finalizadas ---");
+}
