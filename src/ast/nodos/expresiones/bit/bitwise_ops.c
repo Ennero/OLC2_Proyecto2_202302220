@@ -5,33 +5,59 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// Función para operaciones binarias
-static Result bitwiseOperacion(ExpresionLenguaje *self, char op)
+static inline int aplicar_operacion_bitwise(int v1, int v2, char op)
 {
-    int v1 = *(int *)self->izquierda.valor;
-    int v2 = *(int *)self->derecha.valor;
-    int *res_val = malloc(sizeof(int));
-
-    // Realiza la operación bit a bit correspondiente
     switch (op)
     {
     case '&':
-        *res_val = v1 & v2;
-        break;
+        return v1 & v2;
     case '|':
-        *res_val = v1 | v2;
-        break;
+        return v1 | v2;
     case '^':
-        *res_val = v1 ^ v2;
-        break;
+        return v1 ^ v2;
+    default:
+        return 0;
     }
-    return nuevoValorResultado(res_val, INT); // Siempre será INT
+}
+
+// Función genérica para operaciones binarias
+static Result bitwiseOperacion(ExpresionLenguaje *self, char op, TipoDato tipo_resultado)
+{
+    int v1 = self->izquierda.valor ? *((int *)self->izquierda.valor) : 0;
+    int v2 = self->derecha.valor ? *((int *)self->derecha.valor) : 0;
+
+    // Normalizar operandos booleanos a 0 o 1 antes de operar
+    if (tipo_resultado == BOOLEAN)
+    {
+        v1 = v1 ? 1 : 0;
+        v2 = v2 ? 1 : 0;
+    }
+
+    int resultado_bruto = aplicar_operacion_bitwise(v1, v2, op);
+
+    int *res_val = malloc(sizeof(int));
+    if (!res_val)
+    {
+        return nuevoValorResultadoVacio();
+    }
+
+    if (tipo_resultado == BOOLEAN)
+    {
+        resultado_bruto = resultado_bruto ? 1 : 0;
+    }
+
+    *res_val = resultado_bruto;
+    return nuevoValorResultado(res_val, tipo_resultado);
 }
 
 // Wrappers para cada operador
-static Result opBitwiseAnd(ExpresionLenguaje *self) { return bitwiseOperacion(self, '&'); }
-static Result opBitwiseOr(ExpresionLenguaje *self) { return bitwiseOperacion(self, '|'); }
-static Result opBitwiseXor(ExpresionLenguaje *self) { return bitwiseOperacion(self, '^'); }
+static Result opBitwiseAndNumerico(ExpresionLenguaje *self) { return bitwiseOperacion(self, '&', INT); }
+static Result opBitwiseOrNumerico(ExpresionLenguaje *self) { return bitwiseOperacion(self, '|', INT); }
+static Result opBitwiseXorNumerico(ExpresionLenguaje *self) { return bitwiseOperacion(self, '^', INT); }
+
+static Result opBitwiseAndBoolean(ExpresionLenguaje *self) { return bitwiseOperacion(self, '&', BOOLEAN); }
+static Result opBitwiseOrBoolean(ExpresionLenguaje *self) { return bitwiseOperacion(self, '|', BOOLEAN); }
+static Result opBitwiseXorBoolean(ExpresionLenguaje *self) { return bitwiseOperacion(self, '^', BOOLEAN); }
 
 // Operaciones de desplazamiento -----------
 static Result opLeftShift(ExpresionLenguaje *self)
@@ -65,16 +91,19 @@ static Result opUnsignedRightShift(ExpresionLenguaje *self)
 
 // Tablas de Operaciones ----------------------------------
 Operacion tablaOperacionesBitwiseAnd[TIPO_COUNT][TIPO_COUNT] = {
-    [INT] = {[INT] = opBitwiseAnd, [CHAR] = opBitwiseAnd},
-    [CHAR] = {[INT] = opBitwiseAnd, [CHAR] = opBitwiseAnd}};
+    [BOOLEAN] = {[BOOLEAN] = opBitwiseAndBoolean},
+    [INT] = {[INT] = opBitwiseAndNumerico, [CHAR] = opBitwiseAndNumerico},
+    [CHAR] = {[INT] = opBitwiseAndNumerico, [CHAR] = opBitwiseAndNumerico}};
 
 Operacion tablaOperacionesBitwiseOr[TIPO_COUNT][TIPO_COUNT] = {
-    [INT] = {[INT] = opBitwiseOr, [CHAR] = opBitwiseOr},
-    [CHAR] = {[INT] = opBitwiseOr, [CHAR] = opBitwiseOr}};
+    [BOOLEAN] = {[BOOLEAN] = opBitwiseOrBoolean},
+    [INT] = {[INT] = opBitwiseOrNumerico, [CHAR] = opBitwiseOrNumerico},
+    [CHAR] = {[INT] = opBitwiseOrNumerico, [CHAR] = opBitwiseOrNumerico}};
 
 Operacion tablaOperacionesBitwiseXor[TIPO_COUNT][TIPO_COUNT] = {
-    [INT] = {[INT] = opBitwiseXor, [CHAR] = opBitwiseXor},
-    [CHAR] = {[INT] = opBitwiseXor, [CHAR] = opBitwiseXor}};
+    [BOOLEAN] = {[BOOLEAN] = opBitwiseXorBoolean},
+    [INT] = {[INT] = opBitwiseXorNumerico, [CHAR] = opBitwiseXorNumerico},
+    [CHAR] = {[INT] = opBitwiseXorNumerico, [CHAR] = opBitwiseXorNumerico}};
 
 Operacion tablaOperacionesLeftShift[TIPO_COUNT][TIPO_COUNT] = {
     [INT] = {[INT] = opLeftShift, [CHAR] = opLeftShift},
