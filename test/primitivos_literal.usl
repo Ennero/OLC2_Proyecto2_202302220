@@ -1,0 +1,19 @@
+public static void main() {
+    System.out.println(0);
+    System.out.println(42);
+
+    System.out.println(3.14f);
+    System.out.println(0.125f);
+
+    System.out.println(2.718281828);
+    System.out.println(123456.000001);
+
+    System.out.println(true);
+    System.out.println(false);
+
+    System.out.println('Z');
+    System.out.println('\n');
+    System.out.println('\t');
+
+    System.out.println(null);
+}
