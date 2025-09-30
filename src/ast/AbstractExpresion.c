@@ -48,6 +48,7 @@ void liberarAST(AbstractExpresion *raiz)
 void buildAbstractExpresion(AbstractExpresion *base, Interpret interpretPuntero, const char *node_type, int line, int column)
 {
     base->interpret = interpretPuntero;
+    base->generar = NULL;
     base->node_type = node_type; // Se asigna el nombre
     base->hijos = NULL;
     base->numHijos = 0;

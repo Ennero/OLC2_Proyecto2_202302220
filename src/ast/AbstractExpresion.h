@@ -6,12 +6,16 @@
 #include <stddef.h>
 
 typedef struct AbstractExpresion AbstractExpresion;
+struct GeneradorCodigo;
+
 typedef Result (*Interpret)(AbstractExpresion *, Context *);
+typedef const char *(*GenerarCodigoNodo)(AbstractExpresion *, struct GeneradorCodigo *, Context *);
 
 // Estructura base para todas las expresiones abstractas
 struct AbstractExpresion
 {
     Interpret interpret;
+    GenerarCodigoNodo generar;
     const char *node_type;
     AbstractExpresion **hijos;
     size_t numHijos;

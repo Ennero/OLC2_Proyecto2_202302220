@@ -6,6 +6,33 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include "compilacion/generador_codigo.h"
+
+// La función que interpreta un valor primitivo
+static const char *generarPrimitivoExpresion(AbstractExpresion *self, GeneradorCodigo *generador, Context *context)
+{
+    (void)context;
+    if (!self || !generador)
+        return NULL;
+
+    PrimitivoExpresion *nodo = (PrimitivoExpresion *)self;
+
+    // Manejo especial para literales de cadena
+    switch (nodo->tipo)
+    {
+    case STRING:
+    {
+        char *contenido = process_string_escapes(nodo->valor);
+        const char *etiqueta = registrar_literal_cadena(generador, contenido ? contenido : "");
+        free(contenido);
+        return etiqueta;
+    }
+    default:
+        break;
+    }
+
+    return NULL;
+}
 
 // Codifica un code point Unicode en UTF-8
 static size_t utf8_encode_cp(int cp, char *out)
@@ -249,6 +276,7 @@ AbstractExpresion *nuevoPrimitivoExpresion(char *v, TipoDato tipo, int line, int
     if (!nodo)
         return NULL;
     buildAbstractExpresion(&nodo->base, interpretPrimitivoExpresion, "Primitivo", line, column);
+    nodo->base.generar = generarPrimitivoExpresion;
     nodo->valor = v;
     nodo->tipo = tipo;
     return (AbstractExpresion *)nodo;

@@ -2,15 +2,45 @@
 #include "ast/nodos/builders.h"
 #include "context/context.h"
 #include "array_value.h"
+#include "compilacion/generador_codigo.h"
 #include <stdlib.h>
 #include <stdio.h>
+
+// La función que genera código para un bloque de sentencias
+static const char *generarBloqueExpresion(AbstractExpresion *self, GeneradorCodigo *generador, Context *context)
+{
+    if (!self || !generador)
+    {
+        return NULL;
+    }
+
+    Context *contexto_sub = context;
+    if (context)
+    {
+    char nombre_buffer[64];
+        snprintf(nombre_buffer, sizeof(nombre_buffer), "bloque_comp_%zu", (size_t)self);
+        contexto_sub = nuevoContext(context, nombre_buffer);
+    }
+
+    if (self->numHijos > 0 && self->hijos[0] && self->hijos[0]->generar)
+    {
+        self->hijos[0]->generar(self->hijos[0], generador, contexto_sub);
+    }
+
+    if (context && contexto_sub && contexto_sub != context)
+    {
+        liberarContext(contexto_sub);
+    }
+
+    return NULL;
+}
 
 // La función que interpreta un bloque de sentencias
 Result interpretBloqueExpresion(AbstractExpresion *self, Context *context)
 {
     // Genera el nombre para el nuevo bloque
-    char nombre_buffer[32];
-    sprintf(nombre_buffer, "bloque%d", context->raiz->proximo_id_bloque);
+    char nombre_buffer[64];
+    snprintf(nombre_buffer, sizeof(nombre_buffer), "bloque%d", context->raiz->proximo_id_bloque);
     context->raiz->proximo_id_bloque++;
 
     // Crear el nuevo contexto para este bloque
@@ -72,6 +102,7 @@ AbstractExpresion *nuevoBloqueExpresion(AbstractExpresion *lSentencia, int line,
 
     // Inicializar la parte base del nodo
     buildAbstractExpresion(&nodo->base, interpretBloqueExpresion, "Bloque", line, column);
+    nodo->base.generar = generarBloqueExpresion;
 
     // Agregar la lista de sentencias como hijo, si existe
     if (lSentencia)

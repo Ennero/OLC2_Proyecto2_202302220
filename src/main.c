@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "ast/AbstractExpresion.h"
@@ -11,6 +12,7 @@
 #include "symbol_reporter.h"
 #include "error_reporter.h"
 #include "ast_grapher.h"
+#include "compilacion/compilador.h"
 
 // --- Declaraciones Globales y Prototipos ---
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
@@ -279,47 +281,51 @@ static void on_execute_clicked(GtkToolButton *button, gpointer user_data)
     yylineno = 1;
     yycolumn = 1;
 
-    // Si hay algo en el texto de entrada
-    if (input_text && input_text[0] != '\0')
-    {
-        // Ejecutar el análisis léxico y sintáctico
-        YY_BUFFER_STATE buffer_state = yy_scan_string(input_text);
-        yyparse();
-
-        // Si NO hubo errores de sintaxis Y se generó un AST, proceder a interpretar
-        if (get_error_list() == NULL && ast_root)
-        {
-            Context *contextPadre = nuevoContext(NULL, "global");
-            ast_root->interpret(ast_root, contextPadre);
-        }
-
-        // Al finalizar borrar el buffer del analizador
-        yy_delete_buffer(buffer_state);
-    }
-    else
+    if (!input_text || input_text[0] == '\0')
     {
         append_to_output("No hay código para ejecutar.\n");
+        gtk_text_buffer_set_text(widgets->output_buffer, get_output_buffer(), -1);
+        g_free(input_text);
+        return;
     }
 
-    // Lógica final para determinar el mensaje de estado
-    if (get_error_list() != NULL)
+    bool semantica_correcta = false;
+    bool compilacion_exitosa = false;
+
+    YY_BUFFER_STATE buffer_state = yy_scan_string(input_text);
+    yyparse();
+
+    if (get_error_list() == NULL && ast_root)
     {
-        // Si la lista de errores NO está vacía:
-        // Limpiamos cualquier salida parcial.
-        clear_output_buffer();
-        // Escribimos el mensaje de error.
-        append_to_output("======== Se encontraron errores durante el análisis y/o ejecución ========\nVer la tabla de errores para más detalles.");
+        Context *contextPadre = nuevoContext(NULL, "global");
+        ast_root->interpret(ast_root, contextPadre);
+        semantica_correcta = !has_semantic_error_been_found();
+
+        if (semantica_correcta)
+        {
+            compilacion_exitosa = compilar_programa(ast_root, contextPadre, "programa.s");
+        }
+
+        liberarContext(contextPadre);
+    }
+
+    yy_delete_buffer(buffer_state);
+
+    clear_output_buffer();
+    if (get_error_list() != NULL || !semantica_correcta)
+    {
+        append_to_output("======== Se encontraron errores durante el análisis y/o la interpretación ========\nVer la tabla de errores para más detalles.");
+    }
+    else if (!compilacion_exitosa)
+    {
+        append_to_output("No se pudo generar el archivo 'programa.s'. Verifique permisos y vuelva a intentarlo.");
     }
     else
     {
-
-        // Si la lista de errores está completamente vacía, la ejecución fue un éxito.
-        append_to_output("\n\n======== Código analizado y ejecutado correctamente ========");
+        append_to_output("======== Compilación completada ========\nArchivo generado: programa.s");
     }
 
-    // Actualizar el buffer de salida
-    const char *output_text = get_output_buffer();
-    gtk_text_buffer_set_text(widgets->output_buffer, output_text, -1);
+    gtk_text_buffer_set_text(widgets->output_buffer, get_output_buffer(), -1);
     g_free(input_text);
 }
 
@@ -353,6 +359,7 @@ static void on_show_symbols_clicked(GtkToolButton *button, gpointer user_data)
             // Si no hay errores, se procede a la interpretación
             Context *contextPadre = nuevoContext(NULL, "global");
             ast_root->interpret(ast_root, contextPadre);
+            liberarContext(contextPadre);
         }
         yy_delete_buffer(buffer_state);
     }
@@ -387,6 +394,7 @@ static void on_show_errors_clicked(GtkToolButton *button, gpointer user_data)
         {
             Context *contextPadre = nuevoContext(NULL, "global");
             ast_root->interpret(ast_root, contextPadre);
+            liberarContext(contextPadre);
         }
         yy_delete_buffer(buffer_state);
     }
@@ -710,23 +718,35 @@ int main(int argc, char **argv)
         // Parsear y ejecutar
         YY_BUFFER_STATE buffer_state = yy_scan_string(content);
         yyparse();
+        bool semantica_correcta = false;
+        bool compilacion_exitosa = false;
         if (get_error_list() == NULL && ast_root)
         {
             Context *contextPadre = nuevoContext(NULL, "global");
             ast_root->interpret(ast_root, contextPadre);
+            semantica_correcta = !has_semantic_error_been_found();
+            if (semantica_correcta)
+            {
+                compilacion_exitosa = compilar_programa(ast_root, contextPadre, "programa.s");
+            }
+            liberarContext(contextPadre);
         }
         yy_delete_buffer(buffer_state);
         free(content);
 
         // Mensaje final coherente con la GUI
-        if (get_error_list() != NULL)
+        clear_output_buffer();
+        if (get_error_list() != NULL || !semantica_correcta)
         {
-            clear_output_buffer();
-            append_to_output("======== Se encontraron errores durante el análisis y/o ejecución ========\nVer la tabla de errores para más detalles.\n");
+            append_to_output("======== Se encontraron errores durante el análisis y/o la interpretación ========\nVer la tabla de errores para más detalles.\n");
+        }
+        else if (!compilacion_exitosa)
+        {
+            append_to_output("No se pudo generar el archivo 'programa.s'. Verifique permisos y vuelva a intentarlo.\n");
         }
         else
         {
-            append_to_output("\n\n======== Código analizado y ejecutado correctamente ========\n");
+            append_to_output("======== Compilación completada ========\nArchivo generado: programa.s\n");
         }
 
         // Imprimir salida y, si se desea, errores/símbolos en modo texto sencillo
@@ -750,7 +770,8 @@ int main(int argc, char **argv)
         {
             g_free(current_file_path);
         }
-        return (get_error_list() == NULL) ? 0 : 1;
+    int exit_code = (get_error_list() == NULL && semantica_correcta && compilacion_exitosa) ? 0 : 1;
+    return exit_code;
     }
 
     // Modo GUI por defecto
