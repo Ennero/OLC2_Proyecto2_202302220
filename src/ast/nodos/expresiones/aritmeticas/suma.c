@@ -132,6 +132,7 @@ Result concatenarStringBoolean(ExpresionLenguaje *self)
 {
 
     // Para debuguear ---
+#ifdef DEBUG_PRINT
     printf("DEBUG [suma]: La función de concatenar String+Boolean recibió:\n");
     printf("DEBUG [suma]: Lado Izquierdo (String): '%s'\n", (char *)self->izquierda.valor);
     if (self->derecha.valor)
@@ -142,6 +143,7 @@ Result concatenarStringBoolean(ExpresionLenguaje *self)
     {
         printf("DEBUG [suma]: Lado Derecho (Boolean): NULL\n");
     }
+#endif
     // Para debuguear ---
 
     const char *s1 = (const char *)self->izquierda.valor;

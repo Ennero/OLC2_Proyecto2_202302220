@@ -75,14 +75,21 @@ void liberarContext(Context *context)
         // Si el simbolo es una VARIABLE, liberar su valor si no es prestado
         if (actual->clase == VARIABLE)
         {
-            if (!actual->info.var.borrowed)
+            // No liberar si es un alias a otra variable o si es prestado
+            if (!actual->info.var.borrowed && actual->info.var.alias_of == NULL)
             {
                 if (actual->tipo == ARRAY && actual->info.var.valor != NULL)
                 {
+#ifdef DEBUG_MEM
+                    fprintf(stderr, "[DEBUG free] liberarContext: liberarArray %p (sym=%s)\n", actual->info.var.valor, actual->nombre);
+#endif
                     liberarArray((ArrayValue *)actual->info.var.valor);
                 }
                 else if (actual->info.var.valor != NULL)
                 {
+#ifdef DEBUG_MEM
+                    fprintf(stderr, "[DEBUG free] liberarContext: free %p (sym=%s tipo=%s)\n", actual->info.var.valor, actual->nombre, labelTipoDato[actual->tipo]);
+#endif
                     free(actual->info.var.valor);
                 }
             }
@@ -121,6 +128,7 @@ Symbol *nuevoVariable(char *nombre, void *valor, TipoDato tipo, int es_constante
     nuevo->clase = VARIABLE;
     nuevo->info.var.valor = valor;
     nuevo->info.var.borrowed = 0;
+    nuevo->info.var.alias_of = NULL;
     nuevo->es_constante = es_constante;
     nuevo->line = 0;
     nuevo->column = 0;

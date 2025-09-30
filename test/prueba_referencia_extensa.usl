@@ -1,0 +1,96 @@
+// Pruebas exhaustivas de paso por valor y por referencia
+
+// 1) Primitivos por valor (no afectan al llamador)
+void incInt(int a) { a = a + 1; System.out.println("incInt a= " + String.valueOf(a)); }
+void flipBool(boolean b) { b = !b; System.out.println("flipBool b= " + String.valueOf(b)); }
+void bumpChar(char c) { c = (char)(c + 1); System.out.println("bumpChar c= " + String.valueOf((int)c)); }
+void mulFloat(float f) { f = f * (float)2.5; System.out.println("mulFloat f= " + String.valueOf(f)); }
+void widenToDouble(double d) { d = d + 0.5; System.out.println("widenToDouble d= " + String.valueOf(d)); }
+
+// 2) Arreglos por referencia
+void setFirst(int[] arr) { arr[0] = arr[0] + 100; System.out.println("setFirst arr[0]= " + String.valueOf(arr[0])); }
+void replaceArray(int[] arr) { // reassign parameter to a new array; should not free caller-owned array, and param becomes owner of new
+    int[] nuevo = {7,8,9};
+    arr = nuevo; // Should not affect caller's binding, but allowed inside function
+    System.out.println("replaceArray arr_local[0]= " + String.valueOf(arr[0]));
+}
+
+// 3) Strings por referencia cuando hay identificador; por valor cuando literal/temporal
+void appendWorld(String s) { s = s + " World"; System.out.println("appendWorld s= " + s); }
+void overwriteHello(String s) { s = "Hello"; System.out.println("overwriteHello s= " + s); }
+
+// 4) Anidadas: función que llama a otra con alias
+void nestedString(String s) {
+    appendWorld(s); // should update caller when s is a variable
+}
+
+// 5) Retornos (no depende de ref/valor, pero verifica no romper)
+int retInc(int x) { return x + 1; }
+int[] retArray() { int[] a = {1,2}; return a; }
+String retStr() { String s = "X"; return s; }
+
+public static void main() {
+    System.out.println("-- PRIMITIVOS --");
+    int i = 10; boolean b = false; char c = (char)65; float f = (float)1.2; double d = 2.0;
+    System.out.println("init i= " + String.valueOf(i));
+    incInt(i);
+    System.out.println("after i= " + String.valueOf(i));
+
+    System.out.println("init b= " + String.valueOf(b));
+    flipBool(b);
+    System.out.println("after b= " + String.valueOf(b));
+
+    System.out.println("init c= " + String.valueOf((int)c));
+    bumpChar(c);
+    System.out.println("after c= " + String.valueOf((int)c));
+
+    System.out.println("init f= " + String.valueOf(f));
+    mulFloat(f);
+    System.out.println("after f= " + String.valueOf(f));
+
+    System.out.println("init d= " + String.valueOf(d));
+    widenToDouble(d);
+    System.out.println("after d= " + String.valueOf(d));
+
+    System.out.println("-- ARREGLOS --");
+    int[] A = {5,6,7};
+    System.out.println("A[0] before= " + String.valueOf(A[0]));
+    setFirst(A);
+    System.out.println("A[0] after = " + String.valueOf(A[0]));
+    replaceArray(A);
+    System.out.println("A[0] still = " + String.valueOf(A[0]));
+
+    System.out.println("-- STRINGS --");
+    String s = "Hi";
+    System.out.println("s before= " + s);
+    appendWorld(s);
+    System.out.println("s after = " + s);
+
+    // literal: should not update caller
+    String t = "Yo";
+    System.out.println("t before= " + t);
+    appendWorld("Yo");
+    System.out.println("t after = " + t);
+
+    // temporaries: concatenation yields temporary (copy), caller unchanged
+    appendWorld(s + "!");
+    System.out.println("s after2= " + s);
+
+    // nested
+    nestedString(s);
+    System.out.println("s after3= " + s);
+
+    // overwrite with literal via alias
+    overwriteHello(s);
+    System.out.println("s after4= " + s);
+
+    System.out.println("-- RETORNOS --");
+    int r = retInc(4);
+    System.out.println("retInc= " + String.valueOf(r));
+
+    int[] R = retArray();
+    System.out.println("retArray R[0]= " + String.valueOf(R[0]));
+
+    String RS = retStr();
+    System.out.println("retStr= " + RS);
+}

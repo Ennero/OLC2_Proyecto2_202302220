@@ -84,9 +84,8 @@ Result interpretPrintExpresion(AbstractExpresion *self, Context *context)
         Result res = listaExpresiones->hijos[i]->interpret(listaExpresiones->hijos[i], context);
 
         // --- DEBUGGING PRINT ---
+#ifdef DEBUG_PRINT
         printf("DEBUG [print]: Recibido para imprimir -> Tipo: %s, Puntero a Valor: %p\n", labelTipoDato[res.tipo], res.valor);
-
-        // Imprimir el valor para depuración
         if (res.valor)
         {
             if (res.tipo == BOOLEAN)
@@ -94,6 +93,7 @@ Result interpretPrintExpresion(AbstractExpresion *self, Context *context)
             if (res.tipo == STRING)
                 printf("DEBUG [print]: Valor String es: '%s'\n", (char *)res.valor);
         }
+#endif
         // --------------------------
 
         // Si hubo un error semántico, salir

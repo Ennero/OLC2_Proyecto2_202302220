@@ -40,6 +40,16 @@ Result interpretIdentificadorExpresion(AbstractExpresion *self, Context *context
         return nuevoValorResultadoVacio();
     }
 
+    // Si este símbolo es un alias de otro (por ejemplo, parámetro String por referencia),
+    // resolvemos recursivamente el alias hasta llegar al dueño real
+    if (simbolo && simbolo->clase == VARIABLE)
+    {
+        while (simbolo->info.var.alias_of != NULL)
+        {
+            simbolo = simbolo->info.var.alias_of;
+        }
+    }
+
     // Si la variable es un arreglo, devolvemos la referencia al arreglo
     if (simbolo->tipo == ARRAY)
     {

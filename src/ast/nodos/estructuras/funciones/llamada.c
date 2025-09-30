@@ -2,6 +2,7 @@
 #include "ast/nodos/builders.h"
 #include "context/context.h"
 #include "context/array_value.h"
+#include "ast/nodos/expresiones/terminales/identificadores.h"
 #include "error_reporter.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -142,22 +143,50 @@ Result interpretLlamadaFuncion(AbstractExpresion *self, Context *context)
         TipoDato tipo_variable = (param.dimensiones == 0) ? param.tipo : ARRAY;
         Symbol *sym_param = NULL;
 
-        // Strings se duplican
-        if (tipo_variable == STRING)
-        {
-            valor_bind = strdup((char *)arg.valor);
-            sym_param = nuevoVariable(param.nombre, valor_bind, tipo_variable, 0);
-        }
-        // Arreglos se pasan por referencia
-        else if (tipo_variable == ARRAY)
+        // Reglas:
+        // - Arreglos: por referencia (borrowed)
+        // - String: si el argumento es un identificador del llamador -> alias; si es expresión temporal -> copia
+        // - Primitivos: copia por valor
+        if (tipo_variable == ARRAY)
         {
             valor_bind = arg.valor; // por referencia
             sym_param = nuevoVariable(param.nombre, valor_bind, tipo_variable, 0);
             sym_param->info.var.borrowed = 1; // no liberar en el contexto de la funcion
         }
-        // Primitivos se copian
+        else if (tipo_variable == STRING)
+        {
+            // Intentar detectar si el argumento fue un Identificador (para aliasing)
+            // Si el nodo de argumento es un Identificador, hacemos alias al símbolo del llamador
+            Symbol *caller_sym = NULL;
+            if (argumentos_nodo && i < argumentos_nodo->numHijos && argumentos_nodo->hijos[i] &&
+                strcmp(argumentos_nodo->hijos[i]->node_type, "Identificador") == 0)
+            {
+                char *nombre_id = ((IdentificadorExpresion *)argumentos_nodo->hijos[i])->nombre;
+                caller_sym = buscarTablaSimbolos(context, nombre_id);
+            }
+
+            if (caller_sym && caller_sym->clase == VARIABLE && caller_sym->tipo == STRING)
+            {
+                // Resolver alias en cadena hasta el dueño real
+                Symbol *owner = caller_sym;
+                while (owner->clase == VARIABLE && owner->info.var.alias_of != NULL)
+                {
+                    owner = owner->info.var.alias_of;
+                }
+                // Crear símbolo parámetro sin ser dueño del valor y marcando alias_of al dueño real
+                sym_param = nuevoVariable(param.nombre, owner->info.var.valor, tipo_variable, 0);
+                sym_param->info.var.alias_of = owner;
+            }
+            else
+            {
+                // Si no es identificador o no es variable STRING, hacer copia del string
+                valor_bind = arg.valor ? strdup((char *)arg.valor) : NULL;
+                sym_param = nuevoVariable(param.nombre, valor_bind, tipo_variable, 0);
+            }
+        }
         else
         {
+            // Primitivos: copia por valor
             size_t size = get_type_size(param.tipo);
             valor_bind = malloc(size);
             memcpy(valor_bind, arg.valor, size);
@@ -170,10 +199,22 @@ Result interpretLlamadaFuncion(AbstractExpresion *self, Context *context)
     // Liberar los resultados de los argumentos (si no son arreglos, que se pasan por referencia)
     for (size_t i = 0; i < num_args; i++)
     {
-        // Si no es arreglo, liberar
-        if (argumentos_evaluados[i].tipo != ARRAY)
+        // Liberar temporales de argumentos evaluados que sean copias
+        if (argumentos_evaluados[i].tipo == ARRAY)
         {
-            free(argumentos_evaluados[i].valor);
+            // No liberar: el arreglo pertenece al llamador o al heap; el parámetro es borrowed
+        }
+        else if (argumentos_evaluados[i].tipo == STRING)
+        {
+            // Si creamos alias para STRING, no duplicamos; pero 'argumentos_evaluados' contiene copia desde el identificador
+            // interpretIdentificador duplica el string, así que podemos liberar aquí sin afectar al llamador
+            if (argumentos_evaluados[i].valor)
+                free(argumentos_evaluados[i].valor);
+        }
+        else
+        {
+            if (argumentos_evaluados[i].valor)
+                free(argumentos_evaluados[i].valor);
         }
     }
     free(argumentos_evaluados);

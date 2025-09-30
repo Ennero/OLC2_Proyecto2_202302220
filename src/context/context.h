@@ -26,6 +26,10 @@ typedef struct
 {
     void *valor;  // Puntero al valor 
     int borrowed; // 1 si es una referencia a un arreglo existente
+    // Si este símbolo es un alias de otra variable (p.ej., parámetro pasado por referencia),
+    // apuntará al símbolo dueño real. Cuando alias_of != NULL, este símbolo no es dueño del valor
+    // y toda reasignación deberá aplicarse sobre 'alias_of'.
+    struct Symbol *alias_of;
 } VariableInfo;
 
 // Información sobre una función

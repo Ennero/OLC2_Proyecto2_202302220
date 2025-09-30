@@ -78,30 +78,51 @@ Result interpretReasignacion(AbstractExpresion *self, Context *context)
         return nuevoValorResultadoVacio();
     }
 
-    // Se asigna el valor a través de la union
-    if (simbolo->info.var.valor)
+    // Resolver alias: si este símbolo es un alias de otro (p.ej., parámetro String por referencia),
+    // la escritura debe hacerse sobre el dueño real
+    Symbol *target = simbolo;
+    if (simbolo->clase == VARIABLE)
     {
-        // Si es un arreglo, liberar la memoria del arreglo anterior
-        if (simbolo->tipo == ARRAY)
+        while (target->info.var.alias_of != NULL)
         {
-            liberarArray((ArrayValue *)simbolo->info.var.valor);
-        }
-        // Si es un primitivo o string, liberar la memoria del valor anterior
-        else
-        {
-            free(simbolo->info.var.valor);
+            target = target->info.var.alias_of;
         }
     }
 
-    // Si es un arreglo, hacer una copia profunda del nuevo valor cuando no es NULL
-    if (simbolo->tipo == ARRAY && nuevo_valor.valor != NULL)
+    // Se asigna el valor con manejo especial para arreglos (propiedad/borrowed)
+    if (target->tipo == ARRAY)
     {
-        simbolo->info.var.valor = copiarArray((ArrayValue *)nuevo_valor.valor);
+        ArrayValue *old_arr = (ArrayValue *)target->info.var.valor;
+        int was_borrowed = target->info.var.borrowed;
+
+        // No liberar el arreglo anterior si es prestado (borrowed)
+        if (old_arr && !was_borrowed)
+        {
+            liberarArray(old_arr);
+        }
+
+        // Asignar el nuevo arreglo (clonar para mantener consistencia de propiedad si viene de temporal)
+        if (nuevo_valor.valor != NULL)
+        {
+            target->info.var.valor = copiarArray((ArrayValue *)nuevo_valor.valor);
+        }
+        else
+        {
+            target->info.var.valor = NULL;
+        }
+
+        // Si antes era borrowed (p.ej., parámetro de función) y ahora le asignamos un nuevo arreglo,
+        // el símbolo pasa a ser dueño del valor nuevo, por lo que removemos el flag borrowed.
+        target->info.var.borrowed = 0;
     }
-    // Si es un primitivo o string, asignar directamente el nuevo valor
     else
     {
-        simbolo->info.var.valor = nuevo_valor.valor;
+        // Primitivo o String
+        if (target->info.var.valor)
+        {
+            free(target->info.var.valor);
+        }
+        target->info.var.valor = nuevo_valor.valor;
     }
 
     return nuevoValorResultadoVacio();

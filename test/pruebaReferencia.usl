@@ -1,21 +1,41 @@
-// Declaración de una función que retorna un valor
-int sumar(int a, int b) {
-     a = a + b;
-    return a;
+// Función que recibe un int (por valor)
+void aumentarPorValor(int x) {
+    x = x + 10;
+    System.out.println("Dentro de aumentarPorValor, x = " + String.valueOf(x));
 }
 
- public static  void main() {
-    System.out.println("--- Iniciando Prueba de Funciones ---");
+// Función que recibe un arreglo (por referencia)
+void modificarArreglo(int[] arr) {
+    arr[0] = arr[0] + 50;
+    System.out.println("Dentro de modificarArreglo, arr[0] = " + String.valueOf(arr[0]));
+}
 
-    // --- Prueba de funciones que retornan valor ---
-    int diez=12;
-    int cinco=5;
-    
-    int resultadoSuma = sumar(diez, cinco);
-    System.out.println("El resultado de sumar(10, 5) es: " + resultadoSuma);
-    
-    System.out.println("----------------------------------------");
+// Función que recibe un String (por referencia)
+void concatenarTexto(String texto) {
+    texto = texto + " Mundo";
+    System.out.println("Dentro de concatenarTexto, texto = " + texto);
+}
 
+public static void main() {
+    // Paso por valor
+    int numero = 5;
+    System.out.println("Antes de aumentarPorValor, numero = " + String.valueOf(numero));
+    aumentarPorValor(numero);
+    System.out.println("Después de aumentarPorValor, numero = " + String.valueOf(numero));
 
-    System.out.println("--- Pruebas de Funciones Finalizadas ---");
+    System.out.println("---------------------------");
+
+    // Paso por referencia con arreglo
+    int[] numeros = {10, 20, 30};
+    System.out.println("Antes de modificarArreglo, numeros[0] = " + String.valueOf(numeros[0]));
+    modificarArreglo(numeros);
+    System.out.println("Después de modificarArreglo, numeros[0] = " + String.valueOf(numeros[0]));
+
+    System.out.println("---------------------------");
+
+    // Paso por referencia con String
+    String saludo = "Hola";
+    System.out.println("Antes de concatenarTexto, saludo = " + saludo);
+    concatenarTexto(saludo);
+    System.out.println("Después de concatenarTexto, saludo = " + saludo);
 }
