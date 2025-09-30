@@ -6,20 +6,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// Logica de NOT
-Result logicoNotBooleano(Result res)
+static Result nuevoResultadoBooleano(int valor)
 {
-    int *val = malloc(sizeof(int));
+    int *res = malloc(sizeof(int));
+    if (!res)
+        return nuevoValorResultadoVacio();
 
-    // Se aplica la negación lógica de C (!)
-    *val = !(*((int *)res.valor));
-    free(res.valor);
-    return nuevoValorResultado(val, BOOLEAN);
+    *res = valor ? 1 : 0;
+    return nuevoValorResultado(res, BOOLEAN);
 }
-
-// Tabla de Operaciones
-UnaryOperacion tablaOperacionesNot[TIPO_COUNT] = {
-    [BOOLEAN] = logicoNotBooleano};
 
 // Interpretador para el Nodo NOT
 Result interpretNotExpresion(AbstractExpresion *self, Context *context)
@@ -27,17 +22,28 @@ Result interpretNotExpresion(AbstractExpresion *self, Context *context)
     // Interpretar la expresión hija
     Result res = self->hijos[0]->interpret(self->hijos[0], context);
 
-    // Comprobar si el tipo es BOOLEAN
-    if (res.tipo != BOOLEAN)
+    if (has_semantic_error_been_found())
+    {
+        if (res.tipo != ARRAY)
+            free(res.valor);
+        return nuevoValorResultadoVacio();
+    }
+
+    int valor_bool = 0;
+    if (!convertirResultadoLogico(&res, &valor_bool))
     {
         char desc[256];
         sprintf(desc, "El operador unario '!' no se puede aplicar a un valor de tipo '%s'.", labelTipoDato[res.tipo]);
         add_error_to_report("Semantico", "!", desc, self->line, self->column, context->nombre_completo);
+        if (res.tipo != ARRAY)
+            free(res.valor);
         return nuevoValorResultadoVacio();
     }
 
-    // Llama a la función de negación correcta
-    return tablaOperacionesNot[res.tipo](res);
+    if (res.tipo != ARRAY)
+        free(res.valor);
+
+    return nuevoResultadoBooleano(!valor_bool);
 }
 
 // Constructor del Nodo
