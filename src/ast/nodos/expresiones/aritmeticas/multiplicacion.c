@@ -2,6 +2,7 @@
 #include "ast/nodos/builders.h"
 #include "ast/nodos/expresiones/expresiones.h"
 #include "context/result.h"
+#include "compilacion/generador_codigo.h"
 #include <stdlib.h>
 
 // Funciones de Multiplicación Numérica -----------------
@@ -80,11 +81,24 @@ Operacion tablaOperacionesMultiplicacion[TIPO_COUNT][TIPO_COUNT] = {
     [CHAR][DOUBLE] = multiplicarDoubleInt,
     [DOUBLE][CHAR] = multiplicarDoubleInt};
 
+static const char *generarMultiplicacionExpresion(AbstractExpresion *self, GeneradorCodigo *generador, Context *context)
+{
+    if (!self || !generador)
+        return NULL;
+
+    if (!expresion_es_constante_aritmetica(self))
+        return NULL;
+
+    Result resultado = interpretExpresionLenguaje(self, context);
+    return registrar_literal_desde_resultado(generador, &resultado);
+}
+
 // Constructor del Nodo
 AbstractExpresion *nuevoMultiplicacionExpresion(AbstractExpresion *izquierda, AbstractExpresion *derecha, int line, int column)
 {
     ExpresionLenguaje *expr = nuevoExpresionLenguaje(interpretExpresionLenguaje, izquierda, derecha, line, column);
     expr->base.node_type = "Multiplicacion";
     expr->tablaOperaciones = &tablaOperacionesMultiplicacion;
+    expr->base.generar = generarMultiplicacionExpresion;
     return (AbstractExpresion *)expr;
 }

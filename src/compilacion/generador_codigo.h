@@ -2,6 +2,7 @@
 #define GENERADOR_CODIGO_H
 
 #include "compilacion/cuadruplos.h"
+#include "context/result.h"
 #include <stddef.h>
 #include <stdbool.h>
 
@@ -48,6 +49,8 @@ void agregar_cuadruplo(GeneradorCodigo *generador, OperacionCuadruplo operacion,
 const char *crear_temporal(GeneradorCodigo *generador);
 const char *crear_etiqueta(GeneradorCodigo *generador, const char *prefijo);
 const char *registrar_literal_cadena(GeneradorCodigo *generador, const char *contenido);
+const char *registrar_literal_desde_resultado(GeneradorCodigo *generador, Result *resultado);
+void liberar_resultado(Result *resultado);
 
 // Acceso sólo lectura
 const Cuadruplo *obtener_cuadruplos(const GeneradorCodigo *generador, size_t *cantidad);

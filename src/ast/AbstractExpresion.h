@@ -10,12 +10,14 @@ struct GeneradorCodigo;
 
 typedef Result (*Interpret)(AbstractExpresion *, Context *);
 typedef const char *(*GenerarCodigoNodo)(AbstractExpresion *, struct GeneradorCodigo *, Context *);
+typedef void (*CleanupNodo)(AbstractExpresion *);
 
 // Estructura base para todas las expresiones abstractas
 struct AbstractExpresion
 {
     Interpret interpret;
     GenerarCodigoNodo generar;
+    CleanupNodo cleanup;
     const char *node_type;
     AbstractExpresion **hijos;
     size_t numHijos;

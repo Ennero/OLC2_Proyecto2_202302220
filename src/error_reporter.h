@@ -15,6 +15,13 @@ typedef struct ErrorInfo
     struct ErrorInfo *next;
 } ErrorInfo;
 
+typedef struct ErrorReportSnapshot
+{
+    ErrorInfo *tail;
+    int last_error_id;
+    bool semantic_flag;
+} ErrorReportSnapshot;
+
 void init_error_report();
 void clear_error_report();
 void free_error_report();
@@ -23,5 +30,9 @@ const ErrorInfo *get_error_list();
 
 // Verifica si se ha encontrado al menos un error semantico
 bool has_semantic_error_been_found();
+
+ErrorReportSnapshot capture_error_report_snapshot();
+bool error_report_has_new_errors_since(ErrorReportSnapshot snapshot);
+void rollback_error_report_to_snapshot(ErrorReportSnapshot snapshot);
 
 #endif

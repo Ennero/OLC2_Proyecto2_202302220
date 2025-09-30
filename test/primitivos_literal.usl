@@ -1,6 +1,7 @@
 public static void main() {
     System.out.println(0);
     System.out.println(42);
+    System.out.println(-15);
 
     System.out.println(3.14f);
     System.out.println(0.125f);
@@ -14,6 +15,16 @@ public static void main() {
     System.out.println('Z');
     System.out.println('\n');
     System.out.println('\t');
+
+    int base = 10;
+    float flotante = 1.5f;
+    System.out.println(-2);
+    System.out.println(base * 3);
+    System.out.println(base - 4);
+    System.out.println(base / 2);
+    System.out.println(base % 3);
+    System.out.println(base + 2 * 5);
+    System.out.println(-(base + 0.5f));
 
     System.out.println(null);
 }
