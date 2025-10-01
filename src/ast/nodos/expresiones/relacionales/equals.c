@@ -29,15 +29,9 @@ Result interpretEqualsExpresion(AbstractExpresion *self, Context *context)
         return nuevoValorResultadoVacio();
     }
 
-    // Debug
-    printf("DEBUG [equals]: Comparando A='%s' con B='%s'\n", (char *)izquierda.valor, (char *)derecha.valor);
-
     // Realizar la comparación
     int *res = malloc(sizeof(int));
     *res = (strcmp((char *)izquierda.valor, (char *)derecha.valor) == 0);
-
-    // Debug
-    printf("DEBUG [equals]: El resultado de la comparación es %s\n", *res ? "true" : "false");
 
     free(izquierda.valor);
     free(derecha.valor);
