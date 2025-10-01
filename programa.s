@@ -1,7 +1,7 @@
 .data
 
 literal_cadena_0:
-    .ascii "uno && true -> true"
+    .ascii "uno == verdadero -> true"
 longitud_literal_cadena_0 = . - literal_cadena_0
 
 literal_cadena_1:
@@ -9,64 +9,84 @@ literal_cadena_1:
 longitud_literal_cadena_1 = . - literal_cadena_1
 
 literal_cadena_2:
-    .ascii "cero || true -> true"
+    .ascii "cero == falso -> true"
 longitud_literal_cadena_2 = . - literal_cadena_2
 
 literal_cadena_3:
-    .ascii "uno || cero -> true"
+    .ascii "uno != falso -> true"
 longitud_literal_cadena_3 = . - literal_cadena_3
 
 literal_cadena_4:
-    .ascii "cero && uno -> false"
+    .ascii "verdadero == uno -> true"
 longitud_literal_cadena_4 = . - literal_cadena_4
 
 literal_cadena_5:
-    .ascii "!cero -> true"
+    .ascii "ceroDouble == falso -> true"
 longitud_literal_cadena_5 = . - literal_cadena_5
 
 literal_cadena_6:
-    .ascii "!uno -> false"
+    .ascii "medio < verdadero -> true"
 longitud_literal_cadena_6 = . - literal_cadena_6
 
 literal_cadena_7:
-    .ascii "!ceroDouble -> true"
+    .ascii "verdadero < medio -> false"
 longitud_literal_cadena_7 = . - literal_cadena_7
 
 literal_cadena_8:
-    .ascii "!medio -> false"
+    .ascii "falso <= floatUno -> true"
 longitud_literal_cadena_8 = . - literal_cadena_8
 
 literal_cadena_9:
-    .ascii "!floatCero -> true"
+    .ascii "verdadero >= floatUno -> true"
 longitud_literal_cadena_9 = . - literal_cadena_9
 
 literal_cadena_10:
-    .ascii "!floatUno -> false"
+    .ascii "hola == holaCopia -> true"
 longitud_literal_cadena_10 = . - literal_cadena_10
 
 literal_cadena_11:
-    .ascii "texto && true -> true"
+    .ascii "hola != \"hola\" -> false"
 longitud_literal_cadena_11 = . - literal_cadena_11
 
 literal_cadena_12:
-    .ascii "vacio || uno -> true"
+    .ascii "hola == nuloString -> false"
 longitud_literal_cadena_12 = . - literal_cadena_12
 
 literal_cadena_13:
-    .ascii "nulo || texto -> true"
+    .ascii "vacio == null -> false"
 longitud_literal_cadena_13 = . - literal_cadena_13
 
 literal_cadena_14:
-    .ascii "!nulo -> true"
+    .ascii "nuloString == null -> true"
 longitud_literal_cadena_14 = . - literal_cadena_14
 
 literal_cadena_15:
-    .ascii "short && -> false"
+    .ascii "null == null -> true"
 longitud_literal_cadena_15 = . - literal_cadena_15
 
 literal_cadena_16:
-    .ascii "short || -> true"
+    .ascii "null != null -> false"
 longitud_literal_cadena_16 = . - literal_cadena_16
+
+literal_cadena_17:
+    .ascii "arr1 == arr1 -> true"
+longitud_literal_cadena_17 = . - literal_cadena_17
+
+literal_cadena_18:
+    .ascii "arr1 == arr2 -> false"
+longitud_literal_cadena_18 = . - literal_cadena_18
+
+literal_cadena_19:
+    .ascii "arr1 == arr3 -> false"
+longitud_literal_cadena_19 = . - literal_cadena_19
+
+literal_cadena_20:
+    .ascii "arrNull == null -> true"
+longitud_literal_cadena_20 = . - literal_cadena_20
+
+literal_cadena_21:
+    .ascii "arr1 == null -> false"
+longitud_literal_cadena_21 = . - literal_cadena_21
 
 
 .text
@@ -258,6 +278,66 @@ _start:
     mov x0, #1
     ldr x1, =literal_cadena_16
     mov x2, #longitud_literal_cadena_16
+    mov x8, #64
+    svc #0
+
+    mov x0, #1
+    ldr x1, =literal_cadena_1
+    mov x2, #longitud_literal_cadena_1
+    mov x8, #64
+    svc #0
+
+    mov x0, #1
+    ldr x1, =literal_cadena_17
+    mov x2, #longitud_literal_cadena_17
+    mov x8, #64
+    svc #0
+
+    mov x0, #1
+    ldr x1, =literal_cadena_1
+    mov x2, #longitud_literal_cadena_1
+    mov x8, #64
+    svc #0
+
+    mov x0, #1
+    ldr x1, =literal_cadena_18
+    mov x2, #longitud_literal_cadena_18
+    mov x8, #64
+    svc #0
+
+    mov x0, #1
+    ldr x1, =literal_cadena_1
+    mov x2, #longitud_literal_cadena_1
+    mov x8, #64
+    svc #0
+
+    mov x0, #1
+    ldr x1, =literal_cadena_19
+    mov x2, #longitud_literal_cadena_19
+    mov x8, #64
+    svc #0
+
+    mov x0, #1
+    ldr x1, =literal_cadena_1
+    mov x2, #longitud_literal_cadena_1
+    mov x8, #64
+    svc #0
+
+    mov x0, #1
+    ldr x1, =literal_cadena_20
+    mov x2, #longitud_literal_cadena_20
+    mov x8, #64
+    svc #0
+
+    mov x0, #1
+    ldr x1, =literal_cadena_1
+    mov x2, #longitud_literal_cadena_1
+    mov x8, #64
+    svc #0
+
+    mov x0, #1
+    ldr x1, =literal_cadena_21
+    mov x2, #longitud_literal_cadena_21
     mov x8, #64
     svc #0
 

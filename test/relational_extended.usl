@@ -1,0 +1,40 @@
+public static void main() {
+    int uno = 1;
+    int cero = 0;
+    double medio = 0.5;
+    double ceroDouble = 0.0;
+    float floatUno = 1.0f;
+    boolean verdadero = true;
+    boolean falso = false;
+    String hola = "hola";
+    String holaCopia = hola + "";
+    String vacio = "";
+    String nuloString = null;
+
+    int[] arr1 = new int[3];
+    int[] arr2 = arr1;
+    int[] arr3 = new int[3];
+    int[] arrNull = null;
+
+    System.out.println("uno == verdadero -> " + (uno == verdadero));
+    System.out.println("cero == falso -> " + (cero == falso));
+    System.out.println("uno != falso -> " + (uno != falso));
+    System.out.println("verdadero == uno -> " + (verdadero == uno));
+    System.out.println("ceroDouble == falso -> " + (ceroDouble == falso));
+    System.out.println("medio < verdadero -> " + (medio < verdadero));
+    System.out.println("verdadero < medio -> " + (verdadero < medio));
+    System.out.println("falso <= floatUno -> " + (falso <= floatUno));
+    System.out.println("verdadero >= floatUno -> " + (verdadero >= floatUno));
+    System.out.println("hola == holaCopia -> " + (hola == holaCopia));
+    System.out.println("hola != \"hola\" -> " + (hola != "hola"));
+    System.out.println("hola == nuloString -> " + (hola == nuloString));
+    System.out.println("vacio == null -> " + (vacio == null));
+    System.out.println("nuloString == null -> " + (nuloString == null));
+    System.out.println("null == null -> " + (null == null));
+    System.out.println("null != null -> " + (null != null));
+    System.out.println("arr1 == arr1 -> " + (arr1 == arr1));
+    System.out.println("arr1 == arr2 -> " + (arr1 == arr2));
+    System.out.println("arr1 == arr3 -> " + (arr1 == arr3));
+    System.out.println("arrNull == null -> " + (arrNull == null));
+    System.out.println("arr1 == null -> " + (arr1 == null));
+}

@@ -1,130 +1,183 @@
 #include "ast/nodos/expresiones/expresiones.h"
 #include "ast/nodos/builders.h"
 #include "context/result.h"
+#include "error_reporter.h"
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 
-// Función genérica para comparar orden (>, <, >=, <=)
-static Result compararOrden(ExpresionLenguaje *self, int op_type)
+static Result crearResultadoBooleano(int valor)
 {
     int *res = malloc(sizeof(int));
+    if (!res)
+        return nuevoValorResultadoVacio();
 
-    // Se compara con double para evitar duplicar código
-    double v1 = 0.0;
-    double v2 = 0.0;
-
-    // Obtener valores numéricos
-    switch (self->izquierda.tipo)
-    {
-    case INT:
-        v1 = (double)(*(int *)self->izquierda.valor);
-        break;
-    case CHAR:
-        v1 = (double)(*(int *)self->izquierda.valor);
-        break;
-    case FLOAT:
-        v1 = (double)(*(float *)self->izquierda.valor);
-        break;
-    case DOUBLE:
-        v1 = *((double *)self->izquierda.valor);
-        break;
-    default:
-        v1 = 0.0;
-        break;
-    }
-
-    // Obtener valores numéricos
-    switch (self->derecha.tipo)
-    {
-    case INT:
-        v2 = (double)(*(int *)self->derecha.valor);
-        break;
-    case CHAR:
-        v2 = (double)(*(int *)self->derecha.valor);
-        break;
-    case FLOAT:
-        v2 = (double)(*(float *)self->derecha.valor);
-        break;
-    case DOUBLE:
-        v2 = *((double *)self->derecha.valor);
-        break;
-    default:
-        v2 = 0.0;
-        break;
-    }
-
-    // Realizar la comparación según el tipo de operación
-    switch (op_type)
-    {
-    case 0:
-        *res = (v1 > v2);
-        break; // Mayor que
-    case 1:
-        *res = (v1 < v2);
-        break; // Menor que
-    case 2:
-        *res = (v1 >= v2);
-        break; // Mayor o igual
-    case 3:
-        *res = (v1 <= v2);
-        break; // Menor o igual
-    }
+    *res = valor ? 1 : 0;
     return nuevoValorResultado(res, BOOLEAN);
 }
 
-// Wrappers para cada operador
-static Result compararMayorQue(ExpresionLenguaje *self) { return compararOrden(self, 0); }
-static Result compararMenorQue(ExpresionLenguaje *self) { return compararOrden(self, 1); }
-static Result compararMayorIgual(ExpresionLenguaje *self) { return compararOrden(self, 2); }
-static Result compararMenorIgual(ExpresionLenguaje *self) { return compararOrden(self, 3); }
+static bool convertirResultadoNumerico(const Result *res, double *out)
+{
+    if (!res || !out)
+        return false;
 
-// Tablas de operaciones
-Operacion tablaOperacionesMayorQue[TIPO_COUNT][TIPO_COUNT] = {
-    [INT] = {[INT] = compararMayorQue, [DOUBLE] = compararMayorQue, [CHAR] = compararMayorQue, [FLOAT] = compararMayorQue},
-    [DOUBLE] = {[INT] = compararMayorQue, [DOUBLE] = compararMayorQue, [CHAR] = compararMayorQue, [FLOAT] = compararMayorQue},
-    [CHAR] = {[INT] = compararMayorQue, [DOUBLE] = compararMayorQue, [CHAR] = compararMayorQue, [FLOAT] = compararMayorQue},
-    [FLOAT] = {[INT] = compararMayorQue, [DOUBLE] = compararMayorQue, [CHAR] = compararMayorQue, [FLOAT] = compararMayorQue}};
-Operacion tablaOperacionesMenorQue[TIPO_COUNT][TIPO_COUNT] = {
-    [INT] = {[INT] = compararMenorQue, [DOUBLE] = compararMenorQue, [CHAR] = compararMenorQue, [FLOAT] = compararMenorQue},
-    [DOUBLE] = {[INT] = compararMenorQue, [DOUBLE] = compararMenorQue, [CHAR] = compararMenorQue, [FLOAT] = compararMenorQue},
-    [CHAR] = {[INT] = compararMenorQue, [DOUBLE] = compararMenorQue, [CHAR] = compararMenorQue, [FLOAT] = compararMenorQue},
-    [FLOAT] = {[INT] = compararMenorQue, [DOUBLE] = compararMenorQue, [CHAR] = compararMenorQue, [FLOAT] = compararMenorQue}};
-Operacion tablaOperacionesMayorIgual[TIPO_COUNT][TIPO_COUNT] = {
-    [INT] = {[INT] = compararMayorIgual, [DOUBLE] = compararMayorIgual, [CHAR] = compararMayorIgual, [FLOAT] = compararMayorIgual},
-    [DOUBLE] = {[INT] = compararMayorIgual, [DOUBLE] = compararMayorIgual, [CHAR] = compararMayorIgual, [FLOAT] = compararMayorIgual},
-    [CHAR] = {[INT] = compararMayorIgual, [DOUBLE] = compararMayorIgual, [CHAR] = compararMayorIgual, [FLOAT] = compararMayorIgual},
-    [FLOAT] = {[INT] = compararMayorIgual, [DOUBLE] = compararMayorIgual, [CHAR] = compararMayorIgual, [FLOAT] = compararMayorIgual}};
-Operacion tablaOperacionesMenorIgual[TIPO_COUNT][TIPO_COUNT] = {
-    [INT] = {[INT] = compararMenorIgual, [DOUBLE] = compararMenorIgual, [CHAR] = compararMenorIgual, [FLOAT] = compararMenorIgual},
-    [DOUBLE] = {[INT] = compararMenorIgual, [DOUBLE] = compararMenorIgual, [CHAR] = compararMenorIgual, [FLOAT] = compararMenorIgual},
-    [CHAR] = {[INT] = compararMenorIgual, [DOUBLE] = compararMenorIgual, [CHAR] = compararMenorIgual, [FLOAT] = compararMenorIgual},
-    [FLOAT] = {[INT] = compararMenorIgual, [DOUBLE] = compararMenorIgual, [CHAR] = compararMenorIgual, [FLOAT] = compararMenorIgual}};
+    switch (res->tipo)
+    {
+    case BOOLEAN:
+        if (!res->valor)
+        {
+            *out = 0.0;
+            return true;
+        }
+        *out = (*((int *)res->valor) != 0) ? 1.0 : 0.0;
+        return true;
+    case INT:
+    case CHAR:
+        if (!res->valor)
+        {
+            *out = 0.0;
+            return true;
+        }
+        *out = (double)(*((int *)res->valor));
+        return true;
+    case FLOAT:
+        if (!res->valor)
+        {
+            *out = 0.0;
+            return true;
+        }
+        *out = (double)(*((float *)res->valor));
+        return true;
+    case DOUBLE:
+        if (!res->valor)
+        {
+            *out = 0.0;
+            return true;
+        }
+        *out = *((double *)res->valor);
+        return true;
+    default:
+        return false;
+    }
+}
+
+static inline void liberarResultado(Result resultado)
+{
+    if (resultado.tipo != ARRAY && resultado.valor)
+        free(resultado.valor);
+}
+
+typedef enum
+{
+    CMP_MAYOR,
+    CMP_MENOR,
+    CMP_MAYOR_IGUAL,
+    CMP_MENOR_IGUAL
+} ComparadorOrden;
+
+static Result interpretarComparacionOrden(AbstractExpresion *self, Context *context, const char *operador, ComparadorOrden comparador)
+{
+    Result izquierda = self->hijos[0]->interpret(self->hijos[0], context);
+    if (has_semantic_error_been_found())
+    {
+        liberarResultado(izquierda);
+        return nuevoValorResultadoVacio();
+    }
+
+    Result derecha = self->hijos[1]->interpret(self->hijos[1], context);
+    if (has_semantic_error_been_found())
+    {
+        liberarResultado(izquierda);
+        liberarResultado(derecha);
+        return nuevoValorResultadoVacio();
+    }
+
+    double valor_izquierda = 0.0;
+    double valor_derecha = 0.0;
+
+    if (!convertirResultadoNumerico(&izquierda, &valor_izquierda) || !convertirResultadoNumerico(&derecha, &valor_derecha))
+    {
+        char desc[256];
+        snprintf(desc, sizeof(desc), "El operador relacional '%s' requiere operandos numéricos o booleanos, pero se encontró '%s' y '%s'.", operador, labelTipoDato[izquierda.tipo], labelTipoDato[derecha.tipo]);
+        add_error_to_report("Semantico", operador, desc, self->line, self->column, context->nombre_completo);
+        liberarResultado(izquierda);
+        liberarResultado(derecha);
+        return nuevoValorResultadoVacio();
+    }
+
+    int bool_result = 0;
+
+    switch (comparador)
+    {
+    case CMP_MAYOR:
+        bool_result = (valor_izquierda > valor_derecha);
+        break;
+    case CMP_MENOR:
+        bool_result = (valor_izquierda < valor_derecha);
+        break;
+    case CMP_MAYOR_IGUAL:
+        bool_result = (valor_izquierda >= valor_derecha);
+        break;
+    case CMP_MENOR_IGUAL:
+        bool_result = (valor_izquierda <= valor_derecha);
+        break;
+    }
+
+    liberarResultado(izquierda);
+    liberarResultado(derecha);
+
+    return crearResultadoBooleano(bool_result);
+}
+
+static Result interpretMayorQue(AbstractExpresion *self, Context *context)
+{
+    return interpretarComparacionOrden(self, context, ">", CMP_MAYOR);
+}
+
+static Result interpretMenorQue(AbstractExpresion *self, Context *context)
+{
+    return interpretarComparacionOrden(self, context, "<", CMP_MENOR);
+}
+
+static Result interpretMayorIgual(AbstractExpresion *self, Context *context)
+{
+    return interpretarComparacionOrden(self, context, ">=", CMP_MAYOR_IGUAL);
+}
+
+static Result interpretMenorIgual(AbstractExpresion *self, Context *context)
+{
+    return interpretarComparacionOrden(self, context, "<=", CMP_MENOR_IGUAL);
+}
 
 // Constructores de Nodos ------
 AbstractExpresion *nuevoMayorQueExpresion(AbstractExpresion *i, AbstractExpresion *d, int line, int column)
 {
-    ExpresionLenguaje *expr = nuevoExpresionLenguaje(interpretExpresionLenguaje, i, d, line, column);
+    ExpresionLenguaje *expr = nuevoExpresionLenguaje(interpretMayorQue, i, d, line, column);
     expr->base.node_type = "MayorQue";
-    expr->tablaOperaciones = &tablaOperacionesMayorQue;
+    expr->tablaOperaciones = NULL;
     return (AbstractExpresion *)expr;
 }
+
 AbstractExpresion *nuevoMenorQueExpresion(AbstractExpresion *i, AbstractExpresion *d, int line, int column)
 {
-    ExpresionLenguaje *expr = nuevoExpresionLenguaje(interpretExpresionLenguaje, i, d, line, column);
+    ExpresionLenguaje *expr = nuevoExpresionLenguaje(interpretMenorQue, i, d, line, column);
     expr->base.node_type = "MenorQue";
-    expr->tablaOperaciones = &tablaOperacionesMenorQue;
+    expr->tablaOperaciones = NULL;
     return (AbstractExpresion *)expr;
 }
+
 AbstractExpresion *nuevoMayorIgualExpresion(AbstractExpresion *i, AbstractExpresion *d, int line, int column)
 {
-    ExpresionLenguaje *expr = nuevoExpresionLenguaje(interpretExpresionLenguaje, i, d, line, column);
+    ExpresionLenguaje *expr = nuevoExpresionLenguaje(interpretMayorIgual, i, d, line, column);
     expr->base.node_type = "MayorIgual";
-    expr->tablaOperaciones = &tablaOperacionesMayorIgual;
+    expr->tablaOperaciones = NULL;
     return (AbstractExpresion *)expr;
 }
+
 AbstractExpresion *nuevoMenorIgualExpresion(AbstractExpresion *i, AbstractExpresion *d, int line, int column)
 {
-    ExpresionLenguaje *expr = nuevoExpresionLenguaje(interpretExpresionLenguaje, i, d, line, column);
+    ExpresionLenguaje *expr = nuevoExpresionLenguaje(interpretMenorIgual, i, d, line, column);
     expr->base.node_type = "MenorIgual";
-    expr->tablaOperaciones = &tablaOperacionesMenorIgual;
+    expr->tablaOperaciones = NULL;
     return (AbstractExpresion *)expr;
 }
