@@ -11,6 +11,7 @@
 #include "output_buffer.h"
 #include "symbol_reporter.h"
 #include "error_reporter.h"
+#include "utils/comment_tracker.h"
 #include "ast_grapher.h"
 #include "compilacion/compilador.h"
 
@@ -280,6 +281,7 @@ static void on_execute_clicked(GtkToolButton *button, gpointer user_data)
     ast_root = NULL;
     yylineno = 1;
     yycolumn = 1;
+    clear_comment_tracker();
 
     if (!input_text || input_text[0] == '\0')
     {
@@ -310,6 +312,8 @@ static void on_execute_clicked(GtkToolButton *button, gpointer user_data)
     }
 
     yy_delete_buffer(buffer_state);
+
+    clear_comment_tracker();
 
     clear_output_buffer();
     if (get_error_list() != NULL || !semantica_correcta)
@@ -345,6 +349,7 @@ static void on_show_symbols_clicked(GtkToolButton *button, gpointer user_data)
     ast_root = NULL;
     yylineno = 1;
     yycolumn = 1;
+    clear_comment_tracker();
 
     // Si hay algo en el texto de entrada
     if (input_text && input_text[0] != '\0')
@@ -362,6 +367,7 @@ static void on_show_symbols_clicked(GtkToolButton *button, gpointer user_data)
             liberarContext(contextPadre);
         }
         yy_delete_buffer(buffer_state);
+        clear_comment_tracker();
     }
 
     // Mostrar la ventana de símbolos
@@ -382,6 +388,7 @@ static void on_show_errors_clicked(GtkToolButton *button, gpointer user_data)
     ast_root = NULL;
     yylineno = 1;
     yycolumn = 1;
+    clear_comment_tracker();
 
     // Si hay algo en el texto de entrada
     if (input_text && input_text[0] != '\0')
@@ -397,6 +404,7 @@ static void on_show_errors_clicked(GtkToolButton *button, gpointer user_data)
             liberarContext(contextPadre);
         }
         yy_delete_buffer(buffer_state);
+        clear_comment_tracker();
     }
     display_error_table_window(widgets->main_window);
     g_free(input_text);
@@ -461,6 +469,7 @@ static void on_generate_ast_clicked(GtkToolButton *button, gpointer user_data)
     }
     yylineno = 1;
     yycolumn = 1;
+    clear_comment_tracker();
 
     // Si hay algo en el texto de entrada
     if (input_text && input_text[0] != '\0')
@@ -468,6 +477,7 @@ static void on_generate_ast_clicked(GtkToolButton *button, gpointer user_data)
         YY_BUFFER_STATE buffer_state = yy_scan_string(input_text);
         yyparse();
         yy_delete_buffer(buffer_state);
+        clear_comment_tracker();
     }
 
     // Si no hubo errores y se generó un AST, proceder a graficar
@@ -714,6 +724,7 @@ int main(int argc, char **argv)
         clear_output_buffer();
         clear_symbol_report();
         clear_error_report();
+        clear_comment_tracker();
 
         // Parsear y ejecutar
         YY_BUFFER_STATE buffer_state = yy_scan_string(content);
@@ -732,6 +743,7 @@ int main(int argc, char **argv)
             liberarContext(contextPadre);
         }
         yy_delete_buffer(buffer_state);
+        clear_comment_tracker();
         free(content);
 
         // Mensaje final coherente con la GUI
@@ -765,6 +777,7 @@ int main(int argc, char **argv)
         free_output_buffer();
         free_symbol_report();
         free_error_report();
+        clear_comment_tracker();
         yylex_destroy();
         if (current_file_path)
         {
@@ -790,6 +803,7 @@ int main(int argc, char **argv)
     free_output_buffer();
     free_symbol_report();
     free_error_report();
+    clear_comment_tracker();
     yylex_destroy();
 
     // Liberar la ruta del archivo actual si existe

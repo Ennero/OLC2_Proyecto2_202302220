@@ -1,0 +1,7 @@
+// Comentario inicial de archivo
+public static void main() {
+    // Comentario dentro de main
+    /* Comentario en bloque
+       que cubre varias lineas */
+    System.out.println("Hola comentarios"); // Comentario al final de la linea
+}

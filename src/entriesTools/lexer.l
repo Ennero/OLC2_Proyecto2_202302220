@@ -2,14 +2,75 @@
 // Definiciones y declaraciones en C
 #include "parser.tab.h"
 #include "error_reporter.h"
+#include "utils/comment_tracker.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 // Prototipos de funciones
 extern void yyerror(const char *s);
 int yycolumn = 1;
 char* yylasttext = NULL;
 int yywrap(void);
+
+static int block_comment_start_line = 0;
+static int block_comment_start_column = 0;
+static char *block_comment_buffer = NULL;
+static size_t block_comment_length = 0;
+static size_t block_comment_capacity = 0;
+
+static void reset_block_comment_buffer(void)
+{
+    if (block_comment_buffer)
+    {
+        free(block_comment_buffer);
+    }
+    block_comment_buffer = NULL;
+    block_comment_length = 0;
+    block_comment_capacity = 0;
+}
+
+static int ensure_block_comment_capacity(size_t additional)
+{
+    size_t required = block_comment_length + additional + 1; // +1 para el terminador nulo
+    if (required <= block_comment_capacity)
+    {
+        return 1;
+    }
+
+    size_t new_capacity = block_comment_capacity == 0 ? 64 : block_comment_capacity * 2;
+    while (new_capacity < required)
+    {
+        new_capacity *= 2;
+    }
+
+    char *nuevo_buffer = realloc(block_comment_buffer, new_capacity);
+    if (!nuevo_buffer)
+    {
+        return 0;
+    }
+
+    block_comment_buffer = nuevo_buffer;
+    block_comment_capacity = new_capacity;
+    return 1;
+}
+
+static void append_to_block_comment(const char *texto, size_t longitud)
+{
+    if (!texto || longitud == 0)
+    {
+        return;
+    }
+
+    if (!ensure_block_comment_capacity(longitud))
+    {
+        return;
+    }
+
+    memcpy(block_comment_buffer + block_comment_length, texto, longitud);
+    block_comment_length += longitud;
+    block_comment_buffer[block_comment_length] = '\0';
+}
 
 // Definición de la estructura para la ubicación
 #define YY_USER_ACTION                                   \
@@ -53,12 +114,26 @@ newline           \n
 
 {white_space}      { /* Ignorar */ }
 {newline}          { yycolumn = 1; }
-{line_comment}     { /* Ignorar */ }
+{line_comment}     { registrar_comentario(yylloc.first_line, yylloc.first_column, yytext); }
 
-{block_comment}    { BEGIN(COMMENT); }
-<COMMENT>"*/"      { BEGIN(INITIAL); }
-<COMMENT>.         { /* Ignorar */ }
-<COMMENT>\n        { yycolumn = 1; }
+{block_comment}    {
+                        block_comment_start_line = yylloc.first_line;
+                        block_comment_start_column = yylloc.first_column;
+                        reset_block_comment_buffer();
+                        append_to_block_comment(yytext, yyleng);
+                        BEGIN(COMMENT);
+                    }
+<COMMENT>"*/"      {
+                        append_to_block_comment(yytext, yyleng);
+                        if (block_comment_buffer)
+                        {
+                            registrar_comentario(block_comment_start_line, block_comment_start_column, block_comment_buffer);
+                        }
+                        reset_block_comment_buffer();
+                        BEGIN(INITIAL);
+                    }
+<COMMENT>.         { append_to_block_comment(yytext, yyleng); }
+<COMMENT>\n        { append_to_block_comment(yytext, yyleng); yycolumn = 1; }
 
 "if"                    return TOKEN_IF;
 "else"                  return TOKEN_ELSE;
@@ -167,6 +242,7 @@ newline           \n
 int yywrap(void) {
     if (YY_START == COMMENT) {
         add_error_to_report("Léxico", "EOF", "Fin de archivo inesperado dentro de un comentario en bloque.", yylineno, yycolumn, NULL);
+        reset_block_comment_buffer();
         BEGIN(INITIAL);
     }
     return 1;

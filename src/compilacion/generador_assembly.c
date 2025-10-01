@@ -1,7 +1,53 @@
 #include "compilacion/generador_assembly.h"
+#include "utils/comment_tracker.h"
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+
+static void escribir_comentario_fuente(FILE *archivo, const ComentarioFuente *comentario)
+{
+    if (!archivo || !comentario || !comentario->texto)
+    {
+        return;
+    }
+
+    fprintf(archivo, "// [L%d,C%d] ", comentario->line, comentario->column);
+
+    for (const char *p = comentario->texto; *p; ++p)
+    {
+        if (*p == '\n')
+        {
+            fputc('\n', archivo);
+            if (*(p + 1) != '\0')
+            {
+                fprintf(archivo, "// [L%d,C%d] ", comentario->line, comentario->column);
+            }
+        }
+        else
+        {
+            fputc((unsigned char)*p, archivo);
+        }
+    }
+
+    fputc('\n', archivo);
+}
+
+static void escribir_comentarios_fuente(FILE *archivo)
+{
+    size_t cantidad = 0;
+    const ComentarioFuente *comentarios = obtener_comentarios(&cantidad);
+    if (!comentarios || cantidad == 0)
+    {
+        return;
+    }
+
+    fprintf(archivo, "// === Comentarios del programa fuente ===\n");
+    for (size_t i = 0; i < cantidad; ++i)
+    {
+        escribir_comentario_fuente(archivo, &comentarios[i]);
+    }
+    fputc('\n', archivo);
+}
 
 // Función auxiliar para escribir cadenas ASCII con escapes
 static void escribir_cadena_ascii(FILE *archivo, const char *contenido)
@@ -117,6 +163,8 @@ bool generar_archivo_aarch64(const GeneradorCodigo *generador, const char *ruta_
     FILE *archivo = fopen(ruta_archivo, "w");
     if (!archivo)
         return false;
+
+    escribir_comentarios_fuente(archivo);
 
     // Escribir las secciones .data y .text
     escribir_seccion_datos(archivo, generador);
