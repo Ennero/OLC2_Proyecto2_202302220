@@ -301,6 +301,34 @@ static char *decode_java_string_literal(const char *input)
     return output;
 }
 
+static char *materialize_printable_literal(const PrimitivoExpresion *prim)
+{
+    if (!prim)
+        return NULL;
+
+    switch (prim->tipo)
+    {
+    case STRING:
+        return decode_java_string_literal(prim->valor);
+    case INT:
+    case DOUBLE:
+    case FLOAT:
+        if (!prim->valor)
+            return NULL;
+        return strdup(prim->valor);
+    case BOOLEAN:
+        if (!prim->valor)
+            return strdup("false");
+        if (strcmp(prim->valor, "true") == 0 || strcmp(prim->valor, "1") == 0)
+            return strdup("true");
+        if (strcmp(prim->valor, "false") == 0 || strcmp(prim->valor, "0") == 0)
+            return strdup("false");
+        return strdup(prim->valor);
+    default:
+        return NULL;
+    }
+}
+
 // --------------------------------------------------------------------------------------
 // Recorrido del AST para detectar prints simples
 // --------------------------------------------------------------------------------------
@@ -322,7 +350,7 @@ static void collect_print_literal(AbstractExpresion *print_node, ArmCodegenConte
     AbstractExpresion *expr = lista->hijos[0];
     if (!expr || strcmp(expr->node_type, "Primitivo") != 0)
     {
-        if (!operations_append_comment(&ctx->ops, print_node->line, print_node->column, "System.out.println solo soporta, por ahora, literales String."))
+        if (!operations_append_comment(&ctx->ops, print_node->line, print_node->column, "System.out.println solo soporta, por ahora, literales primitivos directos (String, numéricos o booleanos)."))
         {
             ctx->error_code = -3;
         }
@@ -330,19 +358,13 @@ static void collect_print_literal(AbstractExpresion *print_node, ArmCodegenConte
     }
 
     PrimitivoExpresion *prim = (PrimitivoExpresion *)expr;
-    if (prim->tipo != STRING || prim->valor == NULL)
+    char *decoded = materialize_printable_literal(prim);
+    if (!decoded)
     {
-        if (!operations_append_comment(&ctx->ops, print_node->line, print_node->column, "Literal soportado debe ser de tipo String."))
+        if (!operations_append_comment(&ctx->ops, print_node->line, print_node->column, "Literal soportado debe ser de tipo String, numérico o booleano (sin expresiones adicionales)."))
         {
             ctx->error_code = -3;
         }
-        return;
-    }
-
-    char *decoded = decode_java_string_literal(prim->valor);
-    if (!decoded)
-    {
-        ctx->error_code = -3;
         return;
     }
 
@@ -498,7 +520,7 @@ int generar_arm_desde_ast(AbstractExpresion *programa, const char *ruta_salida)
     }
 
     fprintf(out, "// Archivo generado automáticamente por el compilador JavaLang -> AArch64\n");
-    fprintf(out, "// Fase 2: Soporte inicial para System.out.println con literales String\n\n");
+    fprintf(out, "// Fase 2: Soporte inicial para System.out.println con literales primitivos directos (String, numéricos, booleanos)\n\n");
 
     emit_data_section(out, &ctx.strings);
     emit_text_section(out, &ctx.ops);
