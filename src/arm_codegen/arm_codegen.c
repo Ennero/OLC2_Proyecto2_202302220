@@ -4,11 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "utils/java_num_format.h"
 
 typedef struct
 {
     char *label;
     char *text; // Decodificada (sin comillas, sin escapes)
+    size_t length;
 } StringEntry;
 
 typedef struct
@@ -111,6 +113,7 @@ static const StringEntry *string_table_intern(StringTable *table, char *decoded_
 
     table->entries[table->count].label = label_copy;
     table->entries[table->count].text = decoded_text;
+    table->entries[table->count].length = strlen(decoded_text);
     table->count += 1;
     return &table->entries[table->count - 1];
 }
@@ -311,11 +314,42 @@ static char *materialize_printable_literal(const PrimitivoExpresion *prim)
     case STRING:
         return decode_java_string_literal(prim->valor);
     case INT:
-    case DOUBLE:
-    case FLOAT:
+    {
         if (!prim->valor)
             return NULL;
-        return strdup(prim->valor);
+
+        long value = 0;
+        if (strncmp(prim->valor, "0x", 2) == 0 || strncmp(prim->valor, "0X", 2) == 0)
+        {
+            value = strtol(prim->valor, NULL, 16);
+        }
+        else
+        {
+            value = strtol(prim->valor, NULL, 10);
+        }
+
+        char buffer[64];
+        snprintf(buffer, sizeof(buffer), "%d", (int)value);
+        return strdup(buffer);
+    }
+    case DOUBLE:
+    {
+        if (!prim->valor)
+            return NULL;
+        double value = strtod(prim->valor, NULL);
+        char buffer[80];
+        java_format_double(value, buffer, sizeof(buffer));
+        return strdup(buffer);
+    }
+    case FLOAT:
+    {
+        if (!prim->valor)
+            return NULL;
+        float value = strtof(prim->valor, NULL);
+        char buffer[80];
+        java_format_float(value, buffer, sizeof(buffer));
+        return strdup(buffer);
+    }
     case BOOLEAN:
         if (!prim->valor)
             return strdup("false");
@@ -389,6 +423,80 @@ static char *materialize_printable_literal(const PrimitivoExpresion *prim)
     }
 }
 
+static bool ensure_literal_expression(AbstractExpresion *expr, char **out_text)
+{
+    if (!expr || !out_text)
+        return false;
+
+    if (!expr->node_type || strcmp(expr->node_type, "Primitivo") != 0)
+        return false;
+
+    PrimitivoExpresion *prim = (PrimitivoExpresion *)expr;
+    char *decoded = materialize_printable_literal(prim);
+    if (!decoded)
+        return false;
+
+    *out_text = decoded;
+    return true;
+}
+
+static void free_literal_parts(char **parts, size_t count)
+{
+    if (!parts)
+        return;
+    for (size_t i = 0; i < count; ++i)
+        free(parts[i]);
+    free(parts);
+}
+
+static bool append_literal_part(char ***parts, size_t *count, size_t *capacity, char *text)
+{
+    if (!text)
+        return false;
+
+    if (*count == *capacity)
+    {
+        size_t new_capacity = (*capacity == 0) ? 4 : (*capacity * 2);
+        char **new_parts = realloc(*parts, new_capacity * sizeof(char *));
+        if (!new_parts)
+        {
+            free(text);
+            return false;
+        }
+        *parts = new_parts;
+        *capacity = new_capacity;
+    }
+
+    (*parts)[(*count)++] = text;
+    return true;
+}
+
+static bool gather_literal_concat(AbstractExpresion *expr, char ***parts, size_t *count, size_t *capacity, size_t *total_len)
+{
+    if (!expr)
+        return false;
+
+    if (expr->node_type && strcmp(expr->node_type, "Suma") == 0 && expr->numHijos == 2)
+    {
+        if (!gather_literal_concat(expr->hijos[0], parts, count, capacity, total_len))
+            return false;
+        if (!gather_literal_concat(expr->hijos[1], parts, count, capacity, total_len))
+            return false;
+        return true;
+    }
+
+    char *text = NULL;
+    if (!ensure_literal_expression(expr, &text))
+        return false;
+
+    size_t len = strlen(text);
+    if (!append_literal_part(parts, count, capacity, text))
+        return false;
+
+    *total_len += len;
+    return true;
+}
+
 // --------------------------------------------------------------------------------------
 // Recorrido del AST para detectar prints simples
 // --------------------------------------------------------------------------------------
@@ -398,37 +506,76 @@ static void collect_print_literal(AbstractExpresion *print_node, ArmCodegenConte
         return;
 
     AbstractExpresion *lista = (print_node->numHijos > 0) ? print_node->hijos[0] : NULL;
-    if (!lista || lista->numHijos != 1)
+    size_t arg_count = lista ? lista->numHijos : 0;
+
+    if (arg_count == 0)
     {
-        if (!operations_append_comment(&ctx->ops, print_node->line, print_node->column, "System.out.println actualmente solo soporta un literal String."))
+        char *empty = strdup("");
+        if (!empty)
+        {
+            ctx->error_code = -3;
+            return;
+        }
+
+        const StringEntry *entry = string_table_intern(&ctx->strings, empty);
+        if (!entry)
+        {
+            ctx->error_code = -3;
+            return;
+        }
+
+        if (!operations_append_print(&ctx->ops, entry, print_node->line, print_node->column))
         {
             ctx->error_code = -3;
         }
         return;
     }
 
-    AbstractExpresion *expr = lista->hijos[0];
-    if (!expr || strcmp(expr->node_type, "Primitivo") != 0)
+    char **parts = NULL;
+    size_t parts_count = 0;
+    size_t parts_capacity = 0;
+    size_t total_len = 0;
+    bool valid = true;
+
+    for (size_t i = 0; i < arg_count; ++i)
     {
-        if (!operations_append_comment(&ctx->ops, print_node->line, print_node->column, "System.out.println solo soporta, por ahora, literales primitivos directos (String, numéricos, booleanos, char o null)."))
+        if (!gather_literal_concat(lista->hijos[i], &parts, &parts_count, &parts_capacity, &total_len))
+        {
+            valid = false;
+            break;
+        }
+    }
+
+    if (!valid || parts_count == 0)
+    {
+        free_literal_parts(parts, parts_count);
+        if (!operations_append_comment(&ctx->ops, print_node->line, print_node->column, "System.out.println soporta, por ahora, expresiones formadas por literales primitivos concatenados con '+'."))
         {
             ctx->error_code = -3;
         }
         return;
     }
 
-    PrimitivoExpresion *prim = (PrimitivoExpresion *)expr;
-    char *decoded = materialize_printable_literal(prim);
-    if (!decoded)
+    char *combined = malloc(total_len + 1);
+    if (!combined)
     {
-        if (!operations_append_comment(&ctx->ops, print_node->line, print_node->column, "Literal soportado debe ser de tipo String, numérico, booleano, char o null (sin expresiones adicionales)."))
-        {
-            ctx->error_code = -3;
-        }
+        free_literal_parts(parts, parts_count);
+        ctx->error_code = -3;
         return;
     }
 
-    const StringEntry *entry = string_table_intern(&ctx->strings, decoded);
+    size_t cursor = 0;
+    for (size_t i = 0; i < parts_count; ++i)
+    {
+        size_t len = strlen(parts[i]);
+        memcpy(combined + cursor, parts[i], len);
+        cursor += len;
+    }
+    combined[cursor] = '\0';
+
+    free_literal_parts(parts, parts_count);
+
+    const StringEntry *entry = string_table_intern(&ctx->strings, combined);
     if (!entry)
     {
         ctx->error_code = -3;
@@ -504,13 +651,49 @@ static void emit_data_section(FILE *out, const StringTable *strings)
             }
         }
         fputs("\"\n\n", out);
+
+        fprintf(out, "%s_len:\n    .quad %zu\n\n", entry->label, entry->length);
     }
+
+    fprintf(out, "newline_char:\n    .byte 0x0A\n\n");
+}
+
+static void emit_runtime_support(FILE *out)
+{
+    fprintf(out, "print_line:\n");
+    fprintf(out, "    stp x29, x30, [sp, -16]!\n");
+    fprintf(out, "    mov x29, sp\n\n");
+
+    fprintf(out, "    mov x8, #64\n");
+    fprintf(out, "    mov x2, x1\n");
+    fprintf(out, "    mov x1, x0\n");
+    fprintf(out, "    mov x0, #1\n");
+    fprintf(out, "    svc #0\n\n");
+
+    fprintf(out, "    ldr x1, =newline_char\n");
+    fprintf(out, "    mov x2, #1\n");
+    fprintf(out, "    mov x0, #1\n");
+    fprintf(out, "    mov x8, #64\n");
+    fprintf(out, "    svc #0\n\n");
+
+    fprintf(out, "    ldp x29, x30, [sp], 16\n");
+    fprintf(out, "    ret\n\n");
 }
 
 static void emit_text_section(FILE *out, const OperationList *ops)
 {
     fprintf(out, ".text\n");
+    fprintf(out, ".global _start\n");
     fprintf(out, ".global main\n\n");
+
+    emit_runtime_support(out);
+
+    fprintf(out, "_start:\n");
+    fprintf(out, "    bl main\n");
+    fprintf(out, "    mov x8, #93\n");
+    fprintf(out, "    mov x0, #0\n");
+    fprintf(out, "    svc #0\n\n");
+
     fprintf(out, "main:\n");
     fprintf(out, "    stp x29, x30, [sp, -16]!\n");
     fprintf(out, "    mov x29, sp\n\n");
@@ -524,12 +707,14 @@ static void emit_text_section(FILE *out, const OperationList *ops)
             if (op->string_label)
             {
                 fprintf(out, "    ldr x0, =%s\n", op->string_label);
+                fprintf(out, "    ldr x1, =%s_len\n", op->string_label);
+                fprintf(out, "    ldr x1, [x1]\n");
             }
             else
             {
                 fprintf(out, "    // Operación de impresión con etiqueta nula\n");
             }
-            fprintf(out, "    bl puts\n\n");
+            fprintf(out, "    bl print_line\n\n");
             break;
         case ARM_OP_COMMENT:
             fprintf(out, "    // %s\n\n", op->comment ? op->comment : "Operación no soportada");
