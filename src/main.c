@@ -311,6 +311,9 @@ static void on_execute_clicked(GtkToolButton *button, gpointer user_data)
     int generation_attempted = 0;
     int generation_success = 0;
 
+    int generation_attempted = 0;
+    int generation_success = 0;
+
     // Si hay algo en el texto de entrada
     if (input_text && input_text[0] != '\0')
     {

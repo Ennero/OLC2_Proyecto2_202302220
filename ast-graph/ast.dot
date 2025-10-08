@@ -3,6 +3,7 @@ digraph AST {
   node [shape=box, style="filled,rounded", fillcolor="#FFFFFF", color="#CBD5E0", fontcolor="#111111", fontname="Helvetica", fontsize=11];
   edge [color="#6B7280", arrowhead="vee", arrowsize=0.7, penwidth=1.0];
 <<<<<<< HEAD
+<<<<<<< HEAD
   node0x6488bd622170 [label="Instrucciones", shape=box, style="filled,rounded", fillcolor="#FFFFFF", color="#A0AEC0", fontcolor="#111111", penwidth=1.0, fontsize=11, fontname="Helvetica"];
   node0x6488bd622110 [label="MainFunction", shape=box, style="filled,rounded", fillcolor="#FFFFFF", color="#A0AEC0", fontcolor="#111111", penwidth=1.0, fontsize=11, fontname="Helvetica"];
   node0x6488bd6220b0 [label="Bloque", shape=box, style="filled,rounded", fillcolor="#FFFFFF", color="#A0AEC0", fontcolor="#111111", penwidth=1.0, fontsize=11, fontname="Helvetica"];
@@ -173,6 +174,8 @@ digraph AST {
   node0x6488bd544be0 -> node0x6488bd5f0c80 [color="#6B7280", arrowhead="vee", arrowsize=0.7, penwidth=1.0];
   node0x6488bd5f0c80 -> node0x6488bd5f0c30 [color="#6B7280", arrowhead="vee", arrowsize=0.7, penwidth=1.0];
 =======
+=======
+>>>>>>> origin/main2
   node0x5bff30942360 [label="Instrucciones", shape=box, style="filled,rounded", fillcolor="#FFFFFF", color="#A0AEC0", fontcolor="#111111", penwidth=1.0, fontsize=11, fontname="Helvetica"];
   node0x5bff30942330 [label="MainFunction", shape=box, style="filled,rounded", fillcolor="#FFFFFF", color="#A0AEC0", fontcolor="#111111", penwidth=1.0, fontsize=11, fontname="Helvetica"];
   node0x5bff3093e500 [label="Bloque", shape=box, style="filled,rounded", fillcolor="#FFFFFF", color="#A0AEC0", fontcolor="#111111", penwidth=1.0, fontsize=11, fontname="Helvetica"];
@@ -532,5 +535,8 @@ digraph AST {
   node0x5bff30750af0 -> node0x5bff3093e3d0 [color="#6B7280", arrowhead="vee", arrowsize=0.7, penwidth=1.0];
   node0x5bff3093e3d0 -> node0x5bff3093e3a0 [color="#6B7280", arrowhead="vee", arrowsize=0.7, penwidth=1.0];
   node0x5bff3093e3a0 -> node0x5bff30737960 [color="#6B7280", arrowhead="vee", arrowsize=0.7, penwidth=1.0];
+<<<<<<< HEAD
 >>>>>>> 42fc21b (feat: arm skeleton)
+=======
+>>>>>>> origin/main2
 }
