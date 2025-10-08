@@ -324,6 +324,66 @@ static char *materialize_printable_literal(const PrimitivoExpresion *prim)
         if (strcmp(prim->valor, "false") == 0 || strcmp(prim->valor, "0") == 0)
             return strdup("false");
         return strdup(prim->valor);
+    case CHAR:
+        if (!prim->valor)
+            return NULL;
+        {
+            int cp = 0;
+            const char *s = prim->valor;
+            size_t len = strlen(s);
+            if (len >= 2 && s[0] == '\\')
+            {
+                switch (s[1])
+                {
+                case 'n':
+                    cp = '\n';
+                    break;
+                case 't':
+                    cp = '\t';
+                    break;
+                case 'r':
+                    cp = '\r';
+                    break;
+                case '\\':
+                    cp = '\\';
+                    break;
+                case '"':
+                    cp = '"';
+                    break;
+                case '\'':
+                    cp = '\'';
+                    break;
+                case 'u':
+                {
+                    int val = parse_unicode_escape_decimal(s + 2, len - 2);
+                    if (val < 0)
+                        val = 0;
+                    if (val > 0x10FFFF)
+                        val = 0x10FFFF;
+                    cp = val;
+                    break;
+                }
+                default:
+                    cp = (unsigned char)s[1];
+                    break;
+                }
+            }
+            else
+            {
+                cp = (unsigned char)s[0];
+            }
+
+            char utf8[5] = {0};
+            size_t written = utf8_encode_cp(cp, utf8);
+            char *out = malloc(written + 1);
+            if (!out)
+                return NULL;
+            memcpy(out, utf8, written);
+            out[written] = '\0';
+            return out;
+        }
+    case NULO:
+        return strdup("null");
     default:
         return NULL;
     }
@@ -350,7 +410,7 @@ static void collect_print_literal(AbstractExpresion *print_node, ArmCodegenConte
     AbstractExpresion *expr = lista->hijos[0];
     if (!expr || strcmp(expr->node_type, "Primitivo") != 0)
     {
-        if (!operations_append_comment(&ctx->ops, print_node->line, print_node->column, "System.out.println solo soporta, por ahora, literales primitivos directos (String, numéricos o booleanos)."))
+        if (!operations_append_comment(&ctx->ops, print_node->line, print_node->column, "System.out.println solo soporta, por ahora, literales primitivos directos (String, numéricos, booleanos, char o null)."))
         {
             ctx->error_code = -3;
         }
@@ -361,7 +421,7 @@ static void collect_print_literal(AbstractExpresion *print_node, ArmCodegenConte
     char *decoded = materialize_printable_literal(prim);
     if (!decoded)
     {
-        if (!operations_append_comment(&ctx->ops, print_node->line, print_node->column, "Literal soportado debe ser de tipo String, numérico o booleano (sin expresiones adicionales)."))
+        if (!operations_append_comment(&ctx->ops, print_node->line, print_node->column, "Literal soportado debe ser de tipo String, numérico, booleano, char o null (sin expresiones adicionales)."))
         {
             ctx->error_code = -3;
         }
@@ -520,7 +580,7 @@ int generar_arm_desde_ast(AbstractExpresion *programa, const char *ruta_salida)
     }
 
     fprintf(out, "// Archivo generado automáticamente por el compilador JavaLang -> AArch64\n");
-    fprintf(out, "// Fase 2: Soporte inicial para System.out.println con literales primitivos directos (String, numéricos, booleanos)\n\n");
+    fprintf(out, "// Fase 2: Soporte inicial para System.out.println con literales primitivos directos (String, numéricos, booleanos, char, null)\n\n");
 
     emit_data_section(out, &ctx.strings);
     emit_text_section(out, &ctx.ops);

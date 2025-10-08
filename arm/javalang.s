@@ -1,5 +1,5 @@
 // Archivo generado automáticamente por el compilador JavaLang -> AArch64
-// Fase 2: Soporte inicial para System.out.println con literales primitivos directos (String, numéricos, booleanos)
+// Fase 2: Soporte inicial para System.out.println con literales primitivos directos (String, numéricos, booleanos, char, null)
 
 .data
 
