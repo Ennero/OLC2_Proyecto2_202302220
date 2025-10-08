@@ -13,7 +13,7 @@
 #include "error_reporter.h"
 #include "utils/comment_tracker.h"
 #include "ast_grapher.h"
-#include "compilacion/compilador.h"
+#include "arm_codegen/arm_codegen.h"
 
 // --- Declaraciones Globales y Prototipos ---
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
@@ -27,6 +27,7 @@ extern void yylex_destroy();
 // Raíz del árbol de sintaxis abstracta
 AbstractExpresion *ast_root = NULL;
 static char *current_file_path = NULL;
+static const char *ARM_OUTPUT_PATH = "arm/javalang.s";
 
 // Estructura para almacenar los widgets de la aplicación
 typedef struct
@@ -53,6 +54,7 @@ static void display_symbol_table_window(GtkWindow *parent);
 static gboolean save_file_content(AppWidgets *widgets, const char *path);
 static void open_file(AppWidgets *widgets, const char *path);
 static gboolean copy_file(const char *src_path, const char *dest_path);
+static int ensure_arm_directory(void);
 
 //=====================================================================
 // LÓGICA DE GESTIÓN DE ARCHIVOS Y EXPORTACIÓN
@@ -162,6 +164,29 @@ static gboolean copy_file(const char *src_path, const char *dest_path)
     fclose(src);
     fclose(dest);
     return TRUE;
+}
+
+static int ensure_arm_directory(void)
+{
+    const char *dir = "arm";
+    struct stat st;
+    if (stat(dir, &st) == 0)
+    {
+        if (!S_ISDIR(st.st_mode))
+        {
+            fprintf(stderr, "La ruta '%s' existe pero no es un directorio.\n", dir);
+            return -1;
+        }
+        return 0;
+    }
+
+    if (mkdir(dir, 0777) != 0)
+    {
+        perror("mkdir arm");
+        return -2;
+    }
+
+    return 0;
 }
 
 //=====================================================================
@@ -283,7 +308,14 @@ static void on_execute_clicked(GtkToolButton *button, gpointer user_data)
     yycolumn = 1;
     clear_comment_tracker();
 
-    if (!input_text || input_text[0] == '\0')
+    int generation_attempted = 0;
+    int generation_success = 0;
+
+    int generation_attempted = 0;
+    int generation_success = 0;
+
+    // Si hay algo en el texto de entrada
+    if (input_text && input_text[0] != '\0')
     {
         append_to_output("No hay código para ejecutar.\n");
         gtk_text_buffer_set_text(widgets->output_buffer, get_output_buffer(), -1);
@@ -291,21 +323,30 @@ static void on_execute_clicked(GtkToolButton *button, gpointer user_data)
         return;
     }
 
-    bool semantica_correcta = false;
-    bool compilacion_exitosa = false;
-
-    YY_BUFFER_STATE buffer_state = yy_scan_string(input_text);
-    yyparse();
-
-    if (get_error_list() == NULL && ast_root)
-    {
-        Context *contextPadre = nuevoContext(NULL, "global");
-        ast_root->interpret(ast_root, contextPadre);
-        semantica_correcta = !has_semantic_error_been_found();
-
-        if (semantica_correcta)
+        // Si NO hubo errores de sintaxis Y se generó un AST, proceder a generar código ARM
+        if (get_error_list() == NULL && ast_root)
         {
-            compilacion_exitosa = compilar_programa(ast_root, contextPadre, "programa.s");
+            generation_attempted = 1;
+            if (ensure_arm_directory() == 0)
+            {
+                int status = generar_arm_desde_ast(ast_root, ARM_OUTPUT_PATH);
+                if (status == 0)
+                {
+                    generation_success = 1;
+                    append_to_output("Archivo ARM generado en arm/javalang.s\n");
+                }
+                else
+                {
+                    char buffer_msg[160];
+                    snprintf(buffer_msg, sizeof(buffer_msg),
+                             "Error al generar el archivo ARM (código %d).\n", status);
+                    append_to_output(buffer_msg);
+                }
+            }
+            else
+            {
+                append_to_output("No se pudo preparar el directorio de salida 'arm'.\n");
+            }
         }
 
         liberarContext(contextPadre);
@@ -326,7 +367,22 @@ static void on_execute_clicked(GtkToolButton *button, gpointer user_data)
     }
     else
     {
-        append_to_output("======== Compilación completada ========\nArchivo generado: programa.s");
+
+        if (generation_attempted)
+        {
+            if (generation_success)
+            {
+                append_to_output("\n\n======== Código analizado y archivo ARM generado correctamente ========");
+            }
+            else
+            {
+                append_to_output("\n\n======== Código analizado pero la generación ARM falló ========");
+            }
+        }
+        else
+        {
+            append_to_output("\n\n======== Código analizado ========");
+        }
     }
 
     gtk_text_buffer_set_text(widgets->output_buffer, get_output_buffer(), -1);
@@ -726,21 +782,34 @@ int main(int argc, char **argv)
         clear_error_report();
         clear_comment_tracker();
 
-        // Parsear y ejecutar
+        // Parsear y generar código
         YY_BUFFER_STATE buffer_state = yy_scan_string(content);
         yyparse();
-        bool semantica_correcta = false;
-        bool compilacion_exitosa = false;
+        int generation_attempted_cli = 0;
+        int generation_success_cli = 0;
         if (get_error_list() == NULL && ast_root)
         {
-            Context *contextPadre = nuevoContext(NULL, "global");
-            ast_root->interpret(ast_root, contextPadre);
-            semantica_correcta = !has_semantic_error_been_found();
-            if (semantica_correcta)
+            generation_attempted_cli = 1;
+            if (ensure_arm_directory() == 0)
             {
-                compilacion_exitosa = compilar_programa(ast_root, contextPadre, "programa.s");
+                int status = generar_arm_desde_ast(ast_root, ARM_OUTPUT_PATH);
+                if (status == 0)
+                {
+                    generation_success_cli = 1;
+                    append_to_output("Archivo ARM generado en arm/javalang.s\n");
+                }
+                else
+                {
+                    char buffer_msg[160];
+                    snprintf(buffer_msg, sizeof(buffer_msg),
+                             "Error al generar el archivo ARM (código %d).\n", status);
+                    append_to_output(buffer_msg);
+                }
             }
-            liberarContext(contextPadre);
+            else
+            {
+                append_to_output("No se pudo preparar el directorio de salida 'arm'.\n");
+            }
         }
         yy_delete_buffer(buffer_state);
         clear_comment_tracker();
@@ -758,7 +827,21 @@ int main(int argc, char **argv)
         }
         else
         {
-            append_to_output("======== Compilación completada ========\nArchivo generado: programa.s\n");
+            if (generation_attempted_cli)
+            {
+                if (generation_success_cli)
+                {
+                    append_to_output("\n\n======== Código analizado y archivo ARM generado correctamente ========\n");
+                }
+                else
+                {
+                    append_to_output("\n\n======== Código analizado pero la generación ARM falló ========\n");
+                }
+            }
+            else
+            {
+                append_to_output("\n\n======== Código analizado ========\n");
+            }
         }
 
         // Imprimir salida y, si se desea, errores/símbolos en modo texto sencillo

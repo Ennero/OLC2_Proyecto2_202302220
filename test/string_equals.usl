@@ -1,0 +1,13 @@
+public static void main() {
+    String saludo = "Hola";
+    String saludoCopia = saludo + "";
+    String despedida = "Adios";
+    String vacio = "";
+
+    System.out.println(saludo.equals(saludoCopia));
+    System.out.println(saludo.equals("Hola"));
+    System.out.println(saludo.equals(despedida));
+    System.out.println(saludo.equals(vacio));
+    System.out.println("Hola".equals("Hola"));
+    System.out.println("Hola".equals("hola"));
+}

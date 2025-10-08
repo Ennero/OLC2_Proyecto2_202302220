@@ -25,8 +25,10 @@ public static void main() {
     System.out.println("verdadero < medio -> " + (verdadero < medio));
     System.out.println("falso <= floatUno -> " + (falso <= floatUno));
     System.out.println("verdadero >= floatUno -> " + (verdadero >= floatUno));
-    System.out.println("hola == holaCopia -> " + (hola == holaCopia));
-    System.out.println("hola != \"hola\" -> " + (hola != "hola"));
+    System.out.println("hola.equals(holaCopia) -> " + hola.equals(holaCopia));
+    System.out.println("hola.equals(\"hola\") -> " + hola.equals("hola"));
+    System.out.println("hola.equals(vacio) -> " + hola.equals(vacio));
+    System.out.println("hola.equals(\"adios\") -> " + hola.equals("adios"));
     System.out.println("hola == nuloString -> " + (hola == nuloString));
     System.out.println("vacio == null -> " + (vacio == null));
     System.out.println("nuloString == null -> " + (nuloString == null));

@@ -97,23 +97,21 @@ static Result interpretarComparacionIgualComun(AbstractExpresion *self, Context 
             bool_result = (izquierda.valor == derecha.valor);
         }
     }
+    else if ((izquierda.tipo == STRING && derecha.tipo == STRING))
+    {
+        char desc[256];
+        snprintf(desc, sizeof(desc), "Para comparar Strings utiliza el método '.equals()' en lugar del operador '%s'.", operador);
+        add_error_to_report("Semantico", operador, desc, self->line, self->column, context->nombre_completo);
+        liberarResultado(izquierda);
+        liberarResultado(derecha);
+        return nuevoValorResultadoVacio();
+    }
     else if (izquierda.tipo == STRING || derecha.tipo == STRING)
     {
-        if ((izquierda.tipo == STRING || izquierda.tipo == NULO) &&
-            (derecha.tipo == STRING || derecha.tipo == NULO))
+        if (izquierda.tipo == NULO || derecha.tipo == NULO)
         {
-            const char *left_str = (izquierda.tipo == STRING) ? (char *)izquierda.valor : NULL;
-            const char *right_str = (derecha.tipo == STRING) ? (char *)derecha.valor : NULL;
-
-            if (!left_str || !right_str)
-            {
-                bool_result = (left_str == NULL && right_str == NULL);
-            }
-            else
-            {
-                bool_result = (strcmp(left_str, right_str) == 0);
-            }
             handled = true;
+            bool_result = (izquierda.tipo == NULO && derecha.tipo == NULO);
         }
     }
     else if (izquierda.tipo == NULO || derecha.tipo == NULO)
