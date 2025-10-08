@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "ast/AbstractExpresion.h"
@@ -11,7 +10,6 @@
 #include "output_buffer.h"
 #include "symbol_reporter.h"
 #include "error_reporter.h"
-#include "utils/comment_tracker.h"
 #include "ast_grapher.h"
 #include "arm_codegen/arm_codegen.h"
 
@@ -306,10 +304,6 @@ static void on_execute_clicked(GtkToolButton *button, gpointer user_data)
     ast_root = NULL;
     yylineno = 1;
     yycolumn = 1;
-    clear_comment_tracker();
-
-    int generation_attempted = 0;
-    int generation_success = 0;
 
     int generation_attempted = 0;
     int generation_success = 0;
@@ -317,11 +311,9 @@ static void on_execute_clicked(GtkToolButton *button, gpointer user_data)
     // Si hay algo en el texto de entrada
     if (input_text && input_text[0] != '\0')
     {
-        append_to_output("No hay código para ejecutar.\n");
-        gtk_text_buffer_set_text(widgets->output_buffer, get_output_buffer(), -1);
-        g_free(input_text);
-        return;
-    }
+        // Ejecutar el análisis léxico y sintáctico
+        YY_BUFFER_STATE buffer_state = yy_scan_string(input_text);
+        yyparse();
 
         // Si NO hubo errores de sintaxis Y se generó un AST, proceder a generar código ARM
         if (get_error_list() == NULL && ast_root)
@@ -349,21 +341,22 @@ static void on_execute_clicked(GtkToolButton *button, gpointer user_data)
             }
         }
 
-        liberarContext(contextPadre);
+        // Al finalizar borrar el buffer del analizador
+        yy_delete_buffer(buffer_state);
+    }
+    else
+    {
+        append_to_output("No hay código para ejecutar.\n");
     }
 
-    yy_delete_buffer(buffer_state);
-
-    clear_comment_tracker();
-
-    clear_output_buffer();
-    if (get_error_list() != NULL || !semantica_correcta)
+    // Lógica final para determinar el mensaje de estado
+    if (get_error_list() != NULL)
     {
-        append_to_output("======== Se encontraron errores durante el análisis y/o la interpretación ========\nVer la tabla de errores para más detalles.");
-    }
-    else if (!compilacion_exitosa)
-    {
-        append_to_output("No se pudo generar el archivo 'programa.s'. Verifique permisos y vuelva a intentarlo.");
+        // Si la lista de errores NO está vacía:
+        // Limpiamos cualquier salida parcial.
+        clear_output_buffer();
+        // Escribimos el mensaje de error.
+        append_to_output("======== Se encontraron errores durante el análisis y/o ejecución ========\nVer la tabla de errores para más detalles.");
     }
     else
     {
@@ -385,7 +378,9 @@ static void on_execute_clicked(GtkToolButton *button, gpointer user_data)
         }
     }
 
-    gtk_text_buffer_set_text(widgets->output_buffer, get_output_buffer(), -1);
+    // Actualizar el buffer de salida
+    const char *output_text = get_output_buffer();
+    gtk_text_buffer_set_text(widgets->output_buffer, output_text, -1);
     g_free(input_text);
 }
 
@@ -405,7 +400,6 @@ static void on_show_symbols_clicked(GtkToolButton *button, gpointer user_data)
     ast_root = NULL;
     yylineno = 1;
     yycolumn = 1;
-    clear_comment_tracker();
 
     // Si hay algo en el texto de entrada
     if (input_text && input_text[0] != '\0')
@@ -420,10 +414,8 @@ static void on_show_symbols_clicked(GtkToolButton *button, gpointer user_data)
             // Si no hay errores, se procede a la interpretación
             Context *contextPadre = nuevoContext(NULL, "global");
             ast_root->interpret(ast_root, contextPadre);
-            liberarContext(contextPadre);
         }
         yy_delete_buffer(buffer_state);
-        clear_comment_tracker();
     }
 
     // Mostrar la ventana de símbolos
@@ -444,7 +436,6 @@ static void on_show_errors_clicked(GtkToolButton *button, gpointer user_data)
     ast_root = NULL;
     yylineno = 1;
     yycolumn = 1;
-    clear_comment_tracker();
 
     // Si hay algo en el texto de entrada
     if (input_text && input_text[0] != '\0')
@@ -457,10 +448,8 @@ static void on_show_errors_clicked(GtkToolButton *button, gpointer user_data)
         {
             Context *contextPadre = nuevoContext(NULL, "global");
             ast_root->interpret(ast_root, contextPadre);
-            liberarContext(contextPadre);
         }
         yy_delete_buffer(buffer_state);
-        clear_comment_tracker();
     }
     display_error_table_window(widgets->main_window);
     g_free(input_text);
@@ -525,7 +514,6 @@ static void on_generate_ast_clicked(GtkToolButton *button, gpointer user_data)
     }
     yylineno = 1;
     yycolumn = 1;
-    clear_comment_tracker();
 
     // Si hay algo en el texto de entrada
     if (input_text && input_text[0] != '\0')
@@ -533,7 +521,6 @@ static void on_generate_ast_clicked(GtkToolButton *button, gpointer user_data)
         YY_BUFFER_STATE buffer_state = yy_scan_string(input_text);
         yyparse();
         yy_delete_buffer(buffer_state);
-        clear_comment_tracker();
     }
 
     // Si no hubo errores y se generó un AST, proceder a graficar
@@ -780,7 +767,6 @@ int main(int argc, char **argv)
         clear_output_buffer();
         clear_symbol_report();
         clear_error_report();
-        clear_comment_tracker();
 
         // Parsear y generar código
         YY_BUFFER_STATE buffer_state = yy_scan_string(content);
@@ -812,18 +798,13 @@ int main(int argc, char **argv)
             }
         }
         yy_delete_buffer(buffer_state);
-        clear_comment_tracker();
         free(content);
 
         // Mensaje final coherente con la GUI
-        clear_output_buffer();
-        if (get_error_list() != NULL || !semantica_correcta)
+        if (get_error_list() != NULL)
         {
-            append_to_output("======== Se encontraron errores durante el análisis y/o la interpretación ========\nVer la tabla de errores para más detalles.\n");
-        }
-        else if (!compilacion_exitosa)
-        {
-            append_to_output("No se pudo generar el archivo 'programa.s'. Verifique permisos y vuelva a intentarlo.\n");
+            clear_output_buffer();
+            append_to_output("======== Se encontraron errores durante el análisis y/o ejecución ========\nVer la tabla de errores para más detalles.\n");
         }
         else
         {
@@ -860,14 +841,12 @@ int main(int argc, char **argv)
         free_output_buffer();
         free_symbol_report();
         free_error_report();
-        clear_comment_tracker();
         yylex_destroy();
         if (current_file_path)
         {
             g_free(current_file_path);
         }
-    int exit_code = (get_error_list() == NULL && semantica_correcta && compilacion_exitosa) ? 0 : 1;
-    return exit_code;
+        return (get_error_list() == NULL) ? 0 : 1;
     }
 
     // Modo GUI por defecto
@@ -886,7 +865,6 @@ int main(int argc, char **argv)
     free_output_buffer();
     free_symbol_report();
     free_error_report();
-    clear_comment_tracker();
     yylex_destroy();
 
     // Liberar la ruta del archivo actual si existe

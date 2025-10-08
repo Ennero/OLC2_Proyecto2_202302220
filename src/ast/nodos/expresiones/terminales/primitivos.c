@@ -6,95 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include "compilacion/generador_codigo.h"
-#include "utils/java_num_format.h"
-
-static size_t utf8_encode_cp(int cp, char *out);
-static int parse_unicode_escape_decimal(const char *digits, size_t maxlen);
-static char *process_string_escapes(const char *input);
-static int parse_char_literal(const char *literal);
-static void normalizar_literal(const char *origen, char *destino, size_t tamano, const char *sufijos_finales);
-
-// La función que interpreta un valor primitivo
-static const char *generarPrimitivoExpresion(AbstractExpresion *self, GeneradorCodigo *generador, Context *context)
-{
-    (void)context;
-    if (!self || !generador)
-        return NULL;
-
-    PrimitivoExpresion *nodo = (PrimitivoExpresion *)self;
-
-    // Manejo especial para literales de cadena
-    switch (nodo->tipo)
-    {
-    case STRING:
-    {
-        char *contenido = process_string_escapes(nodo->valor);
-        const char *etiqueta = registrar_literal_cadena(generador, contenido ? contenido : "");
-        free(contenido);
-        return etiqueta;
-    }
-    case INT:
-    {
-        char normalizado[256];
-        normalizar_literal(nodo->valor, normalizado, sizeof(normalizado), NULL);
-        char *endptr = NULL;
-        long valor = strtol(normalizado, &endptr, 0);
-        if (endptr && *endptr != '\0')
-        {
-            return registrar_literal_cadena(generador, nodo->valor);
-        }
-
-        char buffer[64];
-        snprintf(buffer, sizeof(buffer), "%ld", valor);
-        return registrar_literal_cadena(generador, buffer);
-    }
-    case DOUBLE:
-    {
-        char buffer[256];
-        char normalizado[256];
-        normalizar_literal(nodo->valor, normalizado, sizeof(normalizado), "fFdD");
-        char *endptr = NULL;
-        double valor = strtod(normalizado, &endptr);
-        if (endptr && *endptr != '\0')
-        {
-            return registrar_literal_cadena(generador, nodo->valor);
-        }
-        java_format_double(valor, buffer, sizeof(buffer));
-        return registrar_literal_cadena(generador, buffer);
-    }
-    case FLOAT:
-    {
-        char buffer[256];
-        char normalizado[256];
-        normalizar_literal(nodo->valor, normalizado, sizeof(normalizado), "fF");
-        char *endptr = NULL;
-        float valor = strtof(normalizado, &endptr);
-        if (endptr && *endptr != '\0')
-        {
-            return registrar_literal_cadena(generador, nodo->valor);
-        }
-        java_format_float(valor, buffer, sizeof(buffer));
-        return registrar_literal_cadena(generador, buffer);
-    }
-    case BOOLEAN:
-        return registrar_literal_cadena(generador, (strcmp(nodo->valor, "true") == 0) ? "true" : "false");
-    case CHAR:
-    {
-        int cp = parse_char_literal(nodo->valor);
-        char buffer[8];
-        size_t bytes = utf8_encode_cp(cp, buffer);
-        buffer[bytes] = '\0';
-        return registrar_literal_cadena(generador, buffer);
-    }
-    case NULO:
-        return registrar_literal_cadena(generador, "null");
-    default:
-        break;
-    }
-
-    return NULL;
-}
 
 // Codifica un code point Unicode en UTF-8
 static size_t utf8_encode_cp(int cp, char *out)
@@ -153,31 +64,6 @@ static int parse_unicode_escape_decimal(const char *digits, size_t maxlen)
     if (val > 0x10FFFF)
         val = 0x10FFFF;
     return (int)val;
-}
-
-// Normaliza literales numéricos eliminando guiones bajos y sufijos finales opcionales
-static void normalizar_literal(const char *origen, char *destino, size_t tamano, const char *sufijos_finales)
-{
-    if (!destino || tamano == 0)
-        return;
-
-    destino[0] = '\0';
-    if (!origen)
-        return;
-
-    size_t j = 0;
-    for (size_t i = 0; origen[i] != '\0' && j + 1 < tamano; ++i)
-    {
-        char c = origen[i];
-        if (c == '_')
-            continue;
-
-        if (sufijos_finales && sufijos_finales[0] != '\0' && strchr(sufijos_finales, c) && origen[i + 1] == '\0')
-            continue;
-
-        destino[j++] = c;
-    }
-    destino[j] = '\0';
 }
 
 // Función auxiliar para procesar las secuencias de escape en cadenas y devolver UTF-8 válido
@@ -250,48 +136,6 @@ static char *process_string_escapes(const char *input)
     return output;
 }
 
-static int parse_char_literal(const char *literal)
-{
-    if (!literal)
-        return 0;
-
-    size_t n = strlen(literal);
-    if (n >= 2 && literal[0] == '\\')
-    {
-        switch (literal[1])
-        {
-        case 'n':
-            return '\n';
-        case 't':
-            return '\t';
-        case 'r':
-            return '\r';
-        case '\\':
-            return '\\';
-        case '"':
-            return '"';
-        case '\'':
-            return '\'';
-        case 'u':
-        {
-            int val = parse_unicode_escape_decimal(literal + 2, n - 2);
-            if (val < 0)
-                val = 0;
-            if (val > 0x10FFFF)
-                val = 0x10FFFF;
-            return val;
-        }
-        default:
-            return (unsigned char)literal[1];
-        }
-    }
-
-    if (n > 0)
-        return (unsigned char)literal[0];
-
-    return 0;
-}
-
 // Funcion de interpretación para el nodo Primitivo
 Result interpretPrimitivoExpresion(AbstractExpresion *self, Context *context)
 {
@@ -339,7 +183,54 @@ Result interpretPrimitivoExpresion(AbstractExpresion *self, Context *context)
     case CHAR:
     {
         int *valor = malloc(sizeof(int));
-        *valor = parse_char_literal(nodo->valor);
+        // Parsear literal char de forma dedicada para obtener el code point
+        const char *s = nodo->valor;
+        size_t n = strlen(s);
+        int cp = 0;
+        if (n >= 2 && s[0] == '\\')
+        {
+            switch (s[1])
+            {
+            case 'n':
+                cp = '\n';
+                break;
+            case 't':
+                cp = '\t';
+                break;
+            case 'r':
+                cp = '\r';
+                break;
+            case '\\':
+                cp = '\\';
+                break;
+            case '"':
+                cp = '"';
+                break;
+            case '\'':
+                cp = '\'';
+                break;
+            case 'u':
+            {
+                int val = parse_unicode_escape_decimal(s + 2, n - 2);
+                if (val < 0)
+                    val = 0;
+                if (val > 0x10FFFF)
+                    val = 0x10FFFF;
+                cp = val;
+                break;
+            }
+            default:
+                // Escape desconocido, tomar el carácter tal cual
+                cp = (unsigned char)s[1];
+                break;
+            }
+        }
+        else
+        {
+            // Carácter simple (ASCII)
+            cp = (unsigned char)s[0];
+        }
+        *valor = cp;
         return nuevoValorResultado(valor, CHAR);
     }
     case STRING:
@@ -358,7 +249,6 @@ AbstractExpresion *nuevoPrimitivoExpresion(char *v, TipoDato tipo, int line, int
     if (!nodo)
         return NULL;
     buildAbstractExpresion(&nodo->base, interpretPrimitivoExpresion, "Primitivo", line, column);
-    nodo->base.generar = generarPrimitivoExpresion;
     nodo->valor = v;
     nodo->tipo = tipo;
     return (AbstractExpresion *)nodo;

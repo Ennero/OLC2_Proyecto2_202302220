@@ -2,7 +2,6 @@
 #include "ast/nodos/builders.h"
 #include "ast/nodos/expresiones/expresiones.h"
 #include "context/result.h"
-#include "compilacion/generador_codigo.h"
 #include "error_reporter.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -55,18 +54,6 @@ Result interpretUnarioExpresion(AbstractExpresion *self, Context *context)
     return tablaOperacionesUnario[res.tipo](res);
 }
 
-static const char *generarUnarioExpresion(AbstractExpresion *self, GeneradorCodigo *generador, Context *context)
-{
-    if (!self || !generador)
-        return NULL;
-
-    if (!expresion_es_constante_aritmetica(self))
-        return NULL;
-
-    Result resultado = interpretUnarioExpresion(self, context);
-    return registrar_literal_desde_resultado(generador, &resultado);
-}
-
 // Constructor del Nodo
 AbstractExpresion *nuevoUnarioExpresion(AbstractExpresion *expresion, int line, int column)
 {
@@ -75,7 +62,6 @@ AbstractExpresion *nuevoUnarioExpresion(AbstractExpresion *expresion, int line, 
         return NULL;
 
     buildAbstractExpresion(unarioExpresion, interpretUnarioExpresion, "NegacionUnaria", line, column);
-    unarioExpresion->generar = generarUnarioExpresion;
     agregarHijo(unarioExpresion, expresion);
 
     return unarioExpresion;

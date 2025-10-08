@@ -14,20 +14,6 @@ static int error_id_counter = 0;
 // Bandera para indicar si se ha encontrado un error semántico
 static bool semantic_error_found = false;
 
-static void free_error_nodes(ErrorInfo *node)
-{
-    while (node != NULL)
-    {
-        ErrorInfo *next = node->next;
-        free(node->type);
-        free(node->lexeme);
-        free(node->description);
-        free(node->context_name);
-        free(node);
-        node = next;
-    }
-}
-
 // Inicializa o reinicia el reportero de errores
 void init_error_report()
 {
@@ -48,7 +34,22 @@ void init_error_report()
 // Libera toda la memoria utilizada por la lista de errores
 void clear_error_report()
 {
-    free_error_nodes(error_list_head);
+    ErrorInfo *current = error_list_head;
+    ErrorInfo *next;
+    while (current != NULL)
+    {
+        next = current->next;
+
+        // Liberar cada cadena de texto copiada dinámicamente
+        free(current->type);
+        free(current->lexeme);
+        free(current->description);
+        free(current->context_name);
+
+        // Liberar el nodo de la estructura en sí
+        free(current);
+        current = next;
+    }
     // Reiniciar los punteros y el contador
     error_list_head = NULL;
     error_list_tail = NULL;
@@ -116,42 +117,4 @@ const ErrorInfo *get_error_list()
 bool has_semantic_error_been_found()
 {
     return semantic_error_found;
-}
-
-ErrorReportSnapshot capture_error_report_snapshot()
-{
-    ErrorReportSnapshot snapshot;
-    snapshot.tail = error_list_tail;
-    snapshot.last_error_id = error_id_counter;
-    snapshot.semantic_flag = semantic_error_found;
-    return snapshot;
-}
-
-bool error_report_has_new_errors_since(ErrorReportSnapshot snapshot)
-{
-    return error_id_counter != snapshot.last_error_id;
-}
-
-void rollback_error_report_to_snapshot(ErrorReportSnapshot snapshot)
-{
-    ErrorInfo *first_new = snapshot.tail ? snapshot.tail->next : error_list_head;
-
-    if (first_new)
-    {
-        free_error_nodes(first_new);
-    }
-
-    if (snapshot.tail)
-    {
-        snapshot.tail->next = NULL;
-        error_list_tail = snapshot.tail;
-    }
-    else
-    {
-        error_list_head = NULL;
-        error_list_tail = NULL;
-    }
-
-    error_id_counter = snapshot.last_error_id;
-    semantic_error_found = snapshot.semantic_flag;
 }

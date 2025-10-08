@@ -2,8 +2,6 @@
 #define ARITMETICAS_H
 
 #include "ast/nodos/expresiones/expresiones.h"
-#include <stdbool.h>
-#include <string.h>
 
 // Declaraciones de funciones para las operaciones aritméticas
 
@@ -60,33 +58,5 @@ extern Operacion tablaOperacionesModulo[TIPO_COUNT][TIPO_COUNT];
 
 // Unario (Negación)
 extern UnaryOperacion tablaOperacionesUnario[TIPO_COUNT];
-
-static inline bool expresion_es_constante_aritmetica(const AbstractExpresion *expr)
-{
-	if (!expr || !expr->node_type)
-		return false;
-
-	if (strcmp(expr->node_type, "Primitivo") == 0)
-		return true;
-
-	if (strcmp(expr->node_type, "NegacionUnaria") == 0 ||
-		strcmp(expr->node_type, "Suma") == 0 ||
-		strcmp(expr->node_type, "Resta") == 0 ||
-		strcmp(expr->node_type, "Multiplicacion") == 0 ||
-		strcmp(expr->node_type, "Division") == 0 ||
-		strcmp(expr->node_type, "Modulo") == 0)
-	{
-		if (expr->numHijos == 0)
-			return false;
-		for (size_t i = 0; i < expr->numHijos; ++i)
-		{
-			if (!expresion_es_constante_aritmetica(expr->hijos[i]))
-				return false;
-		}
-		return true;
-	}
-
-	return false;
-}
 
 #endif

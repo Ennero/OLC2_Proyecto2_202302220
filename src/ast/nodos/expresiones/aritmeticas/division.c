@@ -4,7 +4,6 @@
 #include "context/result.h"
 #include "error_reporter.h"
 #include <stdlib.h>
-#include "compilacion/generador_codigo.h"
 
 // Funciones de División Numérica -----------------
 Result dividirIntInt(ExpresionLenguaje *self)
@@ -136,24 +135,11 @@ Operacion tablaOperacionesDivision[TIPO_COUNT][TIPO_COUNT] = {
     [CHAR][DOUBLE] = dividirDoubleInt,
     [DOUBLE][CHAR] = dividirDoubleInt};
 
-static const char *generarDivisionExpresion(AbstractExpresion *self, GeneradorCodigo *generador, Context *context)
-{
-    if (!self || !generador)
-        return NULL;
-
-    if (!expresion_es_constante_aritmetica(self))
-        return NULL;
-
-    Result resultado = interpretExpresionLenguaje(self, context);
-    return registrar_literal_desde_resultado(generador, &resultado);
-}
-
 // Constructor del Nodo
 AbstractExpresion *nuevoDivisionExpresion(AbstractExpresion *izquierda, AbstractExpresion *derecha, int line, int column)
 {
     ExpresionLenguaje *expr = nuevoExpresionLenguaje(interpretExpresionLenguaje, izquierda, derecha, line, column);
     expr->base.node_type = "Division";
     expr->tablaOperaciones = &tablaOperacionesDivision;
-    expr->base.generar = generarDivisionExpresion;
     return (AbstractExpresion *)expr;
 }

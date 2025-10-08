@@ -5,7 +5,6 @@
 #include "error_reporter.h"
 #include <stdlib.h>
 #include <math.h>
-#include "compilacion/generador_codigo.h"
 
 // Funciones de Módulo Numérico -----------------
 Result moduloIntInt(ExpresionLenguaje *self)
@@ -137,24 +136,11 @@ Operacion tablaOperacionesModulo[TIPO_COUNT][TIPO_COUNT] = {
     [CHAR][DOUBLE] = moduloDoubleInt,
     [DOUBLE][CHAR] = moduloDoubleInt};
 
-static const char *generarModuloExpresion(AbstractExpresion *self, GeneradorCodigo *generador, Context *context)
-{
-    if (!self || !generador)
-        return NULL;
-
-    if (!expresion_es_constante_aritmetica(self))
-        return NULL;
-
-    Result resultado = interpretExpresionLenguaje(self, context);
-    return registrar_literal_desde_resultado(generador, &resultado);
-}
-
 // Constructor del Nodo
 AbstractExpresion *nuevoModuloExpresion(AbstractExpresion *izquierda, AbstractExpresion *derecha, int line, int column)
 {
     ExpresionLenguaje *expr = nuevoExpresionLenguaje(interpretExpresionLenguaje, izquierda, derecha, line, column);
     expr->base.node_type = "Modulo";
     expr->tablaOperaciones = &tablaOperacionesModulo;
-    expr->base.generar = generarModuloExpresion;
     return (AbstractExpresion *)expr;
 }

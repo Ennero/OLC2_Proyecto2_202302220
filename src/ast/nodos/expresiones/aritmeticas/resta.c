@@ -2,7 +2,6 @@
 #include "ast/nodos/builders.h"
 #include "ast/nodos/expresiones/expresiones.h"
 #include "context/result.h"
-#include "compilacion/generador_codigo.h"
 #include <stdlib.h>
 
 // Funciones de Resta Numérica -----------------
@@ -81,24 +80,11 @@ Operacion tablaOperacionesResta[TIPO_COUNT][TIPO_COUNT] = {
     [CHAR][DOUBLE] = restarDoubleInt,
     [DOUBLE][CHAR] = restarDoubleInt};
 
-static const char *generarRestaExpresion(AbstractExpresion *self, GeneradorCodigo *generador, Context *context)
-{
-    if (!self || !generador)
-        return NULL;
-
-    if (!expresion_es_constante_aritmetica(self))
-        return NULL;
-
-    Result resultado = interpretExpresionLenguaje(self, context);
-    return registrar_literal_desde_resultado(generador, &resultado);
-}
-
 // Constructor del Nodo
 AbstractExpresion *nuevoRestaExpresion(AbstractExpresion *izquierda, AbstractExpresion *derecha, int line, int column)
 {
     ExpresionLenguaje *restaExpresion = nuevoExpresionLenguaje(interpretExpresionLenguaje, izquierda, derecha, line, column);
     restaExpresion->base.node_type = "Resta";
     restaExpresion->tablaOperaciones = &tablaOperacionesResta;
-    restaExpresion->base.generar = generarRestaExpresion;
     return (AbstractExpresion *)restaExpresion;
 }

@@ -7,7 +7,6 @@
 #include <string.h>
 #include "utils/java_num_format.h"
 #include "context/array_value.h"
-#include "compilacion/generador_codigo.h"
 
 // Funciones de Suma Numérica -----------------
 Result sumarIntInt(ExpresionLenguaje *self)
@@ -272,24 +271,11 @@ Operacion tablaOperacionesSuma[TIPO_COUNT][TIPO_COUNT] = {
     [STRING] = {[BOOLEAN] = concatenarStringBoolean, [CHAR] = concatenarStringChar, [INT] = concatenarStringInt, [FLOAT] = concatenarStringFloat, [DOUBLE] = concatenarStringDouble, [STRING] = concatenarStringString, [ARRAY] = concatenarStringArray},
     [ARRAY] = {[STRING] = concatenarArrayString}};
 
-static const char *generarSumaExpresion(AbstractExpresion *self, GeneradorCodigo *generador, Context *context)
-{
-    if (!self || !generador)
-        return NULL;
-
-    if (!expresion_es_constante_aritmetica(self))
-        return NULL;
-
-    Result resultado = interpretExpresionLenguaje(self, context);
-    return registrar_literal_desde_resultado(generador, &resultado);
-}
-
 // Constructor
 AbstractExpresion *nuevoSumaExpresion(AbstractExpresion *izquierda, AbstractExpresion *derecha, int line, int column)
 {
     ExpresionLenguaje *sumaExpresion = nuevoExpresionLenguaje(interpretExpresionLenguaje, izquierda, derecha, line, column);
     sumaExpresion->base.node_type = "Suma";
     sumaExpresion->tablaOperaciones = &tablaOperacionesSuma;
-    sumaExpresion->base.generar = generarSumaExpresion;
     return (AbstractExpresion *)sumaExpresion;
 }

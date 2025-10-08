@@ -3,32 +3,9 @@
 #include "context/context.h"
 #include "context/result.h"
 #include "error_reporter.h"
-#include "compilacion/generador_codigo.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-// La función que genera código para una lista de instrucciones
-static const char *generarInstruccionesExpresion(AbstractExpresion *self, GeneradorCodigo *generador, Context *context)
-{
-    (void)context;
-    if (!self || !generador)
-    {
-        return NULL;
-    }
-
-    // Generar código para cada instrucción hija
-    for (size_t i = 0; i < self->numHijos; ++i)
-    {
-        // Verificar el nodo hijo
-        AbstractExpresion *nodo = self->hijos[i];
-        if (nodo && nodo->generar)
-        {
-            nodo->generar(nodo, generador, context);
-        }
-    }
-    return NULL;
-}
 
 // Función de interpretación para el nodo Instrucciones
 Result interpretInstruccionesExpresion(AbstractExpresion *self, Context *context)
@@ -155,7 +132,6 @@ AbstractExpresion *nuevoInstruccionesExpresion()
         return NULL;
     // Inicializar la estructura base
     buildAbstractExpresion(&nodo->base, interpretInstruccionesExpresion, "Instrucciones", 0, 0);
-    nodo->base.generar = generarInstruccionesExpresion;
 
     return (AbstractExpresion *)nodo;
 }

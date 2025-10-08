@@ -39,11 +39,6 @@ void liberarAST(AbstractExpresion *raiz)
         liberarAST(raiz->hijos[i]);
     }
 
-    if (raiz->cleanup)
-    {
-        raiz->cleanup(raiz);
-    }
-
     // Liberar el arreglo de hijos y el nodo actual
     free(raiz->hijos);
     free(raiz);
@@ -53,8 +48,6 @@ void liberarAST(AbstractExpresion *raiz)
 void buildAbstractExpresion(AbstractExpresion *base, Interpret interpretPuntero, const char *node_type, int line, int column)
 {
     base->interpret = interpretPuntero;
-    base->generar = NULL;
-    base->cleanup = NULL;
     base->node_type = node_type; // Se asigna el nombre
     base->hijos = NULL;
     base->numHijos = 0;
