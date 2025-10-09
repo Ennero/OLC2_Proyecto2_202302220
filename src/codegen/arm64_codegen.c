@@ -7,6 +7,9 @@
 #include "ast/nodos/expresiones/terminales/primitivos.h"
 #include "ast/nodos/expresiones/terminales/identificadores.h"
 #include "ast/nodos/expresiones/expresiones.h"
+#include "ast/nodos/expresiones/aritmeticas/aritmeticas.h"
+#include "ast/nodos/expresiones/relacionales/relacionales.h"
+#include "ast/nodos/expresiones/logicas/logicas.h"
 #include "context/result.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,6 +108,16 @@ static VarEntry *add_var(const char *name, TipoDato tipo, int size_bytes, FILE *
 }
 
 // ----------------- Emisión de expresiones -----------------
+// Helpers para clasificar nodos
+static int node_is_boolean_result(AbstractExpresion *node) {
+    if (!node || !node->node_type) return 0;
+    const char *t = node->node_type;
+    return strcmp(t, "IgualIgual") == 0 || strcmp(t, "Diferente") == 0 ||
+           strcmp(t, "MayorQue") == 0 || strcmp(t, "MenorQue") == 0 ||
+           strcmp(t, "MayorIgual") == 0 || strcmp(t, "MenorIgual") == 0 ||
+           strcmp(t, "And") == 0 || strcmp(t, "Or") == 0 || strcmp(t, "Not") == 0;
+}
+
 // Devuelve 1 si el árbol es de concatenación (contiene string en algún lado)
 static int expr_is_stringy(AbstractExpresion *node) {
     if (!node) return 0;
@@ -187,10 +200,162 @@ static TipoDato emit_eval_numeric(AbstractExpresion *node, FILE *ftext) {
             emitln(ftext, "    add w1, w19, w20");
             return INT;
         }
+    } else if (strcmp(t, "Resta") == 0) {
+        TipoDato tl = emit_eval_numeric(node->hijos[0], ftext);
+        if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
+        TipoDato tr = emit_eval_numeric(node->hijos[1], ftext);
+        if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
+        if (tl == DOUBLE || tr == DOUBLE) {
+            if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
+            if (tr != DOUBLE) emitln(ftext, "    scvtf d9, w20");
+            emitln(ftext, "    fsub d0, d8, d9");
+            return DOUBLE;
+        } else {
+            emitln(ftext, "    sub w1, w19, w20");
+            return INT;
+        }
+    } else if (strcmp(t, "Multiplicacion") == 0) {
+        TipoDato tl = emit_eval_numeric(node->hijos[0], ftext);
+        if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
+        TipoDato tr = emit_eval_numeric(node->hijos[1], ftext);
+        if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
+        if (tl == DOUBLE || tr == DOUBLE) {
+            if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
+            if (tr != DOUBLE) emitln(ftext, "    scvtf d9, w20");
+            emitln(ftext, "    fmul d0, d8, d9");
+            return DOUBLE;
+        } else {
+            emitln(ftext, "    mul w1, w19, w20");
+            return INT;
+        }
+    } else if (strcmp(t, "Division") == 0) {
+        TipoDato tl = emit_eval_numeric(node->hijos[0], ftext);
+        if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
+        TipoDato tr = emit_eval_numeric(node->hijos[1], ftext);
+        if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
+        if (tl == DOUBLE || tr == DOUBLE) {
+            if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
+            if (tr != DOUBLE) emitln(ftext, "    scvtf d9, w20");
+            emitln(ftext, "    fdiv d0, d8, d9");
+            return DOUBLE;
+        } else {
+            emitln(ftext, "    sdiv w1, w19, w20");
+            return INT;
+        }
+    } else if (strcmp(t, "Modulo") == 0) {
+        TipoDato tl = emit_eval_numeric(node->hijos[0], ftext);
+        if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
+        TipoDato tr = emit_eval_numeric(node->hijos[1], ftext);
+        if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
+        if (tl == DOUBLE || tr == DOUBLE) {
+            // convertir a double si hace falta y llamar a fmod
+            if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
+            if (tr != DOUBLE) emitln(ftext, "    scvtf d9, w20");
+            emitln(ftext, "    fmov d0, d8");
+            emitln(ftext, "    fmov d1, d9");
+            emitln(ftext, "    bl fmod");
+            // resultado en d0
+            return DOUBLE;
+        } else {
+            // w1 = w19 % w20 via sdiv+msub
+            emitln(ftext, "    sdiv w21, w19, w20");
+            emitln(ftext, "    msub w1, w21, w20, w19");
+            return INT;
+        }
+    } else if (strcmp(t, "NegacionUnaria") == 0) {
+        TipoDato ty = emit_eval_numeric(node->hijos[0], ftext);
+        if (ty == DOUBLE) {
+            emitln(ftext, "    fneg d0, d0");
+            return DOUBLE;
+        } else {
+            emitln(ftext, "    neg w1, w1");
+            return INT;
+        }
     }
     // Por defecto, 0
     emitln(ftext, "    mov w1, #0");
     return INT;
+}
+
+// Evalúa una expresión booleana y deja 0/1 en w1
+static void emit_eval_boolean(AbstractExpresion *node, FILE *ftext) {
+    const char *t = node->node_type ? node->node_type : "";
+    if (strcmp(t, "Primitivo") == 0) {
+        PrimitivoExpresion *p = (PrimitivoExpresion *)node;
+        if (p->tipo == BOOLEAN) {
+            int is_true = (p->valor && strcmp(p->valor, "true") == 0);
+            char line[64]; snprintf(line, sizeof(line), "    mov w1, #%d", is_true ? 1 : 0); emitln(ftext, line);
+            return;
+        }
+        // numéricos: 0 => false, else true
+        TipoDato ty = emit_eval_numeric(node, ftext);
+        if (ty == DOUBLE) {
+            emitln(ftext, "    fcmp d0, #0.0");
+            emitln(ftext, "    cset w1, ne");
+        } else {
+            emitln(ftext, "    cmp w1, #0");
+            emitln(ftext, "    cset w1, ne");
+        }
+        return;
+    }
+    if (strcmp(t, "Identificador") == 0) {
+        IdentificadorExpresion *id = (IdentificadorExpresion *)node;
+        VarEntry *v = find_var(id->nombre);
+        if (v && v->tipo == BOOLEAN) {
+            char l1[64]; snprintf(l1, sizeof(l1), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, l1);
+            return;
+        }
+        // fallback a numérico no-cero
+        TipoDato ty = emit_eval_numeric(node, ftext);
+        if (ty == DOUBLE) { emitln(ftext, "    fcmp d0, #0.0"); emitln(ftext, "    cset w1, ne"); }
+        else { emitln(ftext, "    cmp w1, #0"); emitln(ftext, "    cset w1, ne"); }
+        return;
+    }
+    // Relacionales entre números
+    if (strcmp(t, "IgualIgual") == 0 || strcmp(t, "Diferente") == 0 ||
+        strcmp(t, "MayorQue") == 0 || strcmp(t, "MenorQue") == 0 ||
+        strcmp(t, "MayorIgual") == 0 || strcmp(t, "MenorIgual") == 0) {
+        // eval ambos
+        TipoDato tl = emit_eval_numeric(node->hijos[0], ftext);
+        if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
+        TipoDato tr = emit_eval_numeric(node->hijos[1], ftext);
+        if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
+        int use_fp = (tl == DOUBLE || tr == DOUBLE);
+        if (use_fp) {
+            if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
+            if (tr != DOUBLE) emitln(ftext, "    scvtf d9, w20");
+            emitln(ftext, "    fcmp d8, d9");
+        } else {
+            emitln(ftext, "    cmp w19, w20");
+        }
+        if (strcmp(t, "IgualIgual") == 0) emitln(ftext, "    cset w1, eq");
+        else if (strcmp(t, "Diferente") == 0) emitln(ftext, "    cset w1, ne");
+        else if (strcmp(t, "MayorQue") == 0) emitln(ftext, "    cset w1, gt");
+        else if (strcmp(t, "MenorQue") == 0) emitln(ftext, "    cset w1, lt");
+        else if (strcmp(t, "MayorIgual") == 0) emitln(ftext, "    cset w1, ge");
+        else if (strcmp(t, "MenorIgual") == 0) emitln(ftext, "    cset w1, le");
+        return;
+    }
+    if (strcmp(t, "And") == 0) {
+        emit_eval_boolean(node->hijos[0], ftext); emitln(ftext, "    mov w19, w1");
+        emit_eval_boolean(node->hijos[1], ftext); emitln(ftext, "    mov w20, w1");
+        emitln(ftext, "    and w1, w19, w20");
+        return;
+    }
+    if (strcmp(t, "Or") == 0) {
+        emit_eval_boolean(node->hijos[0], ftext); emitln(ftext, "    mov w19, w1");
+        emit_eval_boolean(node->hijos[1], ftext); emitln(ftext, "    mov w20, w1");
+        emitln(ftext, "    orr w1, w19, w20");
+        return;
+    }
+    if (strcmp(t, "Not") == 0) {
+        emit_eval_boolean(node->hijos[0], ftext);
+        // w1 = !w1
+        emitln(ftext, "    eor w1, w1, #1");
+        return;
+    }
+    // Fallback: 0
+    emitln(ftext, "    mov w1, #0");
 }
 
 // Emite las partes de una expresión stringy en orden (sin salto de línea)
@@ -267,10 +432,20 @@ static void emit_print_stringy(AbstractExpresion *node, FILE *ftext) {
         }
         return;
     }
-    // fallback: eval numérico
-    TipoDato ty = emit_eval_numeric(node, ftext);
-    if (ty == DOUBLE) emitln(ftext, "    ldr x0, =fmt_double"); else emitln(ftext, "    ldr x0, =fmt_int");
-    emitln(ftext, "    bl printf");
+    // fallback: si es booleana, imprimir true/false; si no, evaluar numérico
+    if (node_is_boolean_result(node)) {
+        emit_eval_boolean(node, ftext);
+        emitln(ftext, "    cmp w1, #0");
+        emitln(ftext, "    ldr x1, =false_str");
+        emitln(ftext, "    ldr x16, =true_str");
+        emitln(ftext, "    csel x1, x16, x1, ne");
+        emitln(ftext, "    ldr x0, =fmt_string");
+        emitln(ftext, "    bl printf");
+    } else {
+        TipoDato ty = emit_eval_numeric(node, ftext);
+        if (ty == DOUBLE) emitln(ftext, "    ldr x0, =fmt_double"); else emitln(ftext, "    ldr x0, =fmt_int");
+        emitln(ftext, "    bl printf");
+    }
 }
 
 // Recorre el árbol emitiendo código para Print con literales primitivos
@@ -337,10 +512,20 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         // Esperamos 1 hijo: una ListaExpresiones, cuyas entradas por ahora deben ser Primitivos
         if (node->numHijos == 0) return;
         AbstractExpresion *lista = node->hijos[0];
+        {
+            char cm[256];
+            snprintf(cm, sizeof(cm), "    // Print lista node_type: %s, numHijos=%zu", lista && lista->node_type ? lista->node_type : "<null>", lista ? lista->numHijos : 0);
+            emitln(ftext, cm);
+        }
 
         // Imprimimos cada expr seguido de espacio (excepto la última), luego un \n
         for (size_t i = 0; i < lista->numHijos; i++) {
             AbstractExpresion *expr = lista->hijos[i];
+            {
+                char cm[256];
+                snprintf(cm, sizeof(cm), "    // print expr node_type: %s", expr && expr->node_type ? expr->node_type : "<null>");
+                emitln(ftext, cm);
+            }
             // Si es concatenación (stringy), imprimir sus partes
             if (expr_is_stringy(expr)) {
                 emit_print_stringy(expr, ftext);
@@ -460,8 +645,27 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                         emitln(ftext, "    bl printf");
                     }
                 }
-            } else if (expr->node_type && strcmp(expr->node_type, "Suma") == 0) {
+            } else if (expr->node_type && (strcmp(expr->node_type, "Suma") == 0 ||
+                                           strcmp(expr->node_type, "Resta") == 0 ||
+                                           strcmp(expr->node_type, "Multiplicacion") == 0 ||
+                                           strcmp(expr->node_type, "Division") == 0 ||
+                                           strcmp(expr->node_type, "Modulo") == 0 ||
+                                           strcmp(expr->node_type, "NegacionUnaria") == 0)) {
                 // Si no es stringy, evaluar como numérico y luego imprimir
+                TipoDato ty = emit_eval_numeric(expr, ftext);
+                if (ty == DOUBLE) emitln(ftext, "    ldr x0, =fmt_double"); else emitln(ftext, "    ldr x0, =fmt_int");
+                emitln(ftext, "    bl printf");
+            } else if (expr->node_type && node_is_boolean_result(expr)) {
+                // Evaluar booleano y mapear a true/false
+                emit_eval_boolean(expr, ftext);
+                emitln(ftext, "    cmp w1, #0");
+                emitln(ftext, "    ldr x1, =false_str");
+                emitln(ftext, "    ldr x16, =true_str");
+                emitln(ftext, "    csel x1, x16, x1, ne");
+                emitln(ftext, "    ldr x0, =fmt_string");
+                emitln(ftext, "    bl printf");
+            } else {
+                // Fallback: evalúa como numérico por defecto
                 TipoDato ty = emit_eval_numeric(expr, ftext);
                 if (ty == DOUBLE) emitln(ftext, "    ldr x0, =fmt_double"); else emitln(ftext, "    ldr x0, =fmt_int");
                 emitln(ftext, "    bl printf");

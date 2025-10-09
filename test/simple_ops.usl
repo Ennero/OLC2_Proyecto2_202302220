@@ -1,0 +1,36 @@
+public static void main() {
+    int a = 9;
+    int b = 4;
+    double x = 7.5;
+    double y = 2.0;
+    boolean t = true;
+    boolean f = false;
+
+    // Aritmética
+    System.out.println(a - b);        // 5
+    System.out.println(a * b);        // 36
+    System.out.println(a / b);        // 2
+    System.out.println(a % b);        // 1
+    System.out.println(x / y);        // 3.750000
+    System.out.println(x % y);        // 1.500000 (via fmod)
+    System.out.println(-a);           // -9
+    System.out.println(-(x + 0.5));   // -8.000000
+
+    // Relacionales
+    System.out.println(a == b);       // false
+    System.out.println(a != b);       // true
+    System.out.println(a > b);        // true
+    System.out.println(a < b);        // false
+    System.out.println(a >= b);       // true
+    System.out.println(a <= b);       // false
+    System.out.println(x >= y);       // true
+
+    // Lógicas
+    System.out.println(t && f);       // false
+    System.out.println(t || f);       // true
+    System.out.println(!t);           // false
+
+    // En concatenaciones
+    System.out.println("res= " + (a - b));    // "res= 5"
+    System.out.println("ok? " + (a > b && t)); // "ok? true"
+}

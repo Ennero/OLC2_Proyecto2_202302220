@@ -46,6 +46,12 @@
 			"type": "shell",
 			"command": "make",
 			"group": "build"
+		},
+		{
+			"label": "rebuild-after-ops-codegen",
+			"type": "shell",
+			"command": "make",
+			"group": "build"
 		}
 	],
 	"version": "2.0.0"

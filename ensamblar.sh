@@ -18,8 +18,8 @@ echo "[1/3] Ensamblando $ASM_FILE"
 aarch64-linux-gnu-as -o "$OBJ_FILE" "$ASM_FILE"
 
 echo "[2/3] Enlazando a binario"
-# Enlazamos contra la libc de aarch64 para tener printf disponible
-aarch64-linux-gnu-gcc -no-pie -o "$BIN_FILE" "$OBJ_FILE"
+# Enlazamos contra la libc de aarch64 para tener printf y libm (fmod) disponibles
+aarch64-linux-gnu-gcc -no-pie -o "$BIN_FILE" "$OBJ_FILE" -lm
 
 echo "[3/3] Ejecutando en qemu-aarch64"
 # Si existe el sysroot de aarch64 en el sistema, usarlo para la libc y el loader
