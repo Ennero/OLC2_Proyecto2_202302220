@@ -1,5 +1,0 @@
-public static void main() {
-    System.out.println("Hola" + " ARM");
-    System.out.println("Numero: " + 123 + ", bool=" + true + ", char=" + 'Z' + ", null=" + null);
-    System.out.println();
-}

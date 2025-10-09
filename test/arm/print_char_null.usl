@@ -1,5 +1,0 @@
-public static void main() {
-    System.out.println('A');
-    System.out.println('\n');
-    System.out.println(null);
-}
