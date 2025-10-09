@@ -1,0 +1,7 @@
+public static void main() {
+    System.out.println(42);
+    System.out.println(3.5);
+    System.out.println(true);
+    System.out.println('A');
+    System.out.println("Hola mundo");
+}

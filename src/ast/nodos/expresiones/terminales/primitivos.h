@@ -9,7 +9,7 @@ typedef struct
 {
     AbstractExpresion base;
     TipoDato tipo;
-    char *valor;
+    char *valor; // literal textual tal como viene del parser
 } PrimitivoExpresion;
 
 Result interpretPrimitivoExpresion(AbstractExpresion *, Context *);

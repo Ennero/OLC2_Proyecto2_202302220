@@ -1,0 +1,14 @@
+public static void main() {
+    int a = 15;
+    double b = 2.5;
+    String s = "Hola";
+
+    System.out.println(a);
+    System.out.println(a + 5);
+    System.out.println(b + 3.5);
+    System.out.println(a + b);
+
+    System.out.println(s + " Mundo");
+    System.out.println("Resultado: " + a + " y b= " + b);
+    System.out.println("Suma: " + (a + 10));
+}

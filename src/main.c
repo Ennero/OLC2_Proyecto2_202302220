@@ -11,6 +11,7 @@
 #include "symbol_reporter.h"
 #include "error_reporter.h"
 #include "ast_grapher.h"
+#include "codegen/arm64_codegen.h"
 
 // --- Declaraciones Globales y Prototipos ---
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
@@ -662,8 +663,9 @@ int main(int argc, char **argv)
     init_symbol_report();
     init_error_report();
 
-    // Modo CLI opcional: "--run <archivo.usl>" para ejecutar sin GUI
-    if (argc >= 3 && strcmp(argv[1], "--run") == 0)
+    // Modo CLI opcional: "--run <archivo.usl>" (interpreta)
+    // y "--arm <archivo.usl>" (genera ensamblador AArch64)
+    if (argc >= 3 && (strcmp(argv[1], "--run") == 0 || strcmp(argv[1], "--arm") == 0))
     {
         // Leer el archivo de entrada
         const char *path = argv[2];
@@ -707,32 +709,50 @@ int main(int argc, char **argv)
         clear_symbol_report();
         clear_error_report();
 
-        // Parsear y ejecutar
+        // Parsear (para ambos modos)
         YY_BUFFER_STATE buffer_state = yy_scan_string(content);
         yyparse();
         if (get_error_list() == NULL && ast_root)
         {
-            Context *contextPadre = nuevoContext(NULL, "global");
-            ast_root->interpret(ast_root, contextPadre);
+            if (strcmp(argv[1], "--run") == 0)
+            {
+                // Interpretación tradicional
+                Context *contextPadre = nuevoContext(NULL, "global");
+                ast_root->interpret(ast_root, contextPadre);
+            }
+            else
+            {
+                // Generación ARM64
+                // Asegurar carpeta de salida
+                mkdir("arm", 0777);
+                int rc = arm64_generate_program(ast_root, "arm/salida.s");
+                if (rc != 0)
+                {
+                    fprintf(stderr, "Fallo generando ARM64 a 'arm/salida.s'\n");
+                }
+            }
         }
         yy_delete_buffer(buffer_state);
         free(content);
 
-        // Mensaje final coherente con la GUI
+        // Mensaje final coherente con la GUI/CLI
         if (get_error_list() != NULL)
         {
             clear_output_buffer();
-            append_to_output("======== Se encontraron errores durante el análisis y/o ejecución ========\nVer la tabla de errores para más detalles.\n");
+            append_to_output("======== Se encontraron errores durante el análisis ========\nVer la tabla de errores para más detalles.\n");
         }
         else
         {
-            append_to_output("\n\n======== Código analizado y ejecutado correctamente ========\n");
+            if (strcmp(argv[1], "--run") == 0)
+                append_to_output("\n\n======== Código analizado y ejecutado correctamente ========\n");
+            else
+                append_to_output("\n\n======== Código analizado y ensamblador ARM64 generado en arm/salida.s ========\n");
         }
 
         // Imprimir salida y, si se desea, errores/símbolos en modo texto sencillo
         fputs(get_output_buffer(), stdout);
 
-        // Imprimir tabla de símbolos
+    // Imprimir tabla de errores por stderr
         const ErrorInfo *errors = get_error_list();
         while (errors)
         {
