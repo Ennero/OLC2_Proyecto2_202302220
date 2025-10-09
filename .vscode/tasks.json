@@ -52,6 +52,51 @@
 			"type": "shell",
 			"command": "make",
 			"group": "build"
+		},
+		{
+			"label": "arm64 test equals+casts",
+			"type": "shell",
+			"command": "./build/javalang --arm test/pruebaReferencia.usl && aarch64-linux-gnu-gcc -no-pie -static -s -o arm/salida arm/salida.s && qemu-aarch64 ./arm/salida",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "arm64 run equals_casts",
+			"type": "shell",
+			"command": "./build/javalang --arm test/equals_casts.usl && aarch64-linux-gnu-gcc -no-pie -static -s -o arm/salida arm/salida.s && qemu-aarch64 ./arm/salida",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "arm64 run equals_casts (retry)",
+			"type": "shell",
+			"command": "./build/javalang --arm test/equals_casts.usl && aarch64-linux-gnu-gcc -no-pie -static -s -o arm/salida arm/salida.s && qemu-aarch64 ./arm/salida",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "arm64 run equals_casts (content eq)",
+			"type": "shell",
+			"command": "./build/javalang --arm test/equals_casts.usl && aarch64-linux-gnu-gcc -no-pie -static -s -o arm/salida arm/salida.s && qemu-aarch64 ./arm/salida",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "arm64 run equals_casts (final)",
+			"type": "shell",
+			"command": "./build/javalang --arm test/equals_casts.usl && aarch64-linux-gnu-gcc -no-pie -static -s -o arm/salida arm/salida.s && qemu-aarch64 ./arm/salida",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
 		}
 	],
 	"version": "2.0.0"

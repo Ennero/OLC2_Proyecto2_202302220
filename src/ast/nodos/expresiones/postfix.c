@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include "ast/nodos/expresiones/terminales/identificadores.h"
 #include "parser.tab.h"
+#include "ast/nodos/expresiones/postfix.h"
 
 // Estructura interna para este nodo
 typedef struct
@@ -15,6 +16,14 @@ typedef struct
     AbstractExpresion base;
     int op_token; // TOKEN_INCREMENTO o TOKEN_DECREMENTO
 } PostfixExpresion;
+
+int postfix_get_op(AbstractExpresion *self)
+{
+    if (!self || !self->node_type) return 0;
+    if (strcmp(self->node_type, "Postfix") != 0) return 0;
+    PostfixExpresion *n = (PostfixExpresion *)self;
+    return n->op_token;
+}
 
 static Result write_back_to_lvalue(AbstractExpresion *lvalue_expr, Context *context, Result nuevo_valor)
 {

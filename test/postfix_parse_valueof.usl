@@ -1,0 +1,23 @@
+public static void main() {
+    int i = 5;
+    double d = 2.5;
+    System.out.println(i++);
+    System.out.println(i);
+    System.out.println(d--);
+    System.out.println(d);
+
+    String s1 = "123";
+    String s2 = "3.14";
+    String s3 = "2.5";
+    int pi = Integer.parseInt(s1);
+    double pd = Double.parseDouble(s2);
+    float pf = Float.parseFloat(s3);
+    System.out.println(pi);
+    System.out.println(pd);
+    System.out.println(pf);
+
+    System.out.println(String.valueOf(42));
+    System.out.println(String.valueOf(3.5));
+    System.out.println(String.valueOf(true));
+    System.out.println(String.valueOf('A'));
+}
