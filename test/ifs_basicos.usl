@@ -1,0 +1,26 @@
+public static void main() {
+    int numero = 10;
+    if (numero > 5) {
+        System.out.println("Mayor que cinco");
+    }
+
+    if (numero % 2 == 0) {
+        System.out.println("Par");
+    } else {
+        System.out.println("Impar");
+    }
+
+    if (numero < 0) {
+        System.out.println("Negativo");
+    } else {
+        System.out.println("Cero o positivo");
+    }
+
+    if (numero < 0) {
+        System.out.println("Negativo");
+    } else if (numero > 0) {
+        System.out.println("Positivo");
+    } else {
+        System.out.println("Cero");
+    }
+}

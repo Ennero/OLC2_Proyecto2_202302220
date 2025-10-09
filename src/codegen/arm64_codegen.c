@@ -39,12 +39,48 @@ typedef VarEntry VarEntry;
 static VarEntry *buscar_variable(const char *name) { return vars_buscar(name); }
 static VarEntry *agregar_variable(const char *name, TipoDato tipo, int size_bytes, FILE *ftext) { return vars_agregar(name, tipo, size_bytes, ftext); }
 
+// ----------------- Helpers de labels -----------------
+static int __label_seq = 0;
+static void emit_label(FILE *f, const char *prefix, int id) {
+    char lab[64]; snprintf(lab, sizeof(lab), "%s_%d:", prefix, id); emitln(f, lab);
+}
+
 // ----------------- Emisión de expresiones -----------------
 // Implementaciones movidas a codegen/expresiones/*.c (arm64_num.c, arm64_bool.c, arm64_print.c)
 
 // Recorre el árbol emitiendo código para Print con literales primitivos
 static void gen_node(FILE *ftext, AbstractExpresion *node) {
     if (!node) return;
+    // IfStatement: emitir saltos con labels y no recorrer hijos antes
+    if (node->node_type && strcmp(node->node_type, "IfStatement") == 0) {
+        int id = ++__label_seq;
+        char thenp[32], elsep[32], endp[32];
+        snprintf(thenp, sizeof(thenp), "L_then");
+        snprintf(elsep, sizeof(elsep), "L_else");
+        snprintf(endp, sizeof(endp),  "L_end");
+        // Evaluar condición como booleano
+        emitir_eval_booleano(node->hijos[0], ftext);
+        emitln(ftext, "    cmp w1, #0");
+        // Si hay else/else-if, saltar a ELSE si cond == 0, de lo contrario THEN
+        if (node->numHijos > 2 && node->hijos[2] != NULL) {
+            char br_else[64]; snprintf(br_else, sizeof(br_else), "    beq %s_%d", elsep, id); emitln(ftext, br_else);
+        } else {
+            char br_end[64]; snprintf(br_end, sizeof(br_end), "    beq %s_%d", endp, id); emitln(ftext, br_end);
+        }
+        // THEN
+        emit_label(ftext, thenp, id);
+        gen_node(ftext, node->hijos[1]);
+        // Al finalizar THEN, saltar a END si existe rama else
+        if (node->numHijos > 2 && node->hijos[2] != NULL) {
+            char br_end2[64]; snprintf(br_end2, sizeof(br_end2), "    b %s_%d", endp, id); emitln(ftext, br_end2);
+            // ELSE
+            emit_label(ftext, elsep, id);
+            gen_node(ftext, node->hijos[2]);
+        }
+        // END
+        emit_label(ftext, endp, id);
+        return;
+    }
     // Manejo especial de bloques: crean un nuevo alcance de variables
     if (node->node_type && strcmp(node->node_type, "Bloque") == 0) {
         vars_push_scope(ftext);
@@ -55,10 +91,10 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         return;
     }
 
-    // Recorremos primero hijos (pre-orden simple para statements) excepto Bloque (ya manejado)
+    // Recorremos primero hijos (pre-orden simple para statements) excepto Bloque/IfStatement (ya manejados)
     for (size_t i = 0; i < node->numHijos; i++) {
-        // No procesar aquí sub-bloques; serán manejados al entrar a gen_node
-        if (node->hijos[i] && node->hijos[i]->node_type && strcmp(node->hijos[i]->node_type, "Bloque") == 0) {
+        if (!node->hijos[i]) continue;
+        if (node->hijos[i]->node_type && (strcmp(node->hijos[i]->node_type, "Bloque") == 0 || strcmp(node->hijos[i]->node_type, "IfStatement") == 0)) {
             gen_node(ftext, node->hijos[i]);
         } else {
             gen_node(ftext, node->hijos[i]);
