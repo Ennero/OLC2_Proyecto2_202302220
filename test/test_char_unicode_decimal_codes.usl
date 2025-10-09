@@ -1,0 +1,11 @@
+public static void main() {
+    char d = 'A';
+    char e = '\u65';    // 65 decimal -> 'A'
+    char f = '\u010';   // 10 decimal -> '\n'
+    char g = '\u00010'; // 10 decimal -> '\n'
+
+    System.out.println((int)d);
+    System.out.println((int)e);
+    System.out.println((int)f);
+    System.out.println((int)g);
+}

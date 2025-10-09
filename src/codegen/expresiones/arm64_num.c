@@ -29,8 +29,31 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
                     else v = strtol(p->valor, NULL, 10);
                 } else if (p->tipo == BOOLEAN) {
                     v = (strcmp(p->valor, "true") == 0);
-                } else { // CHAR básico
-                    v = (unsigned char)p->valor[0];
+                } else { // CHAR con soporte de escapes y \u decimal
+                    const char *s = p->valor;
+                    size_t n = strlen(s);
+                    int cp = 0;
+                    if (n >= 2 && s[0] == '\\') {
+                        switch (s[1]) {
+                            case 'n': cp = '\n'; break;
+                            case 't': cp = '\t'; break;
+                            case 'r': cp = '\r'; break;
+                            case '\\': cp = '\\'; break;
+                            case '"': cp = '"'; break;
+                            case '\'': cp = '\''; break;
+                            case 'u': {
+                                // Leer hasta 5 dígitos decimales después de \u
+                                int val = 0; size_t i = 2; size_t cnt = 0;
+                                while (i < n && cnt < 5 && s[i] >= '0' && s[i] <= '9') { val = val*10 + (s[i]-'0'); i++; cnt++; }
+                                if (val < 0) val = 0; if (val > 0x10FFFF) val = 0x10FFFF;
+                                cp = val; break;
+                            }
+                            default: cp = (unsigned char)s[1]; break;
+                        }
+                    } else {
+                        cp = (unsigned char)s[0];
+                    }
+                    v = cp;
                 }
             }
             char line[64]; snprintf(line, sizeof(line), "    mov w1, #%ld", v); emitln(ftext, line);

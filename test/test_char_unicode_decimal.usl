@@ -1,0 +1,12 @@
+public static void main() {
+    char d = 'A';
+    char e = '\u65';    // 65 decimal -> 'A'
+    char f = '\u010';   // 10 decimal -> '\n'
+    char g = '\u00010'; // 10 decimal -> '\n'
+
+    // Imprimir como enteros para validar valor numérico
+    System.out.println(d);
+    System.out.println(e);
+    System.out.println(f);
+    System.out.println(g);
+}
