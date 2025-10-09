@@ -1,0 +1,32 @@
+public static void main() {
+    // Cadenas con escapes
+    System.out.println("Linea1\nLinea2");
+    System.out.println("Tab\t->\t<- Tab fin");
+    System.out.println("Retorno\rCarro");
+    System.out.println("Comilla doble: \" y backslash: \\");
+
+    // Chars con escapes y unicode decimal
+    char nl = '\n';
+    char tb = '\t';
+    char cr = '\r';
+    char dq = '"';
+    char bs = '\\';
+    char A  = 'A';
+    char Au = '\u65'; // 65 decimal
+
+    // Imprimir directamente chars
+    System.out.println(nl);
+    System.out.println(tb);
+    System.out.println(cr);
+    System.out.println(dq);
+    System.out.println(bs);
+    System.out.println(A);
+    System.out.println(Au);
+
+    // Operaciones con char (internamente entero)
+    int codeA = (int)A;
+    System.out.println(codeA);        // 65
+    System.out.println(A + 1);        // 66
+    System.out.println((char)(A + 1)); // 'B'
+    System.out.println((char)('a' + 1)); // 'b'
+}

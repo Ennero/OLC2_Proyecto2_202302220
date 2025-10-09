@@ -5,6 +5,7 @@
 #include "codegen/arm64_vars.h"
 #include "ast/nodos/expresiones/terminales/primitivos.h"
 #include "ast/nodos/expresiones/terminales/identificadores.h"
+#include "ast/nodos/instrucciones/instruccion/casteos.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -204,19 +205,54 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
             char l2[64]; snprintf(l2, sizeof(l2), "    ldr x1, =%s", lab); emitln(ftext, l2);
             emitln(ftext, "    bl printf");
             return;
-        } else if (p->tipo == INT || p->tipo == CHAR || p->tipo == BOOLEAN) {
-            TipoDato ty = emitir_eval_numerico(node, ftext);
-            if (ty == INT) {
-                emitln(ftext, "    ldr x0, =fmt_int");
-                emitln(ftext, "    bl printf");
-            } else {
-                emitln(ftext, "    ldr x0, =fmt_double");
-                emitln(ftext, "    bl printf");
-            }
+        } else if (p->tipo == CHAR) {
+            // Imprimir caracter como %c
+            (void)emitir_eval_numerico(node, ftext);
+            emitln(ftext, "    ldr x0, =fmt_char");
+            emitln(ftext, "    bl printf");
+            return;
+        } else if (p->tipo == BOOLEAN) {
+            // Mapear a true/false
+            emitir_eval_booleano(node, ftext);
+            emitln(ftext, "    cmp w1, #0");
+            emitln(ftext, "    ldr x1, =false_str");
+            emitln(ftext, "    ldr x16, =true_str");
+            emitln(ftext, "    csel x1, x16, x1, ne");
+            emitln(ftext, "    ldr x0, =fmt_string");
+            emitln(ftext, "    bl printf");
+            return;
+        } else if (p->tipo == INT) {
+            (void)emitir_eval_numerico(node, ftext);
+            emitln(ftext, "    ldr x0, =fmt_int");
+            emitln(ftext, "    bl printf");
             return;
         } else {
             (void)emitir_eval_numerico(node, ftext);
             emitln(ftext, "    ldr x0, =fmt_double");
+            emitln(ftext, "    bl printf");
+            return;
+        }
+    }
+    if (strcmp(t, "Casteo") == 0) {
+        // Si el casteo es a CHAR/BOOLEAN, usar formateo correcto
+        CasteoExpresion *c = (CasteoExpresion *)node;
+        TipoDato dest = c->tipo_destino;
+        TipoDato ty = emitir_eval_numerico(node, ftext);
+        if (dest == CHAR) {
+            emitln(ftext, "    ldr x0, =fmt_char");
+            emitln(ftext, "    bl printf");
+            return;
+        } else if (dest == BOOLEAN) {
+            emitln(ftext, "    cmp w1, #0");
+            emitln(ftext, "    ldr x1, =false_str");
+            emitln(ftext, "    ldr x16, =true_str");
+            emitln(ftext, "    csel x1, x16, x1, ne");
+            emitln(ftext, "    ldr x0, =fmt_string");
+            emitln(ftext, "    bl printf");
+            return;
+        } else {
+            if (dest == DOUBLE || dest == FLOAT || ty == DOUBLE) emitln(ftext, "    ldr x0, =fmt_double");
+            else emitln(ftext, "    ldr x0, =fmt_int");
             emitln(ftext, "    bl printf");
             return;
         }

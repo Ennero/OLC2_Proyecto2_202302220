@@ -1,0 +1,23 @@
+public static void main() {
+    int x = 3;
+    final int y = 2;
+
+    // Agrupación aritmética con char como entero
+    System.out.println(3*342 + (3 * ('A' + 2))); // 1026 + 3*(67) = 1026 + 201 = 1227
+
+    // Bloque crea nuevo alcance
+    {
+        int x = 10; // sombra de x externo
+        System.out.println(x); // 10
+        {
+            int x = 20;
+            System.out.println(x); // 20
+        }
+        System.out.println(x); // 10
+    }
+    System.out.println(x); // 3
+
+    // Probar que final no se reasigna (en codegen lo ignoramos, pero no debería cambiar valor)
+    System.out.println(y); // 2
+     y = 5; // si el parser lo permitiera, codegen lo ignora
+}

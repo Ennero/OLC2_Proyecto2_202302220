@@ -45,10 +45,24 @@ static VarEntry *agregar_variable(const char *name, TipoDato tipo, int size_byte
 // Recorre el árbol emitiendo código para Print con literales primitivos
 static void gen_node(FILE *ftext, AbstractExpresion *node) {
     if (!node) return;
+    // Manejo especial de bloques: crean un nuevo alcance de variables
+    if (node->node_type && strcmp(node->node_type, "Bloque") == 0) {
+        vars_push_scope(ftext);
+        for (size_t i = 0; i < node->numHijos; i++) {
+            gen_node(ftext, node->hijos[i]);
+        }
+        vars_pop_scope(ftext);
+        return;
+    }
 
-    // Recorremos primero hijos (pre-orden simple para statements)
+    // Recorremos primero hijos (pre-orden simple para statements) excepto Bloque (ya manejado)
     for (size_t i = 0; i < node->numHijos; i++) {
-        gen_node(ftext, node->hijos[i]);
+        // No procesar aquí sub-bloques; serán manejados al entrar a gen_node
+        if (node->hijos[i] && node->hijos[i]->node_type && strcmp(node->hijos[i]->node_type, "Bloque") == 0) {
+            gen_node(ftext, node->hijos[i]);
+        } else {
+            gen_node(ftext, node->hijos[i]);
+        }
     }
 
     // Detectar por node_type minimalista
@@ -56,9 +70,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         // ya recorremos hijos arriba
         return;
     }
-    if (node->node_type && strcmp(node->node_type, "Bloque") == 0) {
-        return;
-    }
+    // Bloques ya fueron manejados arriba
     if (node->node_type && strcmp(node->node_type, "MainFunction") == 0) {
         // ya procesamos sus hijos
         return;
@@ -72,7 +84,9 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         }
         // Tamaño
         int size = (decl->tipo == DOUBLE) ? 8 : 8; // usamos 8 para alinear (char/int/bool caben)
-        VarEntry *v = agregar_variable(decl->nombre, decl->tipo, size, ftext);
+        VarEntry *v = NULL;
+        int is_const = decl->es_constante ? 1 : 0;
+        v = vars_agregar_ext(decl->nombre, decl->tipo, size, is_const, ftext);
         if (node->numHijos > 0) {
             AbstractExpresion *init = node->hijos[0];
             if (decl->tipo == DOUBLE || decl->tipo == FLOAT) {
@@ -94,7 +108,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 char st[64]; snprintf(st, sizeof(st), "    str w1, [x29, -%d]", v->offset); emitln(ftext, st);
             }
         } else {
-            // Valor por defecto 0/false/null
+            // Valor por defecto 0/false/null. Para constantes 'final', en Java es error; aquí no reportamos en codegen.
             if (decl->tipo == STRING) {
                 char st[64]; snprintf(st, sizeof(st), "    mov x1, #0\n    str x1, [x29, -%d]", v->offset); emitln(ftext, st);
             } else if (decl->tipo == DOUBLE || decl->tipo == FLOAT) {
@@ -185,15 +199,23 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                         emitln(ftext, "    // print char");
                         emitln(ftext, "    ldr x0, =fmt_char");
                         if (p->valor && p->valor[0] == '\\' && p->valor[1]) {
-                            // muy básico: soportar \\n, \\t, \\r, \\'
                             int v = 0;
-                            switch (p->valor[1]) {
-                                case 'n': v = '\n'; break;
-                                case 't': v = '\t'; break;
-                                case 'r': v = '\r'; break;
-                                case '\\': v = '\\'; break;
-                                case '\'': v = '\''; break;
-                                default: v = (unsigned char)p->valor[1]; break;
+                            if (p->valor[1] == 'u') {
+                                // Leer hasta 5 dígitos decimales tras \u
+                                const char *s = p->valor; size_t n = strlen(s);
+                                int val = 0; size_t i = 2, cnt = 0;
+                                while (i < n && cnt < 5 && s[i] >= '0' && s[i] <= '9') { val = val*10 + (s[i]-'0'); i++; cnt++; }
+                                if (val < 0) val = 0; if (val > 0x10FFFF) val = 0x10FFFF; v = val;
+                            } else {
+                                switch (p->valor[1]) {
+                                    case 'n': v = '\n'; break;
+                                    case 't': v = '\t'; break;
+                                    case 'r': v = '\r'; break;
+                                    case '\\': v = '\\'; break;
+                                    case '\'': v = '\''; break;
+                                    case '"': v = '"'; break;
+                                    default: v = (unsigned char)p->valor[1]; break;
+                                }
                             }
                             char line[64]; snprintf(line, sizeof(line), "    mov w1, #%d", v); emitln(ftext, line);
                         } else {
@@ -252,6 +274,23 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 TipoDato ty = emitir_eval_numerico(expr, ftext);
                 if (ty == DOUBLE) emitln(ftext, "    ldr x0, =fmt_double"); else emitln(ftext, "    ldr x0, =fmt_int");
                 emitln(ftext, "    bl printf");
+            } else if (expr->node_type && strcmp(expr->node_type, "Casteo") == 0) {
+                // Casteo: formateo especial para CHAR y BOOLEAN
+                CasteoExpresion *c = (CasteoExpresion *)expr;
+                TipoDato ty = emitir_eval_numerico(expr, ftext);
+                if (c->tipo_destino == CHAR) {
+                    emitln(ftext, "    ldr x0, =fmt_char");
+                } else if (c->tipo_destino == BOOLEAN) {
+                    emitln(ftext, "    cmp w1, #0");
+                    emitln(ftext, "    ldr x1, =false_str");
+                    emitln(ftext, "    ldr x16, =true_str");
+                    emitln(ftext, "    csel x1, x16, x1, ne");
+                    emitln(ftext, "    ldr x0, =fmt_string");
+                } else {
+                    if (ty == DOUBLE || c->tipo_destino == DOUBLE || c->tipo_destino == FLOAT) emitln(ftext, "    ldr x0, =fmt_double");
+                    else emitln(ftext, "    ldr x0, =fmt_int");
+                }
+                emitln(ftext, "    bl printf");
             } else if (expr->node_type && nodo_es_resultado_booleano(expr)) {
                 // Evaluar booleano y mapear a true/false
                 emitir_eval_booleano(expr, ftext);
@@ -289,6 +328,10 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         ReasignacionExpresion *rea = (ReasignacionExpresion *)node;
         VarEntry *v = buscar_variable(rea->nombre);
     if (!v) return;
+        if (v->is_const) {
+            emitln(ftext, "    // reasignación a constante ignorada en codegen");
+            return;
+        }
         AbstractExpresion *rhs = node->hijos[0];
         if (v->tipo == STRING) {
             // Soportar literal string o id string
@@ -323,6 +366,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         AsignacionCompuestaExpresion *ac = (AsignacionCompuestaExpresion *)node;
         VarEntry *v = buscar_variable(ac->nombre);
         if (!v) return;
+        if (v->is_const) { emitln(ftext, "    // asignación compuesta sobre constante ignorada"); return; }
         AbstractExpresion *rhs = node->hijos[0];
         int op = ac->op_type;
         // Cargar LHS según tipo
