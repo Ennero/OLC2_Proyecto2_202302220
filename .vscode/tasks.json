@@ -97,6 +97,14 @@
 				"$gcc"
 			],
 			"group": "build"
+		},
+		{
+			"label": "build run switch_basico",
+			"type": "shell",
+			"command": "./build/javalang --arm test/switch_basico.usl && ./ensamblar.sh && qemu-aarch64 ./arm/salida",
+			"problemMatcher": [
+				"$gcc"
+			]
 		}
 	],
 	"version": "2.0.0"

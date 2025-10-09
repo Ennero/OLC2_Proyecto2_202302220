@@ -45,12 +45,29 @@ static void emit_label(FILE *f, const char *prefix, int id) {
     char lab[64]; snprintf(lab, sizeof(lab), "%s_%d:", prefix, id); emitln(f, lab);
 }
 
+// ----------------- Pila simple de labels para 'break' -----------------
+static int break_label_stack[64];
+static int break_label_sp = 0;
+static void break_push(int id) { if (break_label_sp < (int)(sizeof(break_label_stack)/sizeof(break_label_stack[0]))) break_label_stack[break_label_sp++] = id; }
+static int break_peek(void) { return break_label_sp > 0 ? break_label_stack[break_label_sp - 1] : -1; }
+static void break_pop(void) { if (break_label_sp > 0) break_label_sp--; }
+
 // ----------------- Emisión de expresiones -----------------
 // Implementaciones movidas a codegen/expresiones/*.c (arm64_num.c, arm64_bool.c, arm64_print.c)
 
 // Recorre el árbol emitiendo código para Print con literales primitivos
 static void gen_node(FILE *ftext, AbstractExpresion *node) {
     if (!node) return;
+    // BreakStatement: salto a etiqueta de ruptura más cercana (switch/loop)
+    if (node->node_type && strcmp(node->node_type, "BreakStatement") == 0) {
+        int bid = break_peek();
+        if (bid >= 0) {
+            char brk[64]; snprintf(brk, sizeof(brk), "    b L_break_%d", bid); emitln(ftext, brk);
+        } else {
+            emitln(ftext, "    // 'break' fuera de contexto; ignorado en codegen");
+        }
+        return;
+    }
     // IfStatement: emitir saltos con labels y no recorrer hijos antes
     if (node->node_type && strcmp(node->node_type, "IfStatement") == 0) {
         int id = ++__label_seq;
@@ -88,6 +105,101 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
             gen_node(ftext, node->hijos[i]);
         }
         vars_pop_scope(ftext);
+        return;
+    }
+
+    // SwitchStatement: evaluación del selector y salto a case/defecto, con soporte de 'break'
+    if (node->node_type && strcmp(node->node_type, "SwitchStatement") == 0) {
+        emitln(ftext, "    // --- Generando switch ---");
+        // hijos: [0]=selector, [1]=lista de casos (Case | DefaultCase)
+        AbstractExpresion *selector = node->hijos[0];
+        AbstractExpresion *case_list = node->hijos[1];
+        int sid = ++__label_seq; // id único para este switch
+
+        // Determinar si trabajaremos como string o numérico
+        int is_stringy = expresion_es_cadena(selector);
+
+        if (is_stringy) {
+            // Evaluar selector a puntero de cadena en x1 y guardarlo en x19
+            int ok = emitir_eval_string_ptr(selector, ftext);
+            if (!ok) {
+                // Fallback: usar String.valueOf(selector)
+                emitir_string_valueof(selector, ftext);
+            }
+            emitln(ftext, "    mov x19, x1");
+        } else {
+            // Evaluar como numérico (preferimos entero). Guardar en w19
+            TipoDato ty = emitir_eval_numerico(selector, ftext);
+            if (ty == DOUBLE) {
+                emitln(ftext, "    fcvtzs w19, d0");
+            } else {
+                emitln(ftext, "    mov w19, w1");
+            }
+        }
+
+        // Buscar si hay default
+        int has_default = 0;
+        for (size_t i = 0; i < (case_list ? case_list->numHijos : 0); i++) {
+            AbstractExpresion *c = case_list->hijos[i];
+            if (c && c->node_type && strcmp(c->node_type, "DefaultCase") == 0) { has_default = 1; break; }
+        }
+
+        // Cadena de comparaciones -> saltos a labels de case_i o default
+        for (size_t i = 0; i < (case_list ? case_list->numHijos : 0); i++) {
+            AbstractExpresion *c = case_list->hijos[i];
+            if (!c || !c->node_type) continue;
+            if (strcmp(c->node_type, "DefaultCase") == 0) continue;
+            // label destino para este case
+            char lab_case[64]; snprintf(lab_case, sizeof(lab_case), "L_case_%zu_%d", i, sid);
+            if (is_stringy) {
+                emitln(ftext, "    // comparar selector string con case string");
+                // Evaluar expr del case a puntero x1 y comparar con x19 usando strcmp
+                if (!emitir_eval_string_ptr(c->hijos[0], ftext)) {
+                    // Si no es string directo, convertir via valueOf
+                    emitir_string_valueof(c->hijos[0], ftext);
+                }
+                emitln(ftext, "    mov x0, x19");
+                emitln(ftext, "    // strcmp(x0, x1) == 0 ? goto case");
+                emitln(ftext, "    bl strcmp");
+                emitln(ftext, "    cmp w0, #0");
+                char br_eq[96]; snprintf(br_eq, sizeof(br_eq), "    beq %s", lab_case); emitln(ftext, br_eq);
+            } else {
+                emitln(ftext, "    // comparar selector int con case int");
+                // Evaluar a entero en w20 y comparar con w19
+                TipoDato tcase = emitir_eval_numerico(c->hijos[0], ftext);
+                if (tcase == DOUBLE) emitln(ftext, "    fcvtzs w20, d0"); else emitln(ftext, "    mov w20, w1");
+                emitln(ftext, "    cmp w19, w20");
+                char br_eq[96]; snprintf(br_eq, sizeof(br_eq), "    beq %s", lab_case); emitln(ftext, br_eq);
+            }
+        }
+
+        // Si no hubo match, saltar a default si existe, sino a break/end
+        if (has_default) {
+            char jdef[64]; snprintf(jdef, sizeof(jdef), "    b L_default_%d", sid); emitln(ftext, jdef);
+        } else {
+            char jend[64]; snprintf(jend, sizeof(jend), "    b L_break_%d", sid); emitln(ftext, jend);
+        }
+
+        // Empujar etiqueta de break para permitir 'break;' dentro de los casos
+        break_push(sid);
+
+        // Emitir los cuerpos de cada case en orden, permitiendo fallthrough natural
+        for (size_t i = 0; i < (case_list ? case_list->numHijos : 0); i++) {
+            AbstractExpresion *c = case_list->hijos[i];
+            if (!c || !c->node_type) continue;
+            if (strcmp(c->node_type, "DefaultCase") == 0) {
+                emit_label(ftext, "L_default", sid);
+                if (c->numHijos > 0 && c->hijos[0]) gen_node(ftext, c->hijos[0]);
+            } else {
+                char lab_case[64]; snprintf(lab_case, sizeof(lab_case), "L_case_%zu", i);
+                emit_label(ftext, lab_case, sid);
+                if (c->numHijos > 1 && c->hijos[1]) gen_node(ftext, c->hijos[1]);
+            }
+        }
+
+        // Etiqueta de ruptura / fin del switch
+        emit_label(ftext, "L_break", sid);
+        break_pop();
         return;
     }
 
