@@ -1,9 +1,16 @@
 #include "codegen/arm64_codegen.h"
+#include "codegen/arm64_core.h"
+#include "codegen/arm64_vars.h"
+#include "codegen/arm64_num.h"
+#include "codegen/arm64_bool.h"
+#include "codegen/arm64_print.h"
 #include "ast/AbstractExpresion.h"
 #include "ast/nodos/instrucciones/instrucciones.h"
 #include "ast/nodos/expresiones/listaExpresiones.h"
 #include "ast/nodos/instrucciones/instruccion/print.h"
 #include "ast/nodos/instrucciones/instruccion/declaracion.h"
+#include "ast/nodos/instrucciones/instruccion/reasignacion.h"
+#include "ast/nodos/instrucciones/instruccion/asignacion_compuesta.h"
 #include "ast/nodos/expresiones/terminales/primitivos.h"
 #include "ast/nodos/expresiones/terminales/identificadores.h"
 #include "ast/nodos/expresiones/expresiones.h"
@@ -11,105 +18,29 @@
 #include "ast/nodos/expresiones/relacionales/relacionales.h"
 #include "ast/nodos/expresiones/logicas/logicas.h"
 #include "context/result.h"
+#include "parser.tab.h" // Para tokens como TOKEN_LSHIFT en asignaciones compuestas
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// Pequeña util para escribir una línea en el archivo
-static void emitln(FILE *f, const char *s) { fputs(s, f); fputc('\n', f); }
+// Pequeña util para escribir una línea en el archivo (delegar a core)
+static void emitln(FILE *f, const char *s) { core_emitln(f, s); }
 
-// Estructura simple para acumular literales string en .data
-typedef struct StrLit {
-    char *label;   // etiqueta en .data
-    char *text;    // contenido asciz
-    struct StrLit *next;
-} StrLit;
+// Delegar manejo de literales a core
+static const char *add_string_literal(const char *text) { return core_add_string_literal(text); }
 
-static StrLit *str_head = NULL, *str_tail = NULL;
-static int str_counter = 0;
-
-static const char *add_string_literal(const char *text) {
-    // Crear y registrar
-    StrLit *n = (StrLit *)calloc(1, sizeof(StrLit));
-    char label[64];
-    snprintf(label, sizeof(label), "str_lit_%d", ++str_counter);
-    n->label = strdup(label);
-    n->text = strdup(text ? text : "");
-    if (!str_head) str_head = n; else str_tail->next = n; str_tail = n;
-    return n->label;
-}
-
-// Escapa comillas y backslashes para usar en .asciz
-static char *escape_for_asciz(const char *s) {
-    size_t len = strlen(s);
-    // peor caso duplica
-    char *out = (char *)malloc(len * 4 + 1);
-    size_t j = 0;
-    for (size_t i = 0; i < len; i++) {
-        unsigned char c = (unsigned char)s[i];
-        switch (c) {
-            case '"':
-                out[j++] = '\\'; out[j++] = '"';
-                break;
-            case '\\':
-                out[j++] = '\\'; out[j++] = '\\';
-                break;
-            case '\n':
-                out[j++] = '\\'; out[j++] = 'n';
-                break;
-            case '\t':
-                out[j++] = '\\'; out[j++] = 't';
-                break;
-            case '\r':
-                out[j++] = '\\'; out[j++] = 'r';
-                break;
-            default:
-                out[j++] = c;
-        }
-    }
-    out[j] = '\0';
-    return out;
-}
+// escape_for_asciz movido a core
 
 // ----------------- Gestión simple de variables locales -----------------
-typedef struct VarEntry {
-    char *name;
-    TipoDato tipo;
-    int offset; // bytes desde x29 hacia abajo (usamos [x29, -offset])
-    struct VarEntry *next;
-} VarEntry;
-
-static VarEntry *vars_head = NULL;
-static int local_bytes = 0; // total actual reservado con sub sp, sp, #...
-
-static VarEntry *find_var(const char *name) {
-    for (VarEntry *v = vars_head; v; v = v->next) {
-        if (strcmp(v->name, name) == 0) return v;
-    }
-    return NULL;
-}
-
-static VarEntry *add_var(const char *name, TipoDato tipo, int size_bytes, FILE *ftext) {
-    // Alinear a 8 bytes
-    int sz = size_bytes;
-    if (sz % 8 != 0) sz = ((sz / 8) + 1) * 8;
-    // Reservar en stack
-    local_bytes += sz;
-    char line[64];
-    snprintf(line, sizeof(line), "    sub sp, sp, #%d", sz);
-    emitln(ftext, line);
-    VarEntry *v = (VarEntry *)calloc(1, sizeof(VarEntry));
-    v->name = strdup(name);
-    v->tipo = tipo;
-    v->offset = local_bytes; // desde x29 hacia abajo
-    v->next = vars_head;
-    vars_head = v;
-    return v;
-}
+// Variables locales delegadas a arm64_vars
+// Tip alias para compatibilidad local
+typedef VarEntry VarEntry;
+static VarEntry *buscar_variable(const char *name) { return vars_buscar(name); }
+static VarEntry *agregar_variable(const char *name, TipoDato tipo, int size_bytes, FILE *ftext) { return vars_agregar(name, tipo, size_bytes, ftext); }
 
 // ----------------- Emisión de expresiones -----------------
 // Helpers para clasificar nodos
-static int node_is_boolean_result(AbstractExpresion *node) {
+int nodo_es_resultado_booleano(AbstractExpresion *node) {
     if (!node || !node->node_type) return 0;
     const char *t = node->node_type;
     return strcmp(t, "IgualIgual") == 0 || strcmp(t, "Diferente") == 0 ||
@@ -119,7 +50,7 @@ static int node_is_boolean_result(AbstractExpresion *node) {
 }
 
 // Devuelve 1 si el árbol es de concatenación (contiene string en algún lado)
-static int expr_is_stringy(AbstractExpresion *node) {
+int expresion_es_cadena(AbstractExpresion *node) {
     if (!node) return 0;
     const char *t = node->node_type ? node->node_type : "";
     if (strcmp(t, "Primitivo") == 0) {
@@ -128,11 +59,11 @@ static int expr_is_stringy(AbstractExpresion *node) {
     }
     if (strcmp(t, "Identificador") == 0) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
-        VarEntry *v = find_var(id->nombre);
+        VarEntry *v = buscar_variable(id->nombre);
         return v && v->tipo == STRING;
     }
     if (strcmp(t, "Suma") == 0) {
-        return expr_is_stringy(node->hijos[0]) || expr_is_stringy(node->hijos[1]);
+        return expresion_es_cadena(node->hijos[0]) || expresion_es_cadena(node->hijos[1]);
     }
     return 0;
 }
@@ -141,7 +72,7 @@ static int expr_is_stringy(AbstractExpresion *node) {
 // - INT en w1
 // - DOUBLE en d0
 // Retorna el TipoDato del resultado (INT o DOUBLE)
-static TipoDato emit_eval_numeric(AbstractExpresion *node, FILE *ftext) {
+TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
     const char *t = node->node_type ? node->node_type : "";
     if (strcmp(t, "Primitivo") == 0) {
         PrimitivoExpresion *p = (PrimitivoExpresion *)node;
@@ -161,16 +92,13 @@ static TipoDato emit_eval_numeric(AbstractExpresion *node, FILE *ftext) {
             char line[64]; snprintf(line, sizeof(line), "    mov w1, #%ld", v); emitln(ftext, line);
             return INT;
         } else if (p->tipo == DOUBLE || p->tipo == FLOAT) {
-            char lab[64]; snprintf(lab, sizeof(lab), "dbl_lit_%d", (int)++str_counter);
+            const char *lab = core_add_double_literal(p->valor ? p->valor : "0");
             char ref[128]; snprintf(ref, sizeof(ref), "    ldr x16, =%s\n    ldr d0, [x16]", lab); emitln(ftext, ref);
-            // registrar el literal
-            StrLit *n = (StrLit *)calloc(1, sizeof(StrLit)); n->label = strdup(lab); n->text = strdup(p->valor ? p->valor : "0");
-            if (!str_head) str_head = n; else str_tail->next = n; str_tail = n;
             return DOUBLE;
         }
     } else if (strcmp(t, "Identificador") == 0) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
-        VarEntry *v = find_var(id->nombre);
+        VarEntry *v = buscar_variable(id->nombre);
         if (!v) return INT;
         if (v->tipo == DOUBLE || v->tipo == FLOAT) {
             char line[64]; snprintf(line, sizeof(line), "    ldr d0, [x29, -%d]", v->offset); emitln(ftext, line);
@@ -183,11 +111,11 @@ static TipoDato emit_eval_numeric(AbstractExpresion *node, FILE *ftext) {
         // Evaluar ambos lados
         // Lado izquierdo
         TipoDato tl;
-        tl = emit_eval_numeric(node->hijos[0], ftext); // result in w1 or d0
+        tl = emitir_eval_numerico(node->hijos[0], ftext); // result in w1 or d0
         // mover a temporales
         if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
         // Lado derecho
-        TipoDato tr = emit_eval_numeric(node->hijos[1], ftext); // now in w1 or d0
+        TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext); // now in w1 or d0
         if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
         // Determinar tipo resultado
         if (tl == DOUBLE || tr == DOUBLE) {
@@ -201,9 +129,9 @@ static TipoDato emit_eval_numeric(AbstractExpresion *node, FILE *ftext) {
             return INT;
         }
     } else if (strcmp(t, "Resta") == 0) {
-        TipoDato tl = emit_eval_numeric(node->hijos[0], ftext);
+        TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
         if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
-        TipoDato tr = emit_eval_numeric(node->hijos[1], ftext);
+        TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext);
         if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
         if (tl == DOUBLE || tr == DOUBLE) {
             if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
@@ -215,9 +143,9 @@ static TipoDato emit_eval_numeric(AbstractExpresion *node, FILE *ftext) {
             return INT;
         }
     } else if (strcmp(t, "Multiplicacion") == 0) {
-        TipoDato tl = emit_eval_numeric(node->hijos[0], ftext);
+        TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
         if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
-        TipoDato tr = emit_eval_numeric(node->hijos[1], ftext);
+        TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext);
         if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
         if (tl == DOUBLE || tr == DOUBLE) {
             if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
@@ -229,9 +157,9 @@ static TipoDato emit_eval_numeric(AbstractExpresion *node, FILE *ftext) {
             return INT;
         }
     } else if (strcmp(t, "Division") == 0) {
-        TipoDato tl = emit_eval_numeric(node->hijos[0], ftext);
+        TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
         if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
-        TipoDato tr = emit_eval_numeric(node->hijos[1], ftext);
+        TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext);
         if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
         if (tl == DOUBLE || tr == DOUBLE) {
             if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
@@ -243,9 +171,9 @@ static TipoDato emit_eval_numeric(AbstractExpresion *node, FILE *ftext) {
             return INT;
         }
     } else if (strcmp(t, "Modulo") == 0) {
-        TipoDato tl = emit_eval_numeric(node->hijos[0], ftext);
+        TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
         if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
-        TipoDato tr = emit_eval_numeric(node->hijos[1], ftext);
+        TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext);
         if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
         if (tl == DOUBLE || tr == DOUBLE) {
             // convertir a double si hace falta y llamar a fmod
@@ -263,7 +191,7 @@ static TipoDato emit_eval_numeric(AbstractExpresion *node, FILE *ftext) {
             return INT;
         }
     } else if (strcmp(t, "NegacionUnaria") == 0) {
-        TipoDato ty = emit_eval_numeric(node->hijos[0], ftext);
+        TipoDato ty = emitir_eval_numerico(node->hijos[0], ftext);
         if (ty == DOUBLE) {
             emitln(ftext, "    fneg d0, d0");
             return DOUBLE;
@@ -271,6 +199,38 @@ static TipoDato emit_eval_numeric(AbstractExpresion *node, FILE *ftext) {
             emitln(ftext, "    neg w1, w1");
             return INT;
         }
+    } else if (strcmp(t, "BitwiseAnd") == 0 || strcmp(t, "BitwiseOr") == 0 || strcmp(t, "BitwiseXor") == 0 ||
+               strcmp(t, "LeftShift") == 0 || strcmp(t, "RightShift") == 0 || strcmp(t, "UnsignedRightShift") == 0) {
+        // Evaluar ambos lados como enteros (si vienen como double, truncar hacia 0)
+        TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
+        if (tl == DOUBLE) {
+            // d0 -> w19 (trunc)
+            emitln(ftext, "    fcvtzs w19, d0");
+        } else {
+            emitln(ftext, "    mov w19, w1");
+        }
+        TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext);
+        if (tr == DOUBLE) {
+            emitln(ftext, "    fcvtzs w20, d0");
+        } else {
+            emitln(ftext, "    mov w20, w1");
+        }
+        if (strcmp(t, "BitwiseAnd") == 0) emitln(ftext, "    and w1, w19, w20");
+        else if (strcmp(t, "BitwiseOr") == 0) emitln(ftext, "    orr w1, w19, w20");
+        else if (strcmp(t, "BitwiseXor") == 0) emitln(ftext, "    eor w1, w19, w20");
+        else if (strcmp(t, "LeftShift") == 0) emitln(ftext, "    lsl w1, w19, w20");
+        else if (strcmp(t, "RightShift") == 0) emitln(ftext, "    asr w1, w19, w20");
+        else /* UnsignedRightShift */ emitln(ftext, "    lsr w1, w19, w20");
+        return INT;
+    } else if (strcmp(t, "BitwiseNot") == 0) {
+        // Unario ~X
+        TipoDato ty = emitir_eval_numerico(node->hijos[0], ftext);
+        if (ty == DOUBLE) {
+            emitln(ftext, "    fcvtzs w1, d0");
+        }
+        // NOT bit a bit
+        emitln(ftext, "    mvn w1, w1");
+        return INT;
     }
     // Por defecto, 0
     emitln(ftext, "    mov w1, #0");
@@ -278,7 +238,7 @@ static TipoDato emit_eval_numeric(AbstractExpresion *node, FILE *ftext) {
 }
 
 // Evalúa una expresión booleana y deja 0/1 en w1
-static void emit_eval_boolean(AbstractExpresion *node, FILE *ftext) {
+void emitir_eval_booleano(AbstractExpresion *node, FILE *ftext) {
     const char *t = node->node_type ? node->node_type : "";
     if (strcmp(t, "Primitivo") == 0) {
         PrimitivoExpresion *p = (PrimitivoExpresion *)node;
@@ -288,7 +248,7 @@ static void emit_eval_boolean(AbstractExpresion *node, FILE *ftext) {
             return;
         }
         // numéricos: 0 => false, else true
-        TipoDato ty = emit_eval_numeric(node, ftext);
+        TipoDato ty = emitir_eval_numerico(node, ftext);
         if (ty == DOUBLE) {
             emitln(ftext, "    fcmp d0, #0.0");
             emitln(ftext, "    cset w1, ne");
@@ -300,13 +260,13 @@ static void emit_eval_boolean(AbstractExpresion *node, FILE *ftext) {
     }
     if (strcmp(t, "Identificador") == 0) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
-        VarEntry *v = find_var(id->nombre);
+        VarEntry *v = buscar_variable(id->nombre);
         if (v && v->tipo == BOOLEAN) {
             char l1[64]; snprintf(l1, sizeof(l1), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, l1);
             return;
         }
         // fallback a numérico no-cero
-        TipoDato ty = emit_eval_numeric(node, ftext);
+        TipoDato ty = emitir_eval_numerico(node, ftext);
         if (ty == DOUBLE) { emitln(ftext, "    fcmp d0, #0.0"); emitln(ftext, "    cset w1, ne"); }
         else { emitln(ftext, "    cmp w1, #0"); emitln(ftext, "    cset w1, ne"); }
         return;
@@ -316,9 +276,9 @@ static void emit_eval_boolean(AbstractExpresion *node, FILE *ftext) {
         strcmp(t, "MayorQue") == 0 || strcmp(t, "MenorQue") == 0 ||
         strcmp(t, "MayorIgual") == 0 || strcmp(t, "MenorIgual") == 0) {
         // eval ambos
-        TipoDato tl = emit_eval_numeric(node->hijos[0], ftext);
+        TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
         if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
-        TipoDato tr = emit_eval_numeric(node->hijos[1], ftext);
+        TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext);
         if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
         int use_fp = (tl == DOUBLE || tr == DOUBLE);
         if (use_fp) {
@@ -337,19 +297,19 @@ static void emit_eval_boolean(AbstractExpresion *node, FILE *ftext) {
         return;
     }
     if (strcmp(t, "And") == 0) {
-        emit_eval_boolean(node->hijos[0], ftext); emitln(ftext, "    mov w19, w1");
-        emit_eval_boolean(node->hijos[1], ftext); emitln(ftext, "    mov w20, w1");
+        emitir_eval_booleano(node->hijos[0], ftext); emitln(ftext, "    mov w19, w1");
+        emitir_eval_booleano(node->hijos[1], ftext); emitln(ftext, "    mov w20, w1");
         emitln(ftext, "    and w1, w19, w20");
         return;
     }
     if (strcmp(t, "Or") == 0) {
-        emit_eval_boolean(node->hijos[0], ftext); emitln(ftext, "    mov w19, w1");
-        emit_eval_boolean(node->hijos[1], ftext); emitln(ftext, "    mov w20, w1");
+        emitir_eval_booleano(node->hijos[0], ftext); emitln(ftext, "    mov w19, w1");
+        emitir_eval_booleano(node->hijos[1], ftext); emitln(ftext, "    mov w20, w1");
         emitln(ftext, "    orr w1, w19, w20");
         return;
     }
     if (strcmp(t, "Not") == 0) {
-        emit_eval_boolean(node->hijos[0], ftext);
+        emitir_eval_booleano(node->hijos[0], ftext);
         // w1 = !w1
         emitln(ftext, "    eor w1, w1, #1");
         return;
@@ -359,19 +319,19 @@ static void emit_eval_boolean(AbstractExpresion *node, FILE *ftext) {
 }
 
 // Emite las partes de una expresión stringy en orden (sin salto de línea)
-static void emit_print_stringy(AbstractExpresion *node, FILE *ftext) {
+void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
     const char *t = node->node_type ? node->node_type : "";
     if (strcmp(t, "Suma") == 0) {
         // Si esta suma NO es stringy, evalúala completa como número (respeta paréntesis)
-        if (!expr_is_stringy(node)) {
-            TipoDato ty = emit_eval_numeric(node, ftext);
+        if (!expresion_es_cadena(node)) {
+            TipoDato ty = emitir_eval_numerico(node, ftext);
             if (ty == DOUBLE) emitln(ftext, "    ldr x0, =fmt_double"); else emitln(ftext, "    ldr x0, =fmt_int");
             emitln(ftext, "    bl printf");
             return;
         }
         // Caso contrario, descompón en partes stringy
-        emit_print_stringy(node->hijos[0], ftext);
-        emit_print_stringy(node->hijos[1], ftext);
+        emitir_imprimir_cadena(node->hijos[0], ftext);
+        emitir_imprimir_cadena(node->hijos[1], ftext);
         return;
     }
     if (strcmp(t, "Primitivo") == 0) {
@@ -384,7 +344,7 @@ static void emit_print_stringy(AbstractExpresion *node, FILE *ftext) {
             return;
         } else if (p->tipo == INT || p->tipo == CHAR || p->tipo == BOOLEAN) {
             // numérico como texto
-            TipoDato ty = emit_eval_numeric(node, ftext);
+            TipoDato ty = emitir_eval_numerico(node, ftext);
             if (ty == INT) {
                 emitln(ftext, "    ldr x0, =fmt_int");
                 emitln(ftext, "    bl printf");
@@ -394,7 +354,7 @@ static void emit_print_stringy(AbstractExpresion *node, FILE *ftext) {
             }
             return;
         } else { // double/float
-            (void)emit_eval_numeric(node, ftext);
+            (void)emitir_eval_numerico(node, ftext);
             emitln(ftext, "    ldr x0, =fmt_double");
             emitln(ftext, "    bl printf");
             return;
@@ -402,7 +362,7 @@ static void emit_print_stringy(AbstractExpresion *node, FILE *ftext) {
     }
     if (strcmp(t, "Identificador") == 0) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
-        VarEntry *v = find_var(id->nombre);
+        VarEntry *v = buscar_variable(id->nombre);
         if (v && v->tipo == STRING) {
             char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, [x29, -%d]", v->offset); emitln(ftext, l1);
             emitln(ftext, "    ldr x0, =fmt_string");
@@ -433,8 +393,8 @@ static void emit_print_stringy(AbstractExpresion *node, FILE *ftext) {
         return;
     }
     // fallback: si es booleana, imprimir true/false; si no, evaluar numérico
-    if (node_is_boolean_result(node)) {
-        emit_eval_boolean(node, ftext);
+    if (nodo_es_resultado_booleano(node)) {
+        emitir_eval_booleano(node, ftext);
         emitln(ftext, "    cmp w1, #0");
         emitln(ftext, "    ldr x1, =false_str");
         emitln(ftext, "    ldr x16, =true_str");
@@ -442,7 +402,7 @@ static void emit_print_stringy(AbstractExpresion *node, FILE *ftext) {
         emitln(ftext, "    ldr x0, =fmt_string");
         emitln(ftext, "    bl printf");
     } else {
-        TipoDato ty = emit_eval_numeric(node, ftext);
+        TipoDato ty = emitir_eval_numerico(node, ftext);
         if (ty == DOUBLE) emitln(ftext, "    ldr x0, =fmt_double"); else emitln(ftext, "    ldr x0, =fmt_int");
         emitln(ftext, "    bl printf");
     }
@@ -478,11 +438,11 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         }
         // Tamaño
         int size = (decl->tipo == DOUBLE) ? 8 : 8; // usamos 8 para alinear (char/int/bool caben)
-        VarEntry *v = add_var(decl->nombre, decl->tipo, size, ftext);
+        VarEntry *v = agregar_variable(decl->nombre, decl->tipo, size, ftext);
         if (node->numHijos > 0) {
             AbstractExpresion *init = node->hijos[0];
             if (decl->tipo == DOUBLE || decl->tipo == FLOAT) {
-                (void)emit_eval_numeric(init, ftext); // d0
+                (void)emitir_eval_numerico(init, ftext); // d0
                 char st[64]; snprintf(st, sizeof(st), "    str d0, [x29, -%d]", v->offset); emitln(ftext, st);
             } else if (decl->tipo == STRING) {
                 if (strcmp(init->node_type, "Primitivo") == 0) {
@@ -492,7 +452,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                     char st[64]; snprintf(st, sizeof(st), "    str x1, [x29, -%d]", v->offset); emitln(ftext, st);
                 }
             } else {
-                (void)emit_eval_numeric(init, ftext); // w1
+                (void)emitir_eval_numerico(init, ftext); // w1
                 char st[64]; snprintf(st, sizeof(st), "    str w1, [x29, -%d]", v->offset); emitln(ftext, st);
             }
         } else {
@@ -527,8 +487,8 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 emitln(ftext, cm);
             }
             // Si es concatenación (stringy), imprimir sus partes
-            if (expr_is_stringy(expr)) {
-                emit_print_stringy(expr, ftext);
+            if (expresion_es_cadena(expr)) {
+                emitir_imprimir_cadena(expr, ftext);
             }
             // Soportar Primitivo
             else if (expr->node_type && strcmp(expr->node_type, "Primitivo") == 0) {
@@ -560,19 +520,14 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                         // Guardar el double en .data y cargar en d0
                         {
                             // Crear etiqueta única con el valor
-                            char lab[64];
-                            snprintf(lab, sizeof(lab), "dbl_lit_%d", (int)++str_counter);
+                            const char *lab = core_add_double_literal(p->valor ? p->valor : "0");
                             // Registrar en lista de strings como hack? Mejor lo escribimos directo desde .text usando etiqueta
                             // Aquí solo emitimos carga de esa etiqueta; la sección .data se generará en arm64_generate_program.
                             char ref[128];
                             snprintf(ref, sizeof(ref), "    ldr x16, =%s\n    ldr d0, [x16]", lab);
                             emitln(ftext, ref);
                             emitln(ftext, "    bl printf");
-                            // Guardamos temporalmente el label en next de str list con texto especial "#DOUBLE:" para la fase .data
-                            StrLit *n = (StrLit *)calloc(1, sizeof(StrLit));
-                            n->label = strdup(lab);
-                            n->text = strdup(p->valor ? p->valor : "0"); // guardamos el literal como texto
-                            if (!str_head) str_head = n; else str_tail->next = n; str_tail = n;
+                            // doble literal ya registrado en core
                         }
                         break;
                     case BOOLEAN:
@@ -617,7 +572,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 }
             } else if (expr->node_type && strcmp(expr->node_type, "Identificador") == 0) {
                 IdentificadorExpresion *id = (IdentificadorExpresion *)expr;
-                VarEntry *v = find_var(id->nombre);
+                VarEntry *v = buscar_variable(id->nombre);
                 if (v) {
                     if (v->tipo == DOUBLE || v->tipo == FLOAT) {
                         char l1[64]; snprintf(l1, sizeof(l1), "    ldr d0, [x29, -%d]", v->offset); emitln(ftext, l1);
@@ -652,12 +607,12 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                                            strcmp(expr->node_type, "Modulo") == 0 ||
                                            strcmp(expr->node_type, "NegacionUnaria") == 0)) {
                 // Si no es stringy, evaluar como numérico y luego imprimir
-                TipoDato ty = emit_eval_numeric(expr, ftext);
+                TipoDato ty = emitir_eval_numerico(expr, ftext);
                 if (ty == DOUBLE) emitln(ftext, "    ldr x0, =fmt_double"); else emitln(ftext, "    ldr x0, =fmt_int");
                 emitln(ftext, "    bl printf");
-            } else if (expr->node_type && node_is_boolean_result(expr)) {
+            } else if (expr->node_type && nodo_es_resultado_booleano(expr)) {
                 // Evaluar booleano y mapear a true/false
-                emit_eval_boolean(expr, ftext);
+                emitir_eval_booleano(expr, ftext);
                 emitln(ftext, "    cmp w1, #0");
                 emitln(ftext, "    ldr x1, =false_str");
                 emitln(ftext, "    ldr x16, =true_str");
@@ -666,7 +621,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 emitln(ftext, "    bl printf");
             } else {
                 // Fallback: evalúa como numérico por defecto
-                TipoDato ty = emit_eval_numeric(expr, ftext);
+                TipoDato ty = emitir_eval_numerico(expr, ftext);
                 if (ty == DOUBLE) emitln(ftext, "    ldr x0, =fmt_double"); else emitln(ftext, "    ldr x0, =fmt_int");
                 emitln(ftext, "    bl printf");
             }
@@ -685,6 +640,99 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
             char l2[64]; snprintf(l2, sizeof(l2), "    ldr x1, =%s", nl); emitln(ftext, l2);
         }
         emitln(ftext, "    bl printf");
+        return;
+    }
+    // Reasignación simple: id = expr
+    if (node->node_type && strcmp(node->node_type, "Reasignacion") == 0) {
+        ReasignacionExpresion *rea = (ReasignacionExpresion *)node;
+        VarEntry *v = buscar_variable(rea->nombre);
+        if (!v) return;
+        AbstractExpresion *rhs = node->hijos[0];
+        if (v->tipo == STRING) {
+            // Soportar literal string o id string
+            if (rhs->node_type && strcmp(rhs->node_type, "Primitivo") == 0) {
+                PrimitivoExpresion *p = (PrimitivoExpresion *)rhs;
+                if (p->tipo == STRING) {
+                    const char *lab = add_string_literal(p->valor ? p->valor : "");
+                    char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, =%s", lab); emitln(ftext, l1);
+                    char st[64]; snprintf(st, sizeof(st), "    str x1, [x29, -%d]", v->offset); emitln(ftext, st);
+                }
+            } else if (rhs->node_type && strcmp(rhs->node_type, "Identificador") == 0) {
+                IdentificadorExpresion *rid = (IdentificadorExpresion *)rhs;
+                VarEntry *rv = buscar_variable(rid->nombre);
+                if (rv) {
+                    char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, [x29, -%d]", rv->offset); emitln(ftext, l1);
+                    char st[64]; snprintf(st, sizeof(st), "    str x1, [x29, -%d]", v->offset); emitln(ftext, st);
+                }
+            }
+        } else if (v->tipo == DOUBLE || v->tipo == FLOAT) {
+            (void)emitir_eval_numerico(rhs, ftext);
+            char st[64]; snprintf(st, sizeof(st), "    str d0, [x29, -%d]", v->offset); emitln(ftext, st);
+        } else {
+            (void)emitir_eval_numerico(rhs, ftext);
+            char st[64]; snprintf(st, sizeof(st), "    str w1, [x29, -%d]", v->offset); emitln(ftext, st);
+        }
+        return;
+    }
+    // Asignación compuesta: id op= expr
+    if (node->node_type && strcmp(node->node_type, "AsignacionCompuesta") == 0) {
+        AsignacionCompuestaExpresion *ac = (AsignacionCompuestaExpresion *)node;
+        VarEntry *v = buscar_variable(ac->nombre);
+        if (!v) return;
+        AbstractExpresion *rhs = node->hijos[0];
+        int op = ac->op_type;
+        // Cargar LHS según tipo
+        if (op == '&' || op == '|' || op == '^' || op == TOKEN_LSHIFT || op == TOKEN_RSHIFT || op == TOKEN_URSHIFT) {
+            // Operaciones enteras
+            // lhs -> w19
+            char l1[64]; snprintf(l1, sizeof(l1), "    ldr w19, [x29, -%d]", v->offset); emitln(ftext, l1);
+            // rhs -> w20 (conv si double)
+            TipoDato tr = emitir_eval_numerico(rhs, ftext);
+            if (tr == DOUBLE) emitln(ftext, "    fcvtzs w20, d0"); else emitln(ftext, "    mov w20, w1");
+            if (op == '&') emitln(ftext, "    and w1, w19, w20");
+            else if (op == '|') emitln(ftext, "    orr w1, w19, w20");
+            else if (op == '^') emitln(ftext, "    eor w1, w19, w20");
+            else if (op == TOKEN_LSHIFT) emitln(ftext, "    lsl w1, w19, w20");
+            else if (op == TOKEN_RSHIFT) emitln(ftext, "    asr w1, w19, w20");
+            else /* TOKEN_URSHIFT */ emitln(ftext, "    lsr w1, w19, w20");
+            // Guardar
+            char st[64]; snprintf(st, sizeof(st), "    str w1, [x29, -%d]", v->offset); emitln(ftext, st);
+        } else if (op == '+' || op == '-' || op == '*' || op == '/' || op == '%') {
+            // Numérico con posible double
+            // Cargar lhs
+            if (v->tipo == DOUBLE || v->tipo == FLOAT) {
+                char l1[64]; snprintf(l1, sizeof(l1), "    ldr d8, [x29, -%d]", v->offset); emitln(ftext, l1);
+            } else {
+                char l1[64]; snprintf(l1, sizeof(l1), "    ldr w19, [x29, -%d]", v->offset); emitln(ftext, l1);
+            }
+            TipoDato tr = emitir_eval_numerico(rhs, ftext);
+            // Normalizar a double si cualquiera es double
+            int use_fp = (v->tipo == DOUBLE || v->tipo == FLOAT || tr == DOUBLE);
+            if (use_fp) {
+                if (!(v->tipo == DOUBLE || v->tipo == FLOAT)) emitln(ftext, "    scvtf d8, w19");
+                if (tr != DOUBLE) emitln(ftext, "    scvtf d9, w1"); else emitln(ftext, "    fmov d9, d0");
+                if (op == '+') emitln(ftext, "    fadd d0, d8, d9");
+                else if (op == '-') emitln(ftext, "    fsub d0, d8, d9");
+                else if (op == '*') emitln(ftext, "    fmul d0, d8, d9");
+                else if (op == '/') emitln(ftext, "    fdiv d0, d8, d9");
+                else /* % */ {
+                    emitln(ftext, "    fmov d0, d8");
+                    emitln(ftext, "    fmov d1, d9");
+                    emitln(ftext, "    bl fmod");
+                }
+                // Guardar double
+                char st[64]; snprintf(st, sizeof(st), "    str d0, [x29, -%d]", v->offset); emitln(ftext, st);
+            } else {
+                // Entero
+                if (op == '+') emitln(ftext, "    add w1, w19, w1");
+                else if (op == '-') emitln(ftext, "    sub w1, w19, w1");
+                else if (op == '*') emitln(ftext, "    mul w1, w19, w1");
+                else if (op == '/') emitln(ftext, "    sdiv w1, w19, w1");
+                else /* % */ { emitln(ftext, "    sdiv w21, w19, w1"); emitln(ftext, "    msub w1, w21, w1, w19"); }
+                char st[64]; snprintf(st, sizeof(st), "    str w1, [x29, -%d]", v->offset); emitln(ftext, st);
+            }
+        }
+        return;
     }
 }
 
@@ -729,51 +777,18 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     gen_node(f, root);
 
     // Epílogo
-    if (local_bytes > 0) {
-        char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", local_bytes); emitln(f, addb);
-    }
+    // Epílogo de variables locales
+    vars_epilogo(f);
     emitln(f, "\n    mov w0, #0");
     emitln(f, "    ldp x29, x30, [sp], 16");
     emitln(f, "    ret\n");
 
     // Volvemos a .data y emitimos literales recolectados (strings y doubles)
-    emitln(f, "// --- Literales recolectados ---");
-    emitln(f, ".data");
-    for (StrLit *n = str_head; n; n = n->next) {
-        // Si es un label de double "dbl_lit_X" entonces emitir .double
-        if (strncmp(n->label, "dbl_lit_", 8) == 0) {
-            // n->text contiene el literal como string
-            char line[256];
-            snprintf(line, sizeof(line), "%s:    .double %s", n->label, n->text);
-            emitln(f, line);
-        } else {
-            // tratar como string asciz
-            char *esc = escape_for_asciz(n->text);
-            char line[512];
-            snprintf(line, sizeof(line), "%s:    .asciz \"%s\"", n->label, esc);
-            emitln(f, line);
-            free(esc);
-        }
-    }
+    core_emit_collected_literals(f);
 
     fclose(f);
-    // liberar lista
-    while (str_head) {
-        StrLit *nx = str_head->next;
-        free(str_head->label);
-        free(str_head->text);
-        free(str_head);
-        str_head = nx;
-    }
-    str_tail = NULL;
-    str_counter = 0;
-    // liberar tabla de variables
-    while (vars_head) {
-        VarEntry *nx = vars_head->next;
-        free(vars_head->name);
-        free(vars_head);
-        vars_head = nx;
-    }
-    local_bytes = 0;
+    // liberar estructuras
+    core_reset_literals();
+    vars_reset();
     return 0;
 }

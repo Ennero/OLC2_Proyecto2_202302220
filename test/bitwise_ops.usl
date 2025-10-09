@@ -1,0 +1,25 @@
+public static void main() {
+    int a = 5;
+    int b = 3;
+
+    System.out.println(a & b);      // 1
+    System.out.println(a | b);      // 7
+    System.out.println(a ^ b);      // 6
+    System.out.println(~a);         // -6 (32-bit)
+    System.out.println(a << 2);     // 20
+    System.out.println(a >> 1);     // 2
+    System.out.println((-8) >>> 1); // 2147483644 on 32-bit
+
+    a |= 8;   // 13
+    System.out.println(a);
+    a &= 3;   // 1
+    System.out.println(a);
+    a ^= 6;   // 7
+    System.out.println(a);
+    a <<= 1;  // 14
+    System.out.println(a);
+    a >>= 2;  // 3
+    System.out.println(a);
+    a >>>= 1; // 1
+    System.out.println(a);
+}
