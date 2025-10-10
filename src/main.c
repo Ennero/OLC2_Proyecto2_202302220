@@ -43,6 +43,7 @@ static void on_execute_clicked(GtkToolButton *button, gpointer user_data);
 static void on_show_symbols_clicked(GtkToolButton *button, gpointer user_data);
 static void on_show_errors_clicked(GtkToolButton *button, gpointer user_data);
 static void on_generate_ast_clicked(GtkToolButton *button, gpointer user_data);
+static void on_compile_clicked(GtkToolButton *button, gpointer user_data);
 static void on_ast_export_clicked(GtkButton *button, gpointer user_data);
 
 // Funciones para mostrar las ventanas de reportes
@@ -433,6 +434,69 @@ static void on_ast_export_clicked(GtkButton *button, gpointer user_data)
     gtk_widget_destroy(dialog);
 }
 
+//==========================================================================================================================================
+// COMPILACIÓN A ARM64 DESDE LA GUI
+//==========================================================================================================================================
+static void on_compile_clicked(GtkToolButton *button, gpointer user_data)
+{
+    (void)button;
+    AppWidgets *widgets = (AppWidgets *)user_data;
+
+    // Obtener el texto de entrada
+    GtkTextBuffer *buffer = GTK_TEXT_BUFFER(widgets->input_buffer);
+    GtkTextIter start, end;
+    gtk_text_buffer_get_bounds(buffer, &start, &end);
+    gchar *input_text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+
+    // Limpiar reportes previos
+    clear_output_buffer();
+    clear_symbol_report();
+    clear_error_report();
+    ast_root = NULL;
+    yylineno = 1;
+    yycolumn = 1;
+
+    if (input_text && input_text[0] != '\0')
+    {
+        // Parsear el contenido como en CLI
+        YY_BUFFER_STATE buffer_state = yy_scan_string(input_text);
+        yyparse();
+
+        if (get_error_list() == NULL && ast_root)
+        {
+            // Generar ensamblador ARM64 en arm/salida.s, igual que en CLI --arm
+            mkdir("arm", 0777);
+            int rc = arm64_generate_program(ast_root, "arm/salida.s");
+            if (rc != 0)
+            {
+                append_to_output("Fallo generando ARM64 a 'arm/salida.s'\n");
+            }
+        }
+
+        yy_delete_buffer(buffer_state);
+    }
+    else
+    {
+        append_to_output("No hay código para compilar.\n");
+    }
+
+    // Mensaje final coherente
+    if (get_error_list() != NULL)
+    {
+        clear_output_buffer();
+        append_to_output("======== Se encontraron errores durante el análisis ========\nVer la tabla de errores para más detalles.\n");
+    }
+    else if (input_text && input_text[0] != '\0')
+    {
+        append_to_output("\n\n======== Código analizado y ensamblador ARM64 generado en arm/salida.s ========\n");
+    }
+
+    // Actualizar salida en la UI
+    const char *output_text = get_output_buffer();
+    gtk_text_buffer_set_text(widgets->output_buffer, output_text, -1);
+    g_free(input_text);
+}
+
 // Funcion para generar el ast
 static void on_generate_ast_clicked(GtkToolButton *button, gpointer user_data)
 {
@@ -514,7 +578,7 @@ static void activate(GtkApplication *app, gpointer user_data)
 {
     // Crear los widgets principales
     GtkWidget *window, *vbox, *toolbar, *paned, *scrolled_input, *scrolled_output, *input_view, *output_view;
-    GtkToolItem *new_tool, *open_tool, *save_tool, *save_as_tool, *spacer, *exec_tool, *ast_tool, *symbols_tool, *errors_tool;
+    GtkToolItem *new_tool, *open_tool, *save_tool, *save_as_tool, *spacer, *compile_tool, *exec_tool, *ast_tool, *symbols_tool, *errors_tool;
     AppWidgets *widgets = (AppWidgets *)user_data;
 
     // Configurar la ventana principal
@@ -532,6 +596,7 @@ static void activate(GtkApplication *app, gpointer user_data)
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_data(provider,
                                     "toolbar .execute-button button { background-image: image(green); color: white; font-weight: bold; }"
+                                    "toolbar .compile-button button { background-image: image(orange); color: white; font-weight: bold; }"
                                     "toolbar .analysis-button button { background-image: image(lightgreen); }",
                                     -1, NULL);
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
@@ -559,6 +624,9 @@ static void activate(GtkApplication *app, gpointer user_data)
     gtk_tool_item_set_expand(spacer, TRUE);
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), spacer, -1);
 
+    compile_tool = gtk_tool_button_new(gtk_image_new_from_icon_name("system-run", GTK_ICON_SIZE_SMALL_TOOLBAR), "Compilar");
+    gtk_toolbar_insert(GTK_TOOLBAR(toolbar), compile_tool, -1);
+
     errors_tool = gtk_tool_button_new(gtk_image_new_from_icon_name("dialog-error", GTK_ICON_SIZE_SMALL_TOOLBAR), "Tabla Errores");
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), errors_tool, -1);
 
@@ -572,6 +640,7 @@ static void activate(GtkApplication *app, gpointer user_data)
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), exec_tool, -1);
 
     gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(exec_tool)), "execute-button");
+    gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(compile_tool)), "compile-button");
     gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(errors_tool)), "analysis-button");
     gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(symbols_tool)), "analysis-button");
     gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(ast_tool)), "analysis-button");
@@ -623,6 +692,7 @@ static void activate(GtkApplication *app, gpointer user_data)
     g_signal_connect(G_OBJECT(open_tool), "clicked", G_CALLBACK(on_open_clicked), widgets);
     g_signal_connect(G_OBJECT(save_tool), "clicked", G_CALLBACK(on_save_clicked), widgets);
     g_signal_connect(G_OBJECT(save_as_tool), "clicked", G_CALLBACK(on_save_as_clicked), widgets);
+    g_signal_connect(G_OBJECT(compile_tool), "clicked", G_CALLBACK(on_compile_clicked), widgets);
     g_signal_connect(G_OBJECT(exec_tool), "clicked", G_CALLBACK(on_execute_clicked), widgets);
     g_signal_connect(G_OBJECT(ast_tool), "clicked", G_CALLBACK(on_generate_ast_clicked), widgets);
     g_signal_connect(G_OBJECT(symbols_tool), "clicked", G_CALLBACK(on_show_symbols_clicked), widgets);
