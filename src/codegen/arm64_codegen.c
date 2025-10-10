@@ -85,6 +85,14 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
             }
         }
         if (__current_func_exit_id >= 0) {
+            // Asegurar balance de pila: devolver los bytes locales aún asignados
+            int bytes_out = vars_local_bytes();
+            {
+                char cmt[96]; snprintf(cmt, sizeof(cmt), "    // return: unwind %d bytes", bytes_out); emitln(ftext, cmt);
+            }
+            if (bytes_out > 0) {
+                char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes_out); emitln(ftext, addb);
+            }
             char br[64]; snprintf(br, sizeof(br), "    b L_func_exit_%d", __current_func_exit_id); emitln(ftext, br);
         } else {
             // No hay etiqueta de función (no debería ocurrir); emitir epílogo inline mínimo

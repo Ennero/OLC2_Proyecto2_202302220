@@ -1,0 +1,9 @@
+public static void main() {
+    int counter = 0;
+    while (true) { // Condición siempre verdadera
+        System.out.println("Contador: " + String.valueOf(counter));
+        break; // Rompe el bucle después de una iteración
+        counter++;
+    }
+    System.out.println("Fin");
+}
