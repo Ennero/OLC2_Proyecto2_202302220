@@ -52,12 +52,58 @@ static void break_push(int id) { if (break_label_sp < (int)(sizeof(break_label_s
 static int break_peek(void) { return break_label_sp > 0 ? break_label_stack[break_label_sp - 1] : -1; }
 static void break_pop(void) { if (break_label_sp > 0) break_label_sp--; }
 
+// ----------------- Pila simple de labels para 'continue' (loops) -----------------
+static int continue_label_stack[64];
+static int continue_label_sp = 0;
+static void continue_push(int id) { if (continue_label_sp < (int)(sizeof(continue_label_stack)/sizeof(continue_label_stack[0]))) continue_label_stack[continue_label_sp++] = id; }
+static int continue_peek(void) { return continue_label_sp > 0 ? continue_label_stack[continue_label_sp - 1] : -1; }
+static void continue_pop(void) { if (continue_label_sp > 0) continue_label_sp--; }
+
+// ----------------- Etiqueta global de salida de función para 'return' -----------------
+static int __current_func_exit_id = -1;
+
 // ----------------- Emisión de expresiones -----------------
 // Implementaciones movidas a codegen/expresiones/*.c (arm64_num.c, arm64_bool.c, arm64_print.c)
 
 // Recorre el árbol emitiendo código para Print con literales primitivos
 static void gen_node(FILE *ftext, AbstractExpresion *node) {
     if (!node) return;
+    // ReturnStatement: evaluar opcionalmente la expresión y saltar al epílogo
+    if (node->node_type && strcmp(node->node_type, "ReturnStatement") == 0) {
+        if (node->numHijos > 0 && node->hijos[0]) {
+            AbstractExpresion *rhs = node->hijos[0];
+            // Intentar evaluar como numérico; si es DOUBLE convertir a int para código de salida (w0)
+            if (nodo_es_resultado_booleano(rhs) || (rhs->node_type && strcmp(rhs->node_type, "Primitivo") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Identificador") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Suma") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Resta") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Multiplicacion") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Division") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Modulo") == 0) || (rhs->node_type && strcmp(rhs->node_type, "NegacionUnaria") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Casteo") == 0)) {
+                TipoDato ty = emitir_eval_numerico(rhs, ftext);
+                if (ty == DOUBLE) emitln(ftext, "    fcvtzs w0, d0"); else emitln(ftext, "    mov w0, w1");
+            } else if (expresion_es_cadena(rhs)) {
+                // No se retorna cadena al sistema; poner 0
+                emitln(ftext, "    mov w0, #0");
+            } else {
+                // Fallback
+                emitln(ftext, "    mov w0, #0");
+            }
+        }
+        if (__current_func_exit_id >= 0) {
+            char br[64]; snprintf(br, sizeof(br), "    b L_func_exit_%d", __current_func_exit_id); emitln(ftext, br);
+        } else {
+            // No hay etiqueta de función (no debería ocurrir); emitir epílogo inline mínimo
+            emitln(ftext, "    // return fuera de contexto; epílogo inline");
+            emitln(ftext, "    ldp x29, x30, [sp], 16");
+            emitln(ftext, "    ret");
+        }
+        return;
+    }
+    // ContinueStatement: saltar a la etiqueta de continuación más cercana (si existe)
+    if (node->node_type && strcmp(node->node_type, "ContinueStatement") == 0) {
+        int cid = continue_peek();
+        if (cid >= 0) {
+            char cbr[64]; snprintf(cbr, sizeof(cbr), "    b L_continue_%d", cid); emitln(ftext, cbr);
+        } else {
+            emitln(ftext, "    // 'continue' fuera de bucle; ignorado en codegen");
+        }
+        return;
+    }
     // BreakStatement: salto a etiqueta de ruptura más cercana (switch/loop)
     if (node->node_type && strcmp(node->node_type, "BreakStatement") == 0) {
         int bid = break_peek();
@@ -611,8 +657,15 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     // escribiremos código en un archivo temporal y luego insertaremos .data y .text en orden.
     // Simplificamos: guardamos el file pointer y generamos directo, y al final emitimos la parte .data restante.
 
+    // Establecer etiqueta de salida para 'return'
+    __current_func_exit_id = ++__label_seq;
+
     // Generación del cuerpo
     gen_node(f, root);
+
+    // Etiqueta de salida de función (usada por 'return')
+    emit_label(f, "L_func_exit", __current_func_exit_id);
+    __current_func_exit_id = -1;
 
     // Epílogo
     // Epílogo de variables locales

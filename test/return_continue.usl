@@ -1,0 +1,8 @@
+public static void main() {
+    System.out.println("A");
+    if (1 < 2) {
+        System.out.println("B");
+        return; // early exit from main
+    }
+    System.out.println("C");
+}
