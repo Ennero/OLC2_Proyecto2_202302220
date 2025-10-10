@@ -1,0 +1,27 @@
+public static void main() {
+    // while con continue y break
+    int i = 0;
+    while (i < 5) {
+        if (i == 3) {
+            i = i + 1;
+            continue; // salta a condición
+        }
+        System.out.println(i);
+        if (i == 4) { break; }
+        i = i + 1;
+    }
+
+    System.out.println("--");
+
+    // for con i=i+1
+    for (int j = 0; j < 3; j = j + 1) {
+        System.out.println(j);
+    }
+
+    System.out.println("--");
+
+    // for con i++ en update
+    for (int k = 0; k < 3; k++) {
+        System.out.println(k);
+    }
+}

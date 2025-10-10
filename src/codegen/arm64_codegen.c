@@ -249,6 +249,110 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         return;
     }
 
+    // WhileStatement: chequear condición, cuerpo, soporte de break/continue
+    if (node->node_type && strcmp(node->node_type, "WhileStatement") == 0) {
+        int wid = ++__label_seq;
+        // El while no introduce por sí mismo nuevas variables (el bloque interno sí), pero
+        // para seguridad de futuras extensiones, no abrimos scope extra aquí.
+
+        // Preparar labels: condición, continue (vuelve a condición), break (salida)
+        char lcond[32], lcont[32], lbreak[32];
+        snprintf(lcond, sizeof(lcond),  "L_while_cond");
+        snprintf(lcont, sizeof(lcont),  "L_continue");
+        snprintf(lbreak, sizeof(lbreak), "L_break");
+
+        // Empujar etiquetas de control
+        break_push(wid);
+        continue_push(wid);
+
+        // Condición
+        emit_label(ftext, lcond, wid);
+        emitir_eval_booleano(node->hijos[0], ftext);
+        emitln(ftext, "    cmp w1, #0");
+        {
+            char bexit[64]; snprintf(bexit, sizeof(bexit), "    beq %s_%d", lbreak, wid); emitln(ftext, bexit);
+        }
+        // Cuerpo
+        gen_node(ftext, node->hijos[1]);
+        // Continue: regresar a condición
+        emit_label(ftext, lcont, wid);
+        {
+            char bcond[64]; snprintf(bcond, sizeof(bcond), "    b %s_%d", lcond, wid); emitln(ftext, bcond);
+        }
+        // Salida del while (break)
+        emit_label(ftext, lbreak, wid);
+        continue_pop();
+        break_pop();
+        return;
+    }
+
+    // ForStatement: init; cond; body; update; con break/continue correctos
+    if (node->node_type && strcmp(node->node_type, "ForStatement") == 0) {
+        int fid = ++__label_seq;
+        // Hacer scope para variables de init (p.ej., int i=0)
+        vars_push_scope(ftext);
+
+        // Hijos esperados: [0]=init (opt), [1]=cond (opt), [2]=update (opt), [3]=bloque (o NULL); si [3]==NULL y hay 5 hijos, usar [4]
+        AbstractExpresion *init = node->numHijos > 0 ? node->hijos[0] : NULL;
+        AbstractExpresion *cond = node->numHijos > 1 ? node->hijos[1] : NULL;
+        AbstractExpresion *update = node->numHijos > 2 ? node->hijos[2] : NULL;
+        AbstractExpresion *bloque = NULL;
+        if (node->numHijos > 3) {
+            bloque = node->hijos[3];
+            if (bloque == NULL && node->numHijos > 4) bloque = node->hijos[4];
+        }
+
+        if (init) {
+            // Declaración o asignación inicial
+            gen_node(ftext, init);
+        }
+
+        // Preparar labels: condición, cuerpo (implícito), continue (update), break (salida)
+        char lcond[32], lcont[32], lbreak[32];
+        snprintf(lcond, sizeof(lcond),  "L_for_cond");
+        snprintf(lcont, sizeof(lcont),  "L_continue");
+        snprintf(lbreak, sizeof(lbreak), "L_break");
+
+        // Empujar control de flujo
+        break_push(fid);
+        continue_push(fid);
+
+        // Condición (si existe)
+        emit_label(ftext, lcond, fid);
+        if (cond) {
+            emitir_eval_booleano(cond, ftext);
+            emitln(ftext, "    cmp w1, #0");
+            char bexit[64]; snprintf(bexit, sizeof(bexit), "    beq %s_%d", lbreak, fid); emitln(ftext, bexit);
+        }
+        // Cuerpo
+        if (bloque) {
+            gen_node(ftext, bloque);
+        }
+
+        // Continue: ejecutar update aquí y volver a condición
+        emit_label(ftext, lcont, fid);
+        if (update) {
+            // Soportar tanto i=i+1 como i++
+            const char *t = update->node_type ? update->node_type : "";
+            if (strcmp(t, "AsignacionCompuesta") == 0 || strcmp(t, "Reasignacion") == 0) {
+                gen_node(ftext, update);
+            } else {
+                // Evaluar para efectos secundarios (p. ej., Postfix)
+                (void)emitir_eval_numerico(update, ftext);
+            }
+        }
+        {
+            char bcond[64]; snprintf(bcond, sizeof(bcond), "    b %s_%d", lcond, fid); emitln(ftext, bcond);
+        }
+        // Salida del for (break)
+        emit_label(ftext, lbreak, fid);
+        continue_pop();
+        break_pop();
+        // Cerrar scope de variables del for
+        vars_pop_scope(ftext);
+        return;
+    }
+
     // Recorremos primero hijos (pre-orden simple para statements) excepto Bloque/IfStatement (ya manejados)
     for (size_t i = 0; i < node->numHijos; i++) {
         if (!node->hijos[i]) continue;
