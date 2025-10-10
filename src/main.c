@@ -44,6 +44,7 @@ static void on_show_symbols_clicked(GtkToolButton *button, gpointer user_data);
 static void on_show_errors_clicked(GtkToolButton *button, gpointer user_data);
 static void on_generate_ast_clicked(GtkToolButton *button, gpointer user_data);
 static void on_compile_clicked(GtkToolButton *button, gpointer user_data);
+static void on_assemble_clicked(GtkToolButton *button, gpointer user_data);
 static void on_ast_export_clicked(GtkButton *button, gpointer user_data);
 
 // Funciones para mostrar las ventanas de reportes
@@ -571,6 +572,71 @@ static void on_generate_ast_clicked(GtkToolButton *button, gpointer user_data)
     g_free(input_text);
 }
 
+//==========================================================================================================================================
+// ENSAMBLAR Y EJECUTAR (usa ensamblar.sh) DESDE LA GUI
+//==========================================================================================================================================
+static void on_assemble_clicked(GtkToolButton *button, gpointer user_data)
+{
+    (void)button;
+    AppWidgets *widgets = (AppWidgets *)user_data;
+
+    clear_output_buffer();
+
+    // Ejecutar script ./ensamblar.sh y capturar salida/errores
+    gchar *argv[] = { "/bin/bash", "-lc", "./ensamblar.sh", NULL };
+    gchar *out = NULL; 
+    gchar *err = NULL;
+    gint status = 0;
+    GError *gerr = NULL;
+    gboolean ok = g_spawn_sync(
+        NULL,         // working dir actual
+        argv,         // comando
+        NULL,         // env hereda
+        G_SPAWN_SEARCH_PATH,
+        NULL, NULL,   // sin child-setup
+        &out,         // stdout
+        &err,         // stderr
+        &status,      // exit status
+        &gerr         // error de GLib
+    );
+
+    if (!ok)
+    {
+        append_to_output("No se pudo ejecutar './ensamblar.sh' desde la GUI.\n");
+        if (gerr && gerr->message)
+        {
+            append_to_output(gerr->message);
+            append_to_output("\n");
+        }
+    }
+    else
+    {
+        append_to_output("===== Salida de ensamblado/enlace/ejecución =====\n");
+        if (out && *out)
+        {
+            append_to_output(out);
+            if (out[strlen(out) - 1] != '\n') append_to_output("\n");
+        }
+        if (err && *err)
+        {
+            append_to_output("\n===== Errores/Advertencias =====\n");
+            append_to_output(err);
+            if (err[strlen(err) - 1] != '\n') append_to_output("\n");
+        }
+
+        char status_msg[128];
+        snprintf(status_msg, sizeof(status_msg), "\n[exit-status: %d]\n", status);
+        append_to_output(status_msg);
+    }
+
+    if (gerr) g_error_free(gerr);
+    if (out) g_free(out);
+    if (err) g_free(err);
+
+    // Enviar a la vista de salida
+    gtk_text_buffer_set_text(widgets->output_buffer, get_output_buffer(), -1);
+}
+
 //=====================================================================
 // CONSTRUCCIÓN DE LA INTERFAZ GRÁFICA
 //=====================================================================
@@ -578,7 +644,7 @@ static void activate(GtkApplication *app, gpointer user_data)
 {
     // Crear los widgets principales
     GtkWidget *window, *vbox, *toolbar, *paned, *scrolled_input, *scrolled_output, *input_view, *output_view;
-    GtkToolItem *new_tool, *open_tool, *save_tool, *save_as_tool, *spacer, *compile_tool, *exec_tool, *ast_tool, *symbols_tool, *errors_tool;
+    GtkToolItem *new_tool, *open_tool, *save_tool, *save_as_tool, *spacer, *compile_tool, *assemble_tool, *exec_tool, *ast_tool, *symbols_tool, *errors_tool;
     AppWidgets *widgets = (AppWidgets *)user_data;
 
     // Configurar la ventana principal
@@ -597,6 +663,7 @@ static void activate(GtkApplication *app, gpointer user_data)
     gtk_css_provider_load_from_data(provider,
                                     "toolbar .execute-button button { background-image: image(green); color: white; font-weight: bold; }"
                                     "toolbar .compile-button button { background-image: image(orange); color: white; font-weight: bold; }"
+                                    "toolbar .assemble-button button { background-image: image(dodgerblue); color: white; font-weight: bold; }"
                                     "toolbar .analysis-button button { background-image: image(lightgreen); }",
                                     -1, NULL);
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
@@ -627,6 +694,9 @@ static void activate(GtkApplication *app, gpointer user_data)
     compile_tool = gtk_tool_button_new(gtk_image_new_from_icon_name("system-run", GTK_ICON_SIZE_SMALL_TOOLBAR), "Compilar");
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), compile_tool, -1);
 
+    assemble_tool = gtk_tool_button_new(gtk_image_new_from_icon_name("applications-engineering", GTK_ICON_SIZE_SMALL_TOOLBAR), "Ensamblar y Ejecutar");
+    gtk_toolbar_insert(GTK_TOOLBAR(toolbar), assemble_tool, -1);
+
     errors_tool = gtk_tool_button_new(gtk_image_new_from_icon_name("dialog-error", GTK_ICON_SIZE_SMALL_TOOLBAR), "Tabla Errores");
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), errors_tool, -1);
 
@@ -641,6 +711,7 @@ static void activate(GtkApplication *app, gpointer user_data)
 
     gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(exec_tool)), "execute-button");
     gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(compile_tool)), "compile-button");
+    gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(assemble_tool)), "assemble-button");
     gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(errors_tool)), "analysis-button");
     gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(symbols_tool)), "analysis-button");
     gtk_style_context_add_class(gtk_widget_get_style_context(GTK_WIDGET(ast_tool)), "analysis-button");
@@ -693,6 +764,7 @@ static void activate(GtkApplication *app, gpointer user_data)
     g_signal_connect(G_OBJECT(save_tool), "clicked", G_CALLBACK(on_save_clicked), widgets);
     g_signal_connect(G_OBJECT(save_as_tool), "clicked", G_CALLBACK(on_save_as_clicked), widgets);
     g_signal_connect(G_OBJECT(compile_tool), "clicked", G_CALLBACK(on_compile_clicked), widgets);
+    g_signal_connect(G_OBJECT(assemble_tool), "clicked", G_CALLBACK(on_assemble_clicked), widgets);
     g_signal_connect(G_OBJECT(exec_tool), "clicked", G_CALLBACK(on_execute_clicked), widgets);
     g_signal_connect(G_OBJECT(ast_tool), "clicked", G_CALLBACK(on_generate_ast_clicked), widgets);
     g_signal_connect(G_OBJECT(symbols_tool), "clicked", G_CALLBACK(on_show_symbols_clicked), widgets);
