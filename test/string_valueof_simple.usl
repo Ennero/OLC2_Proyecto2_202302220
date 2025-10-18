@@ -1,0 +1,4 @@
+public static void main() {
+    int numero = 5;
+    System.out.println(String.valueOf(numero));
+}

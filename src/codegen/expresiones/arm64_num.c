@@ -74,6 +74,35 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
             char line[64]; snprintf(line, sizeof(line), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, line);
             return INT;
         }
+    } else if (strcmp(t, "ArrayAccess") == 0) {
+        // Evaluar acceso a arreglo como entero (int elements)
+        // Recolectar profundidad e índices
+        int depth = 0; AbstractExpresion *it = node;
+        while (it && it->node_type && strcmp(it->node_type, "ArrayAccess") == 0) { depth++; it = it->hijos[0]; }
+        if (!(it && it->node_type && strcmp(it->node_type, "Identificador") == 0)) {
+            emitln(ftext, "    mov w1, #0");
+            return INT;
+        }
+        IdentificadorExpresion *id = (IdentificadorExpresion *)it;
+        VarEntry *v = buscar_variable(id->nombre);
+        if (!v) { emitln(ftext, "    mov w1, #0"); return INT; }
+        int bytes = ((depth * 4) + 15) & ~15;
+        if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
+        it = node; for (int i = 0; i < depth; ++i) {
+            AbstractExpresion *idx = it->hijos[1];
+            TipoDato ty = emitir_eval_numerico(idx, ftext);
+            if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+            char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st);
+            it = it->hijos[0];
+        }
+        // x0 = arr, x1 = indices, w2 = depth
+        { char ld[64]; snprintf(ld, sizeof(ld), "    ldr x0, [x29, -%d]", v->offset); emitln(ftext, ld); }
+        emitln(ftext, "    mov x1, sp");
+        { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
+        emitln(ftext, "    bl array_element_addr");
+        emitln(ftext, "    ldr w1, [x0]");
+        if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+        return INT;
     } else if (strcmp(t, "Suma") == 0) {
         TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
         if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");

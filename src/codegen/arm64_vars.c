@@ -19,8 +19,18 @@ VarEntry *vars_buscar(const char *name) {
 
 VarEntry *vars_agregar(const char *name, TipoDato tipo, int size_bytes, FILE *ftext) {
     int sz = size_bytes;
+    // Mínimo alineado a 8 por acceso natural de datos
     if (sz % 8 != 0) sz = ((sz / 8) + 1) * 8;
-    local_bytes += sz;
+    // Mantener SP siempre alineado a 16 bytes tras cada reserva local
+    // Ajustamos 'sz' con padding si local_bytes + sz no es múltiplo de 16
+    int new_total = local_bytes + sz;
+    int misalign = new_total % 16;
+    if (misalign != 0) {
+        int pad = 16 - misalign; // 8 típico cuando sz es 8 y local_bytes%16==0
+        sz += pad;
+        new_total += pad;
+    }
+    local_bytes = new_total;
     char line[64];
     snprintf(line, sizeof(line), "    sub sp, sp, #%d", sz);
     emitln(ftext, line);

@@ -62,6 +62,156 @@ static void continue_pop(void) { if (continue_label_sp > 0) continue_label_sp--;
 // ----------------- Etiqueta global de salida de función para 'return' -----------------
 static int __current_func_exit_id = -1;
 
+// ----------------- Helpers de runtime para arreglos (flat) -----------------
+// new_array_flat(dims=w0, sizes_ptr=x1) -> x0: puntero a cabecera
+// Layout:
+//  [0..3]   : int dims
+//  [4..7]   : padding
+//  [8..]    : int sizes[dims]
+//  [align8] : int data[prod(sizes)]
+static void emit_array_helpers(FILE *ftext) {
+    emitln(ftext, "// --- Runtime helpers para arreglos ---");
+    emitln(ftext, "// x0 = dims (w0), x1 = ptr a sizes[int32] -> retorna x0 puntero a arreglo");
+    emitln(ftext, "new_array_flat:");
+    // Prologue: save FP/LR and callee-saved we use (x19-x28)
+    emitln(ftext, "    stp x29, x30, [sp, -16]!");
+    emitln(ftext, "    mov x29, sp");
+    emitln(ftext, "    sub sp, sp, #80"); // space for x19-x28 (10 regs * 8 = 80)
+    emitln(ftext, "    stp x19, x20, [sp, #0]");
+    emitln(ftext, "    stp x21, x22, [sp, #16]");
+    emitln(ftext, "    stp x23, x24, [sp, #32]");
+    emitln(ftext, "    stp x25, x26, [sp, #48]");
+    emitln(ftext, "    stp x27, x28, [sp, #64]");
+    emitln(ftext, "    // Guardar args en callee-saved (preservados a través de llamadas)");
+    emitln(ftext, "    mov w19, w0"); // dims
+    emitln(ftext, "    mov x20, x1"); // sizes ptr
+    emitln(ftext, "    mov x21, #1"); // total_elems (64-bit)
+    emitln(ftext, "    mov w12, #0"); // i
+    emitln(ftext, "L_arr_prod_loop:");
+    emitln(ftext, "    cmp w12, w19");
+    emitln(ftext, "    b.ge L_arr_prod_done");
+    emitln(ftext, "    add x14, x20, x12, uxtw #2");
+    emitln(ftext, "    ldr w13, [x14]");
+    emitln(ftext, "    uxtw x13, w13");
+    emitln(ftext, "    mul x21, x21, x13");
+    emitln(ftext, "    add w12, w12, #1");
+    emitln(ftext, "    b L_arr_prod_loop");
+    emitln(ftext, "L_arr_prod_done:");
+    emitln(ftext, "    // bytes de header = 8 + dims*4; alinear a 8");
+    emitln(ftext, "    mov x15, #8");
+    emitln(ftext, "    uxtw x16, w19");
+    emitln(ftext, "    lsl x16, x16, #2");
+    emitln(ftext, "    add x15, x15, x16");
+    emitln(ftext, "    add x17, x15, #7");
+    emitln(ftext, "    and x17, x17, #-8");
+    emitln(ftext, "    mov x27, x17"); // preservar header_size (callee-saved)
+    emitln(ftext, "    // total_bytes = data_off + total_elems*4");
+    emitln(ftext, "    lsl x18, x21, #2");
+    emitln(ftext, "    add x22, x17, x18");
+    emitln(ftext, "    mov x0, x22");
+    emitln(ftext, "    bl malloc");
+    emitln(ftext, "    mov x23, x0"); // arr base
+    emitln(ftext, "    // escribir dims");
+    emitln(ftext, "    str w19, [x23]");
+    emitln(ftext, "    // copiar sizes");
+    emitln(ftext, "    add x24, x23, #8");
+    emitln(ftext, "    mov w12, #0");
+    emitln(ftext, "L_arr_store_sizes:");
+    emitln(ftext, "    cmp w12, w19");
+    emitln(ftext, "    b.ge L_arr_sizes_done");
+    emitln(ftext, "    add x14, x20, x12, uxtw #2");
+    emitln(ftext, "    ldr w13, [x14]");
+    emitln(ftext, "    add x25, x24, x12, uxtw #2");
+    emitln(ftext, "    str w13, [x25]");
+    emitln(ftext, "    add w12, w12, #1");
+    emitln(ftext, "    b L_arr_store_sizes");
+    emitln(ftext, "L_arr_sizes_done:");
+    emitln(ftext, "    // limpiar data a cero");
+    emitln(ftext, "    add x26, x23, x27"); // data base
+    emitln(ftext, "    mov x25, #0"); // i = 0 .. total_elems-1 (x21)
+    emitln(ftext, "L_arr_zero_loop:");
+    emitln(ftext, "    cmp x25, x21");
+    emitln(ftext, "    b.ge L_arr_zero_done");
+    emitln(ftext, "    add x28, x26, x25, lsl #2");
+    emitln(ftext, "    mov w14, #0");
+    emitln(ftext, "    str w14, [x28]");
+    emitln(ftext, "    add x25, x25, #1");
+    emitln(ftext, "    b L_arr_zero_loop");
+    emitln(ftext, "L_arr_zero_done:");
+    emitln(ftext, "    mov x0, x23");
+    emitln(ftext, "    ldp x19, x20, [sp, #0]");
+    emitln(ftext, "    ldp x21, x22, [sp, #16]");
+    emitln(ftext, "    ldp x23, x24, [sp, #32]");
+    emitln(ftext, "    ldp x25, x26, [sp, #48]");
+    emitln(ftext, "    ldp x27, x28, [sp, #64]");
+    emitln(ftext, "    add sp, sp, #80");
+    emitln(ftext, "    ldp x29, x30, [sp], 16");
+    emitln(ftext, "    ret\n");
+
+    // x0 = arr_ptr, x1 = ptr indices[int32], w2 = k -> x0 = &data[lin]
+    emitln(ftext, "// x0 = arr_ptr, x1 = indices ptr, w2 = num_indices -> x0 = puntero a elemento int");
+    emitln(ftext, "array_element_addr:");
+    // Prologue: save FP/LR and callee-saved we use (x19-x28)
+    emitln(ftext, "    stp x29, x30, [sp, -16]!");
+    emitln(ftext, "    mov x29, sp");
+    emitln(ftext, "    sub sp, sp, #80");
+    emitln(ftext, "    stp x19, x20, [sp, #0]");
+    emitln(ftext, "    stp x21, x22, [sp, #16]");
+    emitln(ftext, "    stp x23, x24, [sp, #32]");
+    emitln(ftext, "    stp x25, x26, [sp, #48]");
+    emitln(ftext, "    stp x27, x28, [sp, #64]");
+    emitln(ftext, "    mov x9, x0"); // arr
+    emitln(ftext, "    mov x10, x1"); // idx ptr
+    emitln(ftext, "    mov w11, w2"); // k
+    emitln(ftext, "    ldr w12, [x9]"); // dims
+    emitln(ftext, "    // calcular data_offset");
+    emitln(ftext, "    mov x15, #8");
+    emitln(ftext, "    uxtw x16, w12");
+    emitln(ftext, "    lsl x16, x16, #2");
+    emitln(ftext, "    add x15, x15, x16");
+    emitln(ftext, "    add x17, x15, #7");
+    emitln(ftext, "    and x17, x17, #-8");
+    emitln(ftext, "    // puntero a sizes");
+    emitln(ftext, "    add x18, x9, #8");
+    emitln(ftext, "    mov x19, #0"); // lin idx
+    emitln(ftext, "    mov w20, #0"); // i=0..k-1
+    emitln(ftext, "L_lin_outer:");
+    emitln(ftext, "    cmp w20, w11");
+    emitln(ftext, "    b.ge L_lin_done");
+    emitln(ftext, "    // cargar idx[i]");
+    emitln(ftext, "    add x21, x10, x20, uxtw #2");
+    emitln(ftext, "    ldr w22, [x21]");
+    emitln(ftext, "    uxtw x22, w22");
+    emitln(ftext, "    // stride = prod sizes[j] para j=i+1..dims-1");
+    emitln(ftext, "    mov x23, #1");
+    emitln(ftext, "    add w24, w20, #1");
+    emitln(ftext, "L_lin_stride:");
+    emitln(ftext, "    cmp w24, w12");
+    emitln(ftext, "    b.ge L_lin_stride_done");
+    emitln(ftext, "    add x25, x18, x24, uxtw #2");
+    emitln(ftext, "    ldr w26, [x25]");
+    emitln(ftext, "    uxtw x26, w26");
+    emitln(ftext, "    mul x23, x23, x26");
+    emitln(ftext, "    add w24, w24, #1");
+    emitln(ftext, "    b L_lin_stride");
+    emitln(ftext, "L_lin_stride_done:");
+    emitln(ftext, "    madd x19, x22, x23, x19"); // lin += idx*stride
+    emitln(ftext, "    add w20, w20, #1");
+    emitln(ftext, "    b L_lin_outer");
+    emitln(ftext, "L_lin_done:");
+    emitln(ftext, "    // &data[lin]");
+    emitln(ftext, "    add x0, x9, x17");
+    emitln(ftext, "    add x0, x0, x19, lsl #2");
+    emitln(ftext, "    ldp x19, x20, [sp, #0]");
+    emitln(ftext, "    ldp x21, x22, [sp, #16]");
+    emitln(ftext, "    ldp x23, x24, [sp, #32]");
+    emitln(ftext, "    ldp x25, x26, [sp, #48]");
+    emitln(ftext, "    ldp x27, x28, [sp, #64]");
+    emitln(ftext, "    add sp, sp, #80");
+    emitln(ftext, "    ldp x29, x30, [sp], 16");
+    emitln(ftext, "    ret\n");
+}
+
 // ----------------- Emisión de expresiones -----------------
 // Implementaciones movidas a codegen/expresiones/*.c (arm64_num.c, arm64_bool.c, arm64_print.c)
 
@@ -385,7 +535,38 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         // Declaración de variable local con inicialización de literal primitivo
         DeclaracionVariable *decl = (DeclaracionVariable *)node;
         if (decl->dimensiones > 0) {
-            // Arreglos no soportados aún
+            // Reservar slot de 8 bytes para puntero a arreglo
+            VarEntry *v = vars_agregar_ext(decl->nombre, ARRAY, 8, decl->es_constante ? 1 : 0, ftext);
+            if (node->numHijos > 0 && node->hijos[0] && strcmp(node->hijos[0]->node_type ? node->hijos[0]->node_type : "", "ArrayCreation") == 0) {
+                // Emitir creación del arreglo y almacenar el puntero
+                AbstractExpresion *arr_create = node->hijos[0];
+                // dims expresados en hijo[1]
+                AbstractExpresion *lista = arr_create->hijos[1];
+                int dims = (int)(lista ? lista->numHijos : 0);
+                // Reservar buffer temporal en stack para sizes (alineado a 16)
+                int bytes = ((dims * 4) + 15) & ~15;
+                if (bytes > 0) {
+                    char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub);
+                    for (int i = 0; i < dims; ++i) {
+                        TipoDato ty = emitir_eval_numerico(lista->hijos[i], ftext);
+                        if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                        char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st);
+                    }
+                    // x0=dims, x1=sp
+                    char mv0[64]; snprintf(mv0, sizeof(mv0), "    mov w0, #%d", dims); emitln(ftext, mv0);
+                    emitln(ftext, "    mov x1, sp");
+                    emitln(ftext, "    bl new_array_flat");
+                    // x0 tiene el puntero, almacenar en variable
+                    char stp[64]; snprintf(stp, sizeof(stp), "    str x0, [x29, -%d]", v->offset); emitln(ftext, stp);
+                    char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb);
+                } else {
+                    // dims==0: almacenar NULL
+                    char stp[64]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    str x1, [x29, -%d]", v->offset); emitln(ftext, stp);
+                }
+            } else {
+                // Sin inicializador: NULL
+                char stp[64]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    str x1, [x29, -%d]", v->offset); emitln(ftext, stp);
+            }
             return;
         }
         // Tamaño
@@ -424,6 +605,47 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 char st[64]; snprintf(st, sizeof(st), "    mov w1, #0\n    str w1, [x29, -%d]", v->offset); emitln(ftext, st);
             }
         }
+        return;
+    }
+    // Asignación a elemento de arreglo: ArrayAssignment
+    if (node->node_type && strcmp(node->node_type, "ArrayAssignment") == 0) {
+        AbstractExpresion *acceso = node->hijos[0];
+        AbstractExpresion *rhs = node->hijos[1];
+        // Calcular profundidad y recolectar índices (orden externo->interno)
+        int depth = 0; AbstractExpresion *it = acceso;
+        while (it && it->node_type && strcmp(it->node_type, "ArrayAccess") == 0) { depth++; it = it->hijos[0]; }
+        // it ahora es la base (esperado Identificador)
+        if (!(it && it->node_type && strcmp(it->node_type, "Identificador") == 0)) {
+            emitln(ftext, "    // ArrayAssignment base no soportada en codegen");
+            return;
+        }
+        IdentificadorExpresion *id = (IdentificadorExpresion *)it;
+        VarEntry *v = buscar_variable(id->nombre);
+        if (!v) return;
+        // Reservar buffer en stack para índices
+        int bytes = ((depth * 4) + 15) & ~15;
+        if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
+        // Rellenar índices
+        it = acceso; for (int i = 0; i < depth; ++i) {
+            AbstractExpresion *idx = it->hijos[1];
+            TipoDato ty = emitir_eval_numerico(idx, ftext);
+            if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+            char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st);
+            it = it->hijos[0];
+        }
+        // Cargar puntero al arreglo
+        {
+            char ld[64]; snprintf(ld, sizeof(ld), "    ldr x0, [x29, -%d]", v->offset); emitln(ftext, ld);
+        }
+        // x1 = sp, w2 = depth
+        emitln(ftext, "    mov x1, sp");
+        { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
+        emitln(ftext, "    bl array_element_addr");
+        // Evaluar RHS y guardar en [x0]
+        TipoDato rty = emitir_eval_numerico(rhs, ftext);
+        if (rty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+        emitln(ftext, "    str w1, [x0]");
+        if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
         return;
     }
     if (node->node_type && strcmp(node->node_type, "Print") == 0) {
@@ -761,6 +983,8 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     // Emite .text y main
     emitln(f, ".text");
     emitln(f, ".global main\n");
+    // Helpers de arreglos (definiciones en .text)
+    emit_array_helpers(f);
     emitln(f, "main:");
     emitln(f, "    stp x29, x30, [sp, -16]!");
     emitln(f, "    mov x29, sp\n");

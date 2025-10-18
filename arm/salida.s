@@ -14,333 +14,423 @@ tmpbuf:         .skip 1024
 .text
 .global main
 
+// --- Runtime helpers para arreglos ---
+// x0 = dims (w0), x1 = ptr a sizes[int32] -> retorna x0 puntero a arreglo
+new_array_flat:
+    stp x29, x30, [sp, -16]!
+    mov x29, sp
+    sub sp, sp, #80
+    stp x19, x20, [sp, #0]
+    stp x21, x22, [sp, #16]
+    stp x23, x24, [sp, #32]
+    stp x25, x26, [sp, #48]
+    stp x27, x28, [sp, #64]
+    // Guardar args en callee-saved (preservados a través de llamadas)
+    mov w19, w0
+    mov x20, x1
+    mov x21, #1
+    mov w12, #0
+L_arr_prod_loop:
+    cmp w12, w19
+    b.ge L_arr_prod_done
+    add x14, x20, x12, uxtw #2
+    ldr w13, [x14]
+    uxtw x13, w13
+    mul x21, x21, x13
+    add w12, w12, #1
+    b L_arr_prod_loop
+L_arr_prod_done:
+    // bytes de header = 8 + dims*4; alinear a 8
+    mov x15, #8
+    uxtw x16, w19
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    mov x27, x17
+    // total_bytes = data_off + total_elems*4
+    lsl x18, x21, #2
+    add x22, x17, x18
+    mov x0, x22
+    bl malloc
+    mov x23, x0
+    // escribir dims
+    str w19, [x23]
+    // copiar sizes
+    add x24, x23, #8
+    mov w12, #0
+L_arr_store_sizes:
+    cmp w12, w19
+    b.ge L_arr_sizes_done
+    add x14, x20, x12, uxtw #2
+    ldr w13, [x14]
+    add x25, x24, x12, uxtw #2
+    str w13, [x25]
+    add w12, w12, #1
+    b L_arr_store_sizes
+L_arr_sizes_done:
+    // limpiar data a cero
+    add x26, x23, x27
+    mov x25, #0
+L_arr_zero_loop:
+    cmp x25, x21
+    b.ge L_arr_zero_done
+    add x28, x26, x25, lsl #2
+    mov w14, #0
+    str w14, [x28]
+    add x25, x25, #1
+    b L_arr_zero_loop
+L_arr_zero_done:
+    mov x0, x23
+    ldp x19, x20, [sp, #0]
+    ldp x21, x22, [sp, #16]
+    ldp x23, x24, [sp, #32]
+    ldp x25, x26, [sp, #48]
+    ldp x27, x28, [sp, #64]
+    add sp, sp, #80
+    ldp x29, x30, [sp], 16
+    ret
+
+// x0 = arr_ptr, x1 = indices ptr, w2 = num_indices -> x0 = puntero a elemento int
+array_element_addr:
+    stp x29, x30, [sp, -16]!
+    mov x29, sp
+    sub sp, sp, #80
+    stp x19, x20, [sp, #0]
+    stp x21, x22, [sp, #16]
+    stp x23, x24, [sp, #32]
+    stp x25, x26, [sp, #48]
+    stp x27, x28, [sp, #64]
+    mov x9, x0
+    mov x10, x1
+    mov w11, w2
+    ldr w12, [x9]
+    // calcular data_offset
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    // puntero a sizes
+    add x18, x9, #8
+    mov x19, #0
+    mov w20, #0
+L_lin_outer:
+    cmp w20, w11
+    b.ge L_lin_done
+    // cargar idx[i]
+    add x21, x10, x20, uxtw #2
+    ldr w22, [x21]
+    uxtw x22, w22
+    // stride = prod sizes[j] para j=i+1..dims-1
+    mov x23, #1
+    add w24, w20, #1
+L_lin_stride:
+    cmp w24, w12
+    b.ge L_lin_stride_done
+    add x25, x18, x24, uxtw #2
+    ldr w26, [x25]
+    uxtw x26, w26
+    mul x23, x23, x26
+    add w24, w24, #1
+    b L_lin_stride
+L_lin_stride_done:
+    madd x19, x22, x23, x19
+    add w20, w20, #1
+    b L_lin_outer
+L_lin_done:
+    // &data[lin]
+    add x0, x9, x17
+    add x0, x0, x19, lsl #2
+    ldp x19, x20, [sp, #0]
+    ldp x21, x22, [sp, #16]
+    ldp x23, x24, [sp, #32]
+    ldp x25, x26, [sp, #48]
+    ldp x27, x28, [sp, #64]
+    add sp, sp, #80
+    ldp x29, x30, [sp], 16
+    ret
+
 main:
     stp x29, x30, [sp, -16]!
     mov x29, sp
 
-    sub sp, sp, #8
-    mov w1, #9
-    str w1, [x29, -8]
-    sub sp, sp, #8
-    mov w1, #4
-    str w1, [x29, -16]
-    sub sp, sp, #8
-    ldr x16, =dbl_lit_1
-    ldr d0, [x16]
-    str d0, [x29, -24]
-    sub sp, sp, #8
-    ldr x16, =dbl_lit_2
-    ldr d0, [x16]
-    str d0, [x29, -32]
-    sub sp, sp, #8
-    mov w1, #1
-    str w1, [x29, -40]
-    sub sp, sp, #8
-    mov w1, #0
-    str w1, [x29, -48]
     // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Resta
-    ldr w1, [x29, -8]
-    mov w19, w1
-    ldr w1, [x29, -16]
-    mov w20, w1
-    sub w1, w19, w20
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_1
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    sub sp, sp, #16
+    sub sp, sp, #48
+    mov w1, #1
+    str w1, [sp, #0]
+    mov w1, #1
+    str w1, [sp, #4]
+    mov w1, #1
+    str w1, [sp, #8]
+    mov w1, #1
+    str w1, [sp, #12]
+    mov w1, #1
+    str w1, [sp, #16]
+    mov w1, #1
+    str w1, [sp, #20]
+    mov w1, #1
+    str w1, [sp, #24]
+    mov w1, #1
+    str w1, [sp, #28]
+    mov w1, #1
+    str w1, [sp, #32]
+    mov w1, #1
+    str w1, [sp, #36]
+    mov w0, #10
+    mov x1, sp
+    bl new_array_flat
+    str x0, [x29, -16]
+    add sp, sp, #48
+    sub sp, sp, #48
+    mov w1, #0
+    str w1, [sp, #0]
+    mov w1, #0
+    str w1, [sp, #4]
+    mov w1, #0
+    str w1, [sp, #8]
+    mov w1, #0
+    str w1, [sp, #12]
+    mov w1, #0
+    str w1, [sp, #16]
+    mov w1, #0
+    str w1, [sp, #20]
+    mov w1, #0
+    str w1, [sp, #24]
+    mov w1, #0
+    str w1, [sp, #28]
+    mov w1, #0
+    str w1, [sp, #32]
+    mov w1, #0
+    str w1, [sp, #36]
+    ldr x0, [x29, -16]
+    mov x1, sp
+    mov w2, #10
+    bl array_element_addr
+    mov w1, #10
+    str w1, [x0]
+    add sp, sp, #48
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: ArrayAccess
+    sub sp, sp, #48
+    mov w1, #0
+    str w1, [sp, #0]
+    mov w1, #0
+    str w1, [sp, #4]
+    mov w1, #0
+    str w1, [sp, #8]
+    mov w1, #0
+    str w1, [sp, #12]
+    mov w1, #0
+    str w1, [sp, #16]
+    mov w1, #0
+    str w1, [sp, #20]
+    mov w1, #0
+    str w1, [sp, #24]
+    mov w1, #0
+    str w1, [sp, #28]
+    mov w1, #0
+    str w1, [sp, #32]
+    mov w1, #0
+    str w1, [sp, #36]
+    ldr x0, [x29, -16]
+    mov x1, sp
+    mov w2, #10
+    bl array_element_addr
+    ldr w1, [x0]
+    add sp, sp, #48
     ldr x0, =fmt_int
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_3
     bl printf
     // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Multiplicacion
-    ldr w1, [x29, -8]
-    mov w19, w1
-    ldr w1, [x29, -16]
-    mov w20, w1
-    mul w1, w19, w20
-    ldr x0, =fmt_int
-    bl printf
+    // print expr node_type: Primitivo
     ldr x0, =fmt_string
     ldr x1, =str_lit_4
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Division
-    ldr w1, [x29, -8]
-    mov w19, w1
-    ldr w1, [x29, -16]
-    mov w20, w1
-    sdiv w1, w19, w20
-    ldr x0, =fmt_int
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_5
     bl printf
+    sub sp, sp, #16
+    sub sp, sp, #80
+    mov w1, #1
+    str w1, [sp, #0]
+    mov w1, #1
+    str w1, [sp, #4]
+    mov w1, #1
+    str w1, [sp, #8]
+    mov w1, #1
+    str w1, [sp, #12]
+    mov w1, #1
+    str w1, [sp, #16]
+    mov w1, #1
+    str w1, [sp, #20]
+    mov w1, #1
+    str w1, [sp, #24]
+    mov w1, #1
+    str w1, [sp, #28]
+    mov w1, #1
+    str w1, [sp, #32]
+    mov w1, #1
+    str w1, [sp, #36]
+    mov w1, #1
+    str w1, [sp, #40]
+    mov w1, #1
+    str w1, [sp, #44]
+    mov w1, #1
+    str w1, [sp, #48]
+    mov w1, #1
+    str w1, [sp, #52]
+    mov w1, #1
+    str w1, [sp, #56]
+    mov w1, #1
+    str w1, [sp, #60]
+    mov w1, #1
+    str w1, [sp, #64]
+    mov w1, #1
+    str w1, [sp, #68]
+    mov w1, #1
+    str w1, [sp, #72]
+    mov w1, #1
+    str w1, [sp, #76]
+    mov w0, #20
+    mov x1, sp
+    bl new_array_flat
+    str x0, [x29, -32]
+    add sp, sp, #80
+    sub sp, sp, #80
+    mov w1, #0
+    str w1, [sp, #0]
+    mov w1, #0
+    str w1, [sp, #4]
+    mov w1, #0
+    str w1, [sp, #8]
+    mov w1, #0
+    str w1, [sp, #12]
+    mov w1, #0
+    str w1, [sp, #16]
+    mov w1, #0
+    str w1, [sp, #20]
+    mov w1, #0
+    str w1, [sp, #24]
+    mov w1, #0
+    str w1, [sp, #28]
+    mov w1, #0
+    str w1, [sp, #32]
+    mov w1, #0
+    str w1, [sp, #36]
+    mov w1, #0
+    str w1, [sp, #40]
+    mov w1, #0
+    str w1, [sp, #44]
+    mov w1, #0
+    str w1, [sp, #48]
+    mov w1, #0
+    str w1, [sp, #52]
+    mov w1, #0
+    str w1, [sp, #56]
+    mov w1, #0
+    str w1, [sp, #60]
+    mov w1, #0
+    str w1, [sp, #64]
+    mov w1, #0
+    str w1, [sp, #68]
+    mov w1, #0
+    str w1, [sp, #72]
+    mov w1, #0
+    str w1, [sp, #76]
+    ldr x0, [x29, -32]
+    mov x1, sp
+    mov w2, #20
+    bl array_element_addr
+    mov w1, #20
+    str w1, [x0]
+    add sp, sp, #80
     // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Modulo
-    ldr w1, [x29, -8]
-    mov w19, w1
-    ldr w1, [x29, -16]
-    mov w20, w1
-    sdiv w21, w19, w20
-    msub w1, w21, w20, w19
+    // print expr node_type: ArrayAccess
+    sub sp, sp, #80
+    mov w1, #0
+    str w1, [sp, #0]
+    mov w1, #0
+    str w1, [sp, #4]
+    mov w1, #0
+    str w1, [sp, #8]
+    mov w1, #0
+    str w1, [sp, #12]
+    mov w1, #0
+    str w1, [sp, #16]
+    mov w1, #0
+    str w1, [sp, #20]
+    mov w1, #0
+    str w1, [sp, #24]
+    mov w1, #0
+    str w1, [sp, #28]
+    mov w1, #0
+    str w1, [sp, #32]
+    mov w1, #0
+    str w1, [sp, #36]
+    mov w1, #0
+    str w1, [sp, #40]
+    mov w1, #0
+    str w1, [sp, #44]
+    mov w1, #0
+    str w1, [sp, #48]
+    mov w1, #0
+    str w1, [sp, #52]
+    mov w1, #0
+    str w1, [sp, #56]
+    mov w1, #0
+    str w1, [sp, #60]
+    mov w1, #0
+    str w1, [sp, #64]
+    mov w1, #0
+    str w1, [sp, #68]
+    mov w1, #0
+    str w1, [sp, #72]
+    mov w1, #0
+    str w1, [sp, #76]
+    ldr x0, [x29, -32]
+    mov x1, sp
+    mov w2, #20
+    bl array_element_addr
+    ldr w1, [x0]
+    add sp, sp, #80
     ldr x0, =fmt_int
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_6
     bl printf
     // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Division
-    ldr d0, [x29, -24]
-    fmov d8, d0
-    ldr d0, [x29, -32]
-    fmov d9, d0
-    fdiv d0, d8, d9
-    ldr x0, =fmt_double
-    bl printf
+    // print expr node_type: Primitivo
     ldr x0, =fmt_string
     ldr x1, =str_lit_7
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Modulo
-    ldr d0, [x29, -24]
-    fmov d8, d0
-    ldr d0, [x29, -32]
-    fmov d9, d0
-    fmov d0, d8
-    fmov d1, d9
-    bl fmod
-    ldr x0, =fmt_double
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_8
     bl printf
+    sub sp, sp, #16
+    mov x1, #0
+    str x1, [x29, -48]
     // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: NegacionUnaria
-    ldr w1, [x29, -8]
-    neg w1, w1
-    ldr x0, =fmt_int
-    bl printf
+    // print expr node_type: Primitivo
     ldr x0, =fmt_string
     ldr x1, =str_lit_9
     bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: NegacionUnaria
-    ldr d0, [x29, -24]
-    fmov d8, d0
-    ldr x16, =dbl_lit_10
-    ldr d0, [x16]
-    fmov d9, d0
-    fadd d0, d8, d9
-    fneg d0, d0
-    ldr x0, =fmt_double
-    bl printf
     ldr x0, =fmt_string
-    ldr x1, =str_lit_11
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: IgualIgual
-    ldr w1, [x29, -8]
-    mov w19, w1
-    ldr w1, [x29, -16]
-    mov w20, w1
-    cmp w19, w20
-    cset w1, eq
-    cmp w1, #0
-    ldr x1, =false_str
-    ldr x16, =true_str
-    csel x1, x16, x1, ne
-    ldr x0, =fmt_string
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_12
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Diferente
-    ldr w1, [x29, -8]
-    mov w19, w1
-    ldr w1, [x29, -16]
-    mov w20, w1
-    cmp w19, w20
-    cset w1, ne
-    cmp w1, #0
-    ldr x1, =false_str
-    ldr x16, =true_str
-    csel x1, x16, x1, ne
-    ldr x0, =fmt_string
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_13
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: MayorQue
-    ldr w1, [x29, -8]
-    mov w19, w1
-    ldr w1, [x29, -16]
-    mov w20, w1
-    cmp w19, w20
-    cset w1, gt
-    cmp w1, #0
-    ldr x1, =false_str
-    ldr x16, =true_str
-    csel x1, x16, x1, ne
-    ldr x0, =fmt_string
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_14
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: MenorQue
-    ldr w1, [x29, -8]
-    mov w19, w1
-    ldr w1, [x29, -16]
-    mov w20, w1
-    cmp w19, w20
-    cset w1, lt
-    cmp w1, #0
-    ldr x1, =false_str
-    ldr x16, =true_str
-    csel x1, x16, x1, ne
-    ldr x0, =fmt_string
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_15
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: MayorIgual
-    ldr w1, [x29, -8]
-    mov w19, w1
-    ldr w1, [x29, -16]
-    mov w20, w1
-    cmp w19, w20
-    cset w1, ge
-    cmp w1, #0
-    ldr x1, =false_str
-    ldr x16, =true_str
-    csel x1, x16, x1, ne
-    ldr x0, =fmt_string
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_16
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: MenorIgual
-    ldr w1, [x29, -8]
-    mov w19, w1
-    ldr w1, [x29, -16]
-    mov w20, w1
-    cmp w19, w20
-    cset w1, le
-    cmp w1, #0
-    ldr x1, =false_str
-    ldr x16, =true_str
-    csel x1, x16, x1, ne
-    ldr x0, =fmt_string
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_17
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: MayorIgual
-    ldr d0, [x29, -24]
-    fmov d8, d0
-    ldr d0, [x29, -32]
-    fmov d9, d0
-    fcmp d8, d9
-    cset w1, ge
-    cmp w1, #0
-    ldr x1, =false_str
-    ldr x16, =true_str
-    csel x1, x16, x1, ne
-    ldr x0, =fmt_string
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_18
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: And
-    ldr w1, [x29, -40]
-    mov w19, w1
-    ldr w1, [x29, -48]
-    mov w20, w1
-    and w1, w19, w20
-    cmp w1, #0
-    ldr x1, =false_str
-    ldr x16, =true_str
-    csel x1, x16, x1, ne
-    ldr x0, =fmt_string
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_19
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Or
-    ldr w1, [x29, -40]
-    mov w19, w1
-    ldr w1, [x29, -48]
-    mov w20, w1
-    orr w1, w19, w20
-    cmp w1, #0
-    ldr x1, =false_str
-    ldr x16, =true_str
-    csel x1, x16, x1, ne
-    ldr x0, =fmt_string
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_20
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Not
-    ldr w1, [x29, -40]
-    eor w1, w1, #1
-    cmp w1, #0
-    ldr x1, =false_str
-    ldr x16, =true_str
-    csel x1, x16, x1, ne
-    ldr x0, =fmt_string
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_21
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_22
-    bl printf
-    ldr w1, [x29, -8]
-    mov w19, w1
-    ldr w1, [x29, -16]
-    mov w20, w1
-    sub w1, w19, w20
-    ldr x0, =fmt_int
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_23
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_24
-    bl printf
-    ldr w1, [x29, -8]
-    mov w19, w1
-    ldr w1, [x29, -16]
-    mov w20, w1
-    cmp w19, w20
-    cset w1, gt
-    mov w19, w1
-    ldr w1, [x29, -40]
-    mov w20, w1
-    and w1, w19, w20
-    cmp w1, #0
-    ldr x1, =false_str
-    ldr x16, =true_str
-    csel x1, x16, x1, ne
-    ldr x0, =fmt_string
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_25
+    ldr x1, =str_lit_10
     bl printf
     add sp, sp, #48
-L_func_exit_2:
+L_func_exit_1:
 
     mov w0, #0
     ldp x29, x30, [sp], 16
@@ -348,28 +438,13 @@ L_func_exit_2:
 
 // --- Literales recolectados ---
 .data
-dbl_lit_1:    .double 7.5
-dbl_lit_2:    .double 2.0
+str_lit_1:    .asciz "--- Prueba de Arreglo de 10 Dimensiones ---"
+str_lit_2:    .asciz "\n"
 str_lit_3:    .asciz "\n"
-str_lit_4:    .asciz "\n"
+str_lit_4:    .asciz "\n--- Prueba de Arreglo de 20 Dimensiones ---"
 str_lit_5:    .asciz "\n"
 str_lit_6:    .asciz "\n"
-str_lit_7:    .asciz "\n"
+str_lit_7:    .asciz "\n--- Prueba de Declaración de 101 Dimensiones ---"
 str_lit_8:    .asciz "\n"
-str_lit_9:    .asciz "\n"
-dbl_lit_10:    .double 0.5
-str_lit_11:    .asciz "\n"
-str_lit_12:    .asciz "\n"
-str_lit_13:    .asciz "\n"
-str_lit_14:    .asciz "\n"
-str_lit_15:    .asciz "\n"
-str_lit_16:    .asciz "\n"
-str_lit_17:    .asciz "\n"
-str_lit_18:    .asciz "\n"
-str_lit_19:    .asciz "\n"
-str_lit_20:    .asciz "\n"
-str_lit_21:    .asciz "\n"
-str_lit_22:    .asciz "res= "
-str_lit_23:    .asciz "\n"
-str_lit_24:    .asciz "ok? "
-str_lit_25:    .asciz "\n"
+str_lit_9:    .asciz "Declaracion de arreglo de 101 dimensiones exitosa."
+str_lit_10:    .asciz "\n"

@@ -85,92 +85,62 @@ static const char *alloc_fmt_label_for_tipo(TipoDato t) {
 void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
     // Para boolean, reutilizamos la lógica de impresión booleana para elegir true/false
     const char *t = arg->node_type ? arg->node_type : "";
-    if (strcmp(t, "Primitivo") == 0 || strcmp(t, "Identificador") == 0 || strcmp(t, "Suma") == 0 || nodo_es_resultado_booleano(arg)) {
-        if (nodo_es_resultado_booleano(arg)) {
-            emitir_eval_booleano(arg, ftext);
-            emitln(ftext, "    cmp w1, #0");
-            emitln(ftext, "    ldr x1, =false_str");
-            emitln(ftext, "    ldr x16, =true_str");
-            emitln(ftext, "    csel x1, x16, x1, ne");
-        } else if (strcmp(t, "Primitivo") == 0 && ((PrimitivoExpresion*)arg)->tipo == BOOLEAN) {
-            PrimitivoExpresion *p = (PrimitivoExpresion*)arg;
-            int is_true = (p->valor && strcmp(p->valor, "true") == 0);
-            emitln(ftext, is_true ? "    ldr x1, =true_str" : "    ldr x1, =false_str");
-        } else if (strcmp(t, "Identificador") == 0) {
-            IdentificadorExpresion *id = (IdentificadorExpresion*)arg;
-            VarEntry *v = buscar_variable(id->nombre);
-            if (v && v->tipo == BOOLEAN) {
-                char l1[64]; snprintf(l1, sizeof(l1), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, l1);
-                emitln(ftext, "    cmp w1, #0");
-                emitln(ftext, "    ldr x1, =false_str");
-                emitln(ftext, "    ldr x16, =true_str");
-                emitln(ftext, "    csel x1, x16, x1, ne");
-            } else {
-                // no boolean, continuar flujo normal
-                // no-op
-            }
-        } else if (expresion_es_cadena(arg)) {
-            // Devolver el mismo string
-            if (!emitir_eval_string_ptr(arg, ftext)) emitln(ftext, "    mov x1, #0");
-        } else {
-            // Formatear número/char
-            // Detectar si es char desde el AST (literal/id)
-            int is_char = 0;
-            if (arg && arg->node_type) {
-                if (strcmp(arg->node_type, "Primitivo") == 0) {
-                    PrimitivoExpresion *p = (PrimitivoExpresion *)arg;
-                    is_char = (p->tipo == CHAR);
-                } else if (strcmp(arg->node_type, "Identificador") == 0) {
-                    IdentificadorExpresion *id = (IdentificadorExpresion *)arg;
-                    VarEntry *v = buscar_variable(id->nombre);
-                    is_char = (v && v->tipo == CHAR);
-                }
-            }
-            TipoDato ty = emitir_eval_numerico(arg, ftext);
-            // Guardar el valor entero si aplica, antes de sobrescribir x1 con el formato
-            if (ty != DOUBLE) {
-                emitln(ftext, "    mov w21, w1");
-            }
-            // Usar un buffer temporal estático global tmpbuf para evitar fugas
-            emitln(ftext, "    ldr x19, =tmpbuf");
-            // Preparar sprintf(x19, fmt, val)
-            emitln(ftext, "    mov x0, x19");
-            // Seleccionar formato correcto: boolean -> %s con true/false, char -> %c, int -> %d, double -> %f
-            const char *lab = NULL;
-            if (nodo_es_resultado_booleano(arg)) {
-                lab = "fmt_string";
-            } else if (is_char) {
-                lab = "fmt_char";
-            } else {
-                lab = alloc_fmt_label_for_tipo(ty == DOUBLE ? DOUBLE : INT);
-            }
-            char lfmt[64]; snprintf(lfmt, sizeof(lfmt), "    ldr x1, =%s", lab); emitln(ftext, lfmt);
-            if (nodo_es_resultado_booleano(arg)) {
-                // w1 ya contiene 0/1; mapear a puntero true/false en x2
-                emitln(ftext, "    cmp w1, #0");
-                emitln(ftext, "    ldr x2, =false_str");
-                emitln(ftext, "    ldr x16, =true_str");
-                emitln(ftext, "    csel x2, x16, x2, ne");
-                emitln(ftext, "    bl sprintf");
-            } else if (ty == DOUBLE) {
-                // valor en d0 ya disponible
-                emitln(ftext, "    bl sprintf");
-            } else if (is_char) {
-                emitln(ftext, "    mov w2, w21");
-                emitln(ftext, "    bl sprintf");
-            } else {
-                // El valor entero está en w1; mover a w2 para la varargs de sprintf
-                emitln(ftext, "    mov w2, w21");
-                emitln(ftext, "    bl sprintf");
-            }
-            // Devolver puntero al buffer
-            emitln(ftext, "    mov x1, x19");
-        }
-    } else {
-        // Fallback: devolver "Object"
-        const char *lab = add_string_literal("Object");
-        char l2[64]; snprintf(l2, sizeof(l2), "    ldr x1, =%s", lab); emitln(ftext, l2);
+
+    // 1) Si el resultado es booleano (expresión relacional/lógica), mapear a true/false
+    if (nodo_es_resultado_booleano(arg)) {
+        emitir_eval_booleano(arg, ftext);
+        emitln(ftext, "    cmp w1, #0");
+        emitln(ftext, "    ldr x1, =false_str");
+        emitln(ftext, "    ldr x16, =true_str");
+        emitln(ftext, "    csel x1, x16, x1, ne");
+        return;
     }
+
+    // 2) Literal booleano
+    if (strcmp(t, "Primitivo") == 0 && ((PrimitivoExpresion*)arg)->tipo == BOOLEAN) {
+        PrimitivoExpresion *p = (PrimitivoExpresion*)arg;
+        int is_true = (p->valor && strcmp(p->valor, "true") == 0);
+        emitln(ftext, is_true ? "    ldr x1, =true_str" : "    ldr x1, =false_str");
+        return;
+    }
+
+    // 3) Si ya es cadena (literal, id string, concatenación), evalúalo como puntero a string
+    if (expresion_es_cadena(arg)) {
+        if (!emitir_eval_string_ptr(arg, ftext)) emitln(ftext, "    mov x1, #0");
+        return;
+    }
+
+    // 4) Resto: numérico o char (incluye identificadores no booleanos)
+    int is_char = 0;
+    if (strcmp(t, "Primitivo") == 0) {
+        PrimitivoExpresion *p = (PrimitivoExpresion *)arg;
+        is_char = (p->tipo == CHAR);
+    } else if (strcmp(t, "Identificador") == 0) {
+        IdentificadorExpresion *id = (IdentificadorExpresion *)arg;
+        VarEntry *v = buscar_variable(id->nombre);
+        is_char = (v && v->tipo == CHAR);
+    }
+
+    TipoDato ty = emitir_eval_numerico(arg, ftext);
+    if (ty != DOUBLE) {
+        emitln(ftext, "    mov w21, w1");
+    }
+    emitln(ftext, "    ldr x19, =tmpbuf");
+    emitln(ftext, "    mov x0, x19");
+    const char *lab = is_char ? "fmt_char" : alloc_fmt_label_for_tipo(ty == DOUBLE ? DOUBLE : INT);
+    {
+        char lfmt[64]; snprintf(lfmt, sizeof(lfmt), "    ldr x1, =%s", lab); emitln(ftext, lfmt);
+    }
+    if (ty == DOUBLE) {
+        emitln(ftext, "    bl sprintf");
+    } else if (is_char) {
+        emitln(ftext, "    mov w2, w21");
+        emitln(ftext, "    bl sprintf");
+    } else {
+        emitln(ftext, "    mov w2, w21");
+        emitln(ftext, "    bl sprintf");
+    }
+    emitln(ftext, "    mov x1, x19");
 }
 
 void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
