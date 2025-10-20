@@ -478,15 +478,15 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                     emitln(ftext, "    mov x1, sp");
                     emitln(ftext, "    bl new_array_flat");
                     // x0 tiene el puntero, almacenar en variable
-                    char stp[64]; snprintf(stp, sizeof(stp), "    str x0, [x29, -%d]", v->offset); emitln(ftext, stp);
+                    char stp[96]; snprintf(stp, sizeof(stp), "    sub x16, x29, #%d\n    str x0, [x16]", v->offset); emitln(ftext, stp);
                     char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb);
                 } else {
                     // dims==0: almacenar NULL
-                    char stp[64]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    str x1, [x29, -%d]", v->offset); emitln(ftext, stp);
+                    char stp[128]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stp);
                 }
             } else {
                 // Sin inicializador: NULL
-                char stp[64]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    str x1, [x29, -%d]", v->offset); emitln(ftext, stp);
+                char stp[128]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stp);
             }
             return;
         }
@@ -502,7 +502,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 TipoDato rty = emitir_llamada_funcion(init, ftext);
                 if (decl->tipo == DOUBLE || decl->tipo == FLOAT) {
                     if (rty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
-                    char st[64]; snprintf(st, sizeof(st), "    str d0, [x29, -%d]", v->offset); emitln(ftext, st);
+                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d0, [x16]", v->offset); emitln(ftext, st);
                 } else if (decl->tipo == STRING) {
                     if (!expresion_es_cadena(init)) {
                         // Evaluar nuevamente como string ptr si no fue pasado
@@ -511,38 +511,38 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                         // ya debería estar en x1, pero por seguridad
                         if (!emitir_eval_string_ptr(init, ftext)) emitln(ftext, "    mov x1, #0");
                     }
-                    char st[64]; snprintf(st, sizeof(st), "    str x1, [x29, -%d]", v->offset); emitln(ftext, st);
+                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
                 } else {
                     if (rty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-                    char st[64]; snprintf(st, sizeof(st), "    str w1, [x29, -%d]", v->offset); emitln(ftext, st);
+                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w1, [x16]", v->offset); emitln(ftext, st);
                 }
             } else if (decl->tipo == DOUBLE || decl->tipo == FLOAT) {
                 // Inicializa a double/float; si RHS es int, convertir implícitamente
                 TipoDato ty = emitir_eval_numerico(init, ftext);
                 if (ty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
-                char st[64]; snprintf(st, sizeof(st), "    str d0, [x29, -%d]", v->offset); emitln(ftext, st);
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d0, [x16]", v->offset); emitln(ftext, st);
             } else if (decl->tipo == STRING) {
                 if (strcmp(init->node_type, "Primitivo") == 0) {
                     PrimitivoExpresion *p = (PrimitivoExpresion *)init;
                     const char *lab = add_string_literal(p->valor ? p->valor : "");
                     char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, =%s", lab); emitln(ftext, l1);
-                    char st[64]; snprintf(st, sizeof(st), "    str x1, [x29, -%d]", v->offset); emitln(ftext, st);
+                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
                 }
             } else {
                 // Inicializa a entero/bool/char; si RHS es double, convertir implícitamente
                 TipoDato ty = emitir_eval_numerico(init, ftext);
                 if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-                char st[64]; snprintf(st, sizeof(st), "    str w1, [x29, -%d]", v->offset); emitln(ftext, st);
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w1, [x16]", v->offset); emitln(ftext, st);
             }
         } else {
             // Valor por defecto 0/false/null. Para constantes 'final', en Java es error; aquí no reportamos en codegen.
             if (decl->tipo == STRING) {
-                char st[64]; snprintf(st, sizeof(st), "    mov x1, #0\n    str x1, [x29, -%d]", v->offset); emitln(ftext, st);
+                char st[128]; snprintf(st, sizeof(st), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
             } else if (decl->tipo == DOUBLE || decl->tipo == FLOAT) {
                 emitln(ftext, "    fmov d0, xzr");
-                char st[64]; snprintf(st, sizeof(st), "    str d0, [x29, -%d]", v->offset); emitln(ftext, st);
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d0, [x16]", v->offset); emitln(ftext, st);
             } else {
-                char st[64]; snprintf(st, sizeof(st), "    mov w1, #0\n    str w1, [x29, -%d]", v->offset); emitln(ftext, st);
+                char st[128]; snprintf(st, sizeof(st), "    mov w1, #0\n    sub x16, x29, #%d\n    str w1, [x16]", v->offset); emitln(ftext, st);
             }
         }
         return;
@@ -575,7 +575,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         }
         // Cargar puntero al arreglo
         {
-            char ld[64]; snprintf(ld, sizeof(ld), "    ldr x0, [x29, -%d]", v->offset); emitln(ftext, ld);
+            char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", v->offset); emitln(ftext, ld);
         }
         // x1 = sp, w2 = depth
         emitln(ftext, "    mov x1, sp");
@@ -707,22 +707,22 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 VarEntry *v = buscar_variable(id->nombre);
                 if (v) {
                     if (v->tipo == DOUBLE || v->tipo == FLOAT) {
-                        char l1[64]; snprintf(l1, sizeof(l1), "    ldr d0, [x29, -%d]", v->offset); emitln(ftext, l1);
+                        char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr d0, [x16]", v->offset); emitln(ftext, l1);
                         emitln(ftext, "    ldr x0, =fmt_double");
                         emitln(ftext, "    bl printf");
                     } else if (v->tipo == STRING) {
-                        char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, [x29, -%d]", v->offset); emitln(ftext, l1);
+                        char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
                         emitln(ftext, "    ldr x0, =fmt_string");
                         emitln(ftext, "    bl printf");
                     } else if (v->tipo == CHAR) {
-                        char l1[64]; snprintf(l1, sizeof(l1), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, l1);
+                        char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr w1, [x16]", v->offset); emitln(ftext, l1);
                         emitln(ftext, "    mov w0, w1");
                         emitln(ftext, "    bl char_to_utf8");
                         emitln(ftext, "    mov x1, x0");
                         emitln(ftext, "    ldr x0, =fmt_string");
                         emitln(ftext, "    bl printf");
                     } else if (v->tipo == BOOLEAN) {
-                        char l1[64]; snprintf(l1, sizeof(l1), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, l1);
+                        char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr w1, [x16]", v->offset); emitln(ftext, l1);
                         emitln(ftext, "    cmp w1, #0");
                         emitln(ftext, "    ldr x1, =false_str");
                         emitln(ftext, "    ldr x16, =true_str");
@@ -730,7 +730,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                         emitln(ftext, "    ldr x0, =fmt_string");
                         emitln(ftext, "    bl printf");
                     } else { // INT
-                        char l1[64]; snprintf(l1, sizeof(l1), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, l1);
+                        char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr w1, [x16]", v->offset); emitln(ftext, l1);
                         emitln(ftext, "    ldr x0, =fmt_int");
                         emitln(ftext, "    bl printf");
                     }
@@ -838,24 +838,24 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 if (p->tipo == STRING) {
                     const char *lab = add_string_literal(p->valor ? p->valor : "");
                     char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, =%s", lab); emitln(ftext, l1);
-                    char st[64]; snprintf(st, sizeof(st), "    str x1, [x29, -%d]", v->offset); emitln(ftext, st);
+                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
                 }
             } else if (rhs->node_type && strcmp(rhs->node_type, "Identificador") == 0) {
                 IdentificadorExpresion *rid = (IdentificadorExpresion *)rhs;
                 VarEntry *rv = buscar_variable(rid->nombre);
                 if (rv) {
-                    char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, [x29, -%d]", rv->offset); emitln(ftext, l1);
-                    char st[64]; snprintf(st, sizeof(st), "    str x1, [x29, -%d]", v->offset); emitln(ftext, st);
+                    char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", rv->offset); emitln(ftext, l1);
+                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
                 }
             }
         } else if (v->tipo == DOUBLE || v->tipo == FLOAT) {
             TipoDato ty = emitir_eval_numerico(rhs, ftext);
             if (ty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
-            char st[64]; snprintf(st, sizeof(st), "    str d0, [x29, -%d]", v->offset); emitln(ftext, st);
+            char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d0, [x16]", v->offset); emitln(ftext, st);
         } else {
             TipoDato ty = emitir_eval_numerico(rhs, ftext);
             if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-            char st[64]; snprintf(st, sizeof(st), "    str w1, [x29, -%d]", v->offset); emitln(ftext, st);
+            char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w1, [x16]", v->offset); emitln(ftext, st);
         }
         return;
     }
@@ -923,7 +923,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         if (op == '&' || op == '|' || op == '^' || op == TOKEN_LSHIFT || op == TOKEN_RSHIFT || op == TOKEN_URSHIFT) {
             // Operaciones enteras
             // lhs -> w19
-            char l1[64]; snprintf(l1, sizeof(l1), "    ldr w19, [x29, -%d]", v->offset); emitln(ftext, l1);
+            char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr w19, [x16]", v->offset); emitln(ftext, l1);
             // rhs -> w20 (conv si double)
             TipoDato tr = emitir_eval_numerico(rhs, ftext);
             if (tr == DOUBLE) emitln(ftext, "    fcvtzs w20, d0"); else emitln(ftext, "    mov w20, w1");
@@ -934,14 +934,14 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
             else if (op == TOKEN_RSHIFT) emitln(ftext, "    asr w1, w19, w20");
             else /* TOKEN_URSHIFT */ emitln(ftext, "    lsr w1, w19, w20");
             // Guardar
-            char st[64]; snprintf(st, sizeof(st), "    str w1, [x29, -%d]", v->offset); emitln(ftext, st);
+            char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w1, [x16]", v->offset); emitln(ftext, st);
         } else if (op == '+' || op == '-' || op == '*' || op == '/' || op == '%') {
             // Numérico con posible double
             // Cargar lhs
             if (v->tipo == DOUBLE || v->tipo == FLOAT) {
-                char l1[64]; snprintf(l1, sizeof(l1), "    ldr d8, [x29, -%d]", v->offset); emitln(ftext, l1);
+                char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr d8, [x16]", v->offset); emitln(ftext, l1);
             } else {
-                char l1[64]; snprintf(l1, sizeof(l1), "    ldr w19, [x29, -%d]", v->offset); emitln(ftext, l1);
+                char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr w19, [x16]", v->offset); emitln(ftext, l1);
             }
             TipoDato tr = emitir_eval_numerico(rhs, ftext);
             // Normalizar a double si cualquiera es double
@@ -959,7 +959,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                     emitln(ftext, "    bl fmod");
                 }
                 // Guardar double
-                char st[64]; snprintf(st, sizeof(st), "    str d0, [x29, -%d]", v->offset); emitln(ftext, st);
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d0, [x16]", v->offset); emitln(ftext, st);
             } else {
                 // Entero
                 if (op == '+') emitln(ftext, "    add w1, w19, w1");
@@ -967,7 +967,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 else if (op == '*') emitln(ftext, "    mul w1, w19, w1");
                 else if (op == '/') emitln(ftext, "    sdiv w1, w19, w1");
                 else /* % */ { emitln(ftext, "    sdiv w21, w19, w1"); emitln(ftext, "    msub w1, w21, w1, w19"); }
-                char st[64]; snprintf(st, sizeof(st), "    str w1, [x29, -%d]", v->offset); emitln(ftext, st);
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w1, [x16]", v->offset); emitln(ftext, st);
             }
         }
         return;
@@ -1112,11 +1112,11 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
             int size = (fi->param_types[p] == DOUBLE || fi->param_types[p] == FLOAT) ? 8 : 8;
             VarEntry *v = vars_agregar_ext(fi->param_names[p], fi->param_types[p], size, 0, f);
             if (fi->param_types[p] == DOUBLE || fi->param_types[p] == FLOAT) {
-                char st[64]; snprintf(st, sizeof(st), "    str d%d, [x29, -%d]", p, v->offset); emitln(f, st);
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d%d, [x16]", v->offset, p); emitln(f, st);
             } else if (fi->param_types[p] == STRING) {
-                char st[64]; snprintf(st, sizeof(st), "    str x%d, [x29, -%d]", p, v->offset); emitln(f, st);
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x%d, [x16]", v->offset, p); emitln(f, st);
             } else {
-                char st[64]; snprintf(st, sizeof(st), "    str w%d, [x29, -%d]", p, v->offset); emitln(f, st);
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w%d, [x16]", v->offset, p); emitln(f, st);
             }
         }
         // Reservas de locales se harán on-demand en vars_agregar; no reservar aquí

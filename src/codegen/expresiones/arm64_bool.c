@@ -47,7 +47,7 @@ void emitir_eval_booleano(AbstractExpresion *node, FILE *ftext) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
         VarEntry *v = buscar_variable(id->nombre);
         if (v && v->tipo == BOOLEAN) {
-            char l1[64]; snprintf(l1, sizeof(l1), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, l1);
+            char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr w1, [x16]", v->offset); emitln(ftext, l1);
             return;
         }
         TipoDato ty = emitir_eval_numerico(node, ftext);

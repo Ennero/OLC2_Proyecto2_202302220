@@ -243,16 +243,16 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
         VarEntry *v = buscar_variable(id->nombre);
         if (v && v->tipo == STRING) {
-            char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, [x29, -%d]", v->offset); emitln(ftext, l1);
+            char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
             emitln(ftext, "    ldr x0, =fmt_string");
             emitln(ftext, "    bl printf");
         } else if (v) {
             if (v->tipo == DOUBLE || v->tipo == FLOAT) {
-                char l1[64]; snprintf(l1, sizeof(l1), "    ldr d0, [x29, -%d]", v->offset); emitln(ftext, l1);
+                char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr d0, [x16]", v->offset); emitln(ftext, l1);
                 emitln(ftext, "    ldr x0, =fmt_double");
                 emitln(ftext, "    bl printf");
             } else {
-                char l1[64]; snprintf(l1, sizeof(l1), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, l1);
+                char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr w1, [x16]", v->offset); emitln(ftext, l1);
                 if (v->tipo == CHAR) {
                     // Imprimir como UTF-8
                     emitln(ftext, "    mov w0, w1");
@@ -343,7 +343,7 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
         VarEntry *v = buscar_variable(id->nombre);
         if (v && v->tipo == STRING) {
-            char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, [x29, -%d]", v->offset); emitln(ftext, l1);
+            char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
             return 1;
         }
         // Fallback: no local; intentar global como entero -> no es cadena. Para MVP, retornamos 0.

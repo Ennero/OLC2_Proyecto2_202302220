@@ -103,7 +103,28 @@ const char *core_add_double_literal(const char *number_text) {
     char label[64];
     snprintf(label, sizeof(label), "dbl_lit_%d", ++str_counter);
     n->label = strdup(label);
-    n->text = strdup(number_text ? number_text : "0");
+    // Sanitizar el literal numérico para el ensamblador:
+    // - Quitar sufijos Java 'f'/'F'/'d'/'D'
+    // - Si termina en '.', añadir '0'
+    const char *src = number_text ? number_text : "0";
+    size_t len = strlen(src);
+    // copiar y limpiar
+    char *tmp = (char *)malloc(len + 2); // +2 por si agregamos '0' final
+    size_t j = 0;
+    for (size_t i = 0; i < len; ++i) {
+        char c = src[i];
+        if ((c == 'f' || c == 'F' || c == 'd' || c == 'D') && i == len - 1) {
+            // saltar sufijo final
+            continue;
+        }
+        tmp[j++] = c;
+    }
+    // Si quedó terminando en '.', añadir '0'
+    if (j > 0 && tmp[j-1] == '.') {
+        tmp[j++] = '0';
+    }
+    tmp[j] = '\0';
+    n->text = tmp;
     if (!str_head) str_head = n; else str_tail->next = n; str_tail = n;
     return n->label;
 }

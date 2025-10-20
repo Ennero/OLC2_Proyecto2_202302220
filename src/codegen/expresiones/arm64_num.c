@@ -69,10 +69,10 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
         VarEntry *v = buscar_variable(id->nombre);
         if (v) {
             if (v->tipo == DOUBLE || v->tipo == FLOAT) {
-                char line[64]; snprintf(line, sizeof(line), "    ldr d0, [x29, -%d]", v->offset); emitln(ftext, line);
+                char line[96]; snprintf(line, sizeof(line), "    sub x16, x29, #%d\n    ldr d0, [x16]", v->offset); emitln(ftext, line);
                 return DOUBLE;
             } else { // INT/BOOLEAN/CHAR
-                char line[64]; snprintf(line, sizeof(line), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, line);
+                char line[96]; snprintf(line, sizeof(line), "    sub x16, x29, #%d\n    ldr w1, [x16]", v->offset); emitln(ftext, line);
                 return INT;
             }
         }
@@ -107,7 +107,7 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
             it = it->hijos[0];
         }
         // x0 = arr, x1 = indices, w2 = depth
-        { char ld[64]; snprintf(ld, sizeof(ld), "    ldr x0, [x29, -%d]", v->offset); emitln(ftext, ld); }
+    { char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", v->offset); emitln(ftext, ld); }
         emitln(ftext, "    mov x1, sp");
         { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
         emitln(ftext, "    bl array_element_addr");
@@ -265,19 +265,19 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
         if (lvalue && strcmp(lvalue->node_type ? lvalue->node_type : "", "Identificador") == 0) {
             IdentificadorExpresion *id = (IdentificadorExpresion *)lvalue;
             VarEntry *v = buscar_variable(id->nombre);
-            if (v) {
+                if (v) {
                 // Cargar valor actual y guardar como retorno
                 if (v->tipo == DOUBLE || v->tipo == FLOAT) {
-                    char ld[64]; snprintf(ld, sizeof(ld), "    ldr d0, [x29, -%d]", v->offset); emitln(ftext, ld);
+                    char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr d0, [x16]", v->offset); emitln(ftext, ld);
                     const char *one = core_add_double_literal("1.0");
                     char l1[96]; snprintf(l1, sizeof(l1), "    ldr x16, =%s\n    ldr d1, [x16]", one); emitln(ftext, l1);
                     if (op == TOKEN_INCREMENTO) emitln(ftext, "    fadd d1, d0, d1"); else emitln(ftext, "    fsub d1, d0, d1");
-                    char st[64]; snprintf(st, sizeof(st), "    str d1, [x29, -%d]", v->offset); emitln(ftext, st);
+                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d1, [x16]", v->offset); emitln(ftext, st);
                     return DOUBLE;
                 } else {
-                    char ld[64]; snprintf(ld, sizeof(ld), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, ld);
+                    char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr w1, [x16]", v->offset); emitln(ftext, ld);
                     if (op == TOKEN_INCREMENTO) emitln(ftext, "    add w20, w1, #1"); else emitln(ftext, "    sub w20, w1, #1");
-                    char st[64]; snprintf(st, sizeof(st), "    str w20, [x29, -%d]", v->offset); emitln(ftext, st);
+                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w20, [x16]", v->offset); emitln(ftext, st);
                     return INT;
                 }
             } else {
