@@ -16,6 +16,93 @@ typedef VarEntry VarEntry;
 static VarEntry *buscar_variable(const char *name) { return vars_buscar(name); }
 static const char *add_string_literal(const char *text) { return core_add_string_literal(text); }
 
+// Helper: append the string form of an expression to tmpbuf
+static void append_expr_to_tmpbuf(AbstractExpresion *arg, FILE *ftext) {
+    const char *t = arg->node_type ? arg->node_type : "";
+    // If it's a concatenation (Suma) that yields string, recurse without resetting tmpbuf
+    if (strcmp(t, "Suma") == 0 && (expresion_es_cadena(arg->hijos[0]) || expresion_es_cadena(arg->hijos[1]))) {
+        append_expr_to_tmpbuf(arg->hijos[0], ftext);
+        append_expr_to_tmpbuf(arg->hijos[1], ftext);
+        return;
+    }
+    if (expresion_es_cadena(arg)) {
+        if (!emitir_eval_string_ptr(arg, ftext)) {
+            emitln(ftext, "    ldr x1, =null_str");
+        } else {
+            emitln(ftext, "    cmp x1, #0");
+            emitln(ftext, "    ldr x16, =null_str");
+            emitln(ftext, "    csel x1, x16, x1, eq");
+        }
+        emitln(ftext, "    ldr x0, =tmpbuf");
+        emitln(ftext, "    bl strcat");
+        return;
+    }
+    if (nodo_es_resultado_booleano(arg)) {
+        emitir_eval_booleano(arg, ftext);
+        emitln(ftext, "    cmp w1, #0");
+        emitln(ftext, "    ldr x1, =false_str");
+        emitln(ftext, "    ldr x16, =true_str");
+        emitln(ftext, "    csel x1, x16, x1, ne");
+        emitln(ftext, "    ldr x0, =tmpbuf");
+        emitln(ftext, "    bl strcat");
+        return;
+    }
+    // Numeric/char
+    TipoDato ty = emitir_eval_numerico(arg, ftext);
+    int is_char_local = 0;
+    if (strcmp(t, "Primitivo") == 0) {
+        PrimitivoExpresion *p = (PrimitivoExpresion *)arg;
+        is_char_local = (p->tipo == CHAR);
+        if (p->tipo == BOOLEAN) {
+            int is_true = (p->valor && strcmp(p->valor, "true") == 0);
+            emitln(ftext, is_true ? "    ldr x1, =true_str" : "    ldr x1, =false_str");
+            emitln(ftext, "    ldr x0, =tmpbuf");
+            emitln(ftext, "    bl strcat");
+            return;
+        }
+    } else if (strcmp(t, "Identificador") == 0) {
+        IdentificadorExpresion *id = (IdentificadorExpresion *)arg;
+        VarEntry *v = buscar_variable(id->nombre);
+        if (v) {
+            if (v->tipo == CHAR) is_char_local = 1;
+            if (v->tipo == BOOLEAN) {
+                char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr w1, [x16]", v->offset); emitln(ftext, l1);
+                emitln(ftext, "    cmp w1, #0");
+                emitln(ftext, "    ldr x1, =false_str");
+                emitln(ftext, "    ldr x16, =true_str");
+                emitln(ftext, "    csel x1, x16, x1, ne");
+                emitln(ftext, "    ldr x0, =tmpbuf");
+                emitln(ftext, "    bl strcat");
+                return;
+            }
+        }
+    }
+    if (is_char_local) {
+        if (ty == DOUBLE) emitln(ftext, "    fcvtzs w0, d0"); else emitln(ftext, "    mov w0, w1");
+        emitln(ftext, "    bl char_to_utf8");
+        emitln(ftext, "    mov x1, x0");
+        emitln(ftext, "    ldr x0, =tmpbuf");
+        emitln(ftext, "    bl strcat");
+    } else {
+        if (ty == DOUBLE) {
+            emitln(ftext, "    mov x0, sp");
+            emitln(ftext, "    mov x1, #128");
+            emitln(ftext, "    bl java_format_double");
+            emitln(ftext, "    mov x1, sp");
+            emitln(ftext, "    ldr x0, =tmpbuf");
+            emitln(ftext, "    bl strcat");
+        } else {
+            emitln(ftext, "    mov x0, sp");
+            emitln(ftext, "    mov w2, w1");
+            emitln(ftext, "    ldr x1, =fmt_int");
+            emitln(ftext, "    bl sprintf");
+            emitln(ftext, "    mov x1, sp");
+            emitln(ftext, "    ldr x0, =tmpbuf");
+            emitln(ftext, "    bl strcat");
+        }
+    }
+}
+
 int expresion_es_cadena(AbstractExpresion *node) {
     if (!node) return 0;
     const char *t = node->node_type ? node->node_type : "";
@@ -97,6 +184,10 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
         emitln(ftext, "    ldr x1, =false_str");
         emitln(ftext, "    ldr x16, =true_str");
         emitln(ftext, "    csel x1, x16, x1, ne");
+        // Duplicate to return an independent heap string
+        emitln(ftext, "    mov x0, x1");
+        emitln(ftext, "    bl strdup");
+        emitln(ftext, "    mov x1, x0");
         return;
     }
 
@@ -110,6 +201,9 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
             emitln(ftext, "    ldr x1, =false_str");
             emitln(ftext, "    ldr x16, =true_str");
             emitln(ftext, "    csel x1, x16, x1, ne");
+            emitln(ftext, "    mov x0, x1");
+            emitln(ftext, "    bl strdup");
+            emitln(ftext, "    mov x1, x0");
             return;
         }
         // Fallback a global booleano
@@ -129,6 +223,9 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
         PrimitivoExpresion *p = (PrimitivoExpresion*)arg;
         int is_true = (p->valor && strcmp(p->valor, "true") == 0);
         emitln(ftext, is_true ? "    ldr x1, =true_str" : "    ldr x1, =false_str");
+        emitln(ftext, "    mov x0, x1");
+        emitln(ftext, "    bl strdup");
+        emitln(ftext, "    mov x1, x0");
         return;
     }
 
@@ -172,6 +269,9 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
         // Convertir code point a UTF-8 y devolver puntero en x1
         emitln(ftext, "    mov w0, w21");
         emitln(ftext, "    bl char_to_utf8");
+        // Duplicate the one-char buffer so caller gets stable pointer
+        emitln(ftext, "    mov x0, x0");
+        emitln(ftext, "    bl strdup");
         emitln(ftext, "    mov x1, x0");
     } else {
         if (ty == DOUBLE) {
@@ -180,7 +280,10 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
             emitln(ftext, "    mov x0, x19");
             emitln(ftext, "    mov x1, #1024");
             emitln(ftext, "    bl java_format_double");
-            emitln(ftext, "    mov x1, x19");
+            // strdup(tmpbuf)
+            emitln(ftext, "    ldr x0, =tmpbuf");
+            emitln(ftext, "    bl strdup");
+            emitln(ftext, "    mov x1, x0");
         } else {
             // Enteros: sprintf a tmpbuf con %d
             emitln(ftext, "    mov w21, w1");
@@ -189,7 +292,10 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
             emitln(ftext, "    ldr x1, =fmt_int");
             emitln(ftext, "    mov w2, w21");
             emitln(ftext, "    bl sprintf");
-            emitln(ftext, "    mov x1, x19");
+            // strdup(tmpbuf)
+            emitln(ftext, "    mov x0, x19");
+            emitln(ftext, "    bl strdup");
+            emitln(ftext, "    mov x1, x0");
         }
     }
 }
@@ -469,6 +575,19 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
             char l2[64]; snprintf(l2, sizeof(l2), "    ldr x1, =%s", lab); emitln(ftext, l2);
             return 1;
         }
+    }
+    if (strcmp(t, "Suma") == 0 && (expresion_es_cadena(node->hijos[0]) || expresion_es_cadena(node->hijos[1]))) {
+        // Build concatenation into tmpbuf: allocate scratch and clear buffer once
+        emitln(ftext, "    // String concatenation to tmpbuf");
+        emitln(ftext, "    sub sp, sp, #128");
+        emitln(ftext, "    ldr x0, =tmpbuf");
+        emitln(ftext, "    mov w2, #0");
+        emitln(ftext, "    strb w2, [x0]");
+        append_expr_to_tmpbuf(node->hijos[0], ftext);
+        append_expr_to_tmpbuf(node->hijos[1], ftext);
+        emitln(ftext, "    add sp, sp, #128");
+        emitln(ftext, "    ldr x1, =tmpbuf");
+        return 1;
     }
     if (strcmp(t, "ArrayAccess") == 0) {
         // Soportar obtener puntero a elemento de arreglo de strings: usa array_element_addr_ptr

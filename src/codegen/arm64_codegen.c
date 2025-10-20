@@ -473,8 +473,11 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
         // Reset de estado de variables por función
         vars_reset();
         char lab[128]; snprintf(lab, sizeof(lab), "fn_%s:", fi->name); emitln(f, lab);
-        emitln(f, "    stp x29, x30, [sp, -16]!");
-        emitln(f, "    mov x29, sp");
+    emitln(f, "    stp x29, x30, [sp, -16]!");
+    emitln(f, "    mov x29, sp");
+    // Reservar un frame fijo para variables temporales locales y offsets [x29 - N]
+    // Nota: Usamos 1024 bytes (alineado a 16) para simplificar y evitar corrupción por llamadas a libc
+    emitln(f, "    sub sp, sp, #1024");
     // Reservar frame completo para locales una sola vez (se ajustará tras conocer local_bytes)
     // De momento, posponemos hasta después de declarar parámetros. Guardamos etiqueta para inserción.
         // Preparar estado de retorno para ReturnStatement
@@ -499,8 +502,9 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
         // Salida de función
         emit_label(f, "L_func_exit", __current_func_exit_id);
         __current_func_exit_id = -1;
-        // Restaurar stack de variables locales (reset a FP) y epílogo estándar
-        emitln(f, "    mov sp, x29");
+    // Restaurar frame reservado y epílogo estándar
+    emitln(f, "    add sp, sp, #1024");
+    emitln(f, "    mov sp, x29");
         emitln(f, "    ldp x29, x30, [sp], 16");
         emitln(f, "    ret\n");
         // Fin de función; continuar con la siguiente
@@ -511,6 +515,8 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "main:");
     emitln(f, "    stp x29, x30, [sp, -16]!");
     emitln(f, "    mov x29, sp\n");
+    // Reservar un frame fijo para temporales usados con [x29 - N]
+    emitln(f, "    sub sp, sp, #1024");
     // Reservar frame completo de main tras conocer local_bytes; de inicio 0, se actualizará después de declarar
 
     // Para poder generar secciones .data adicionales (dobles y strings) después,
@@ -534,7 +540,8 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     __current_func_exit_id = -1;
 
     // Epílogo
-    // Epílogo de variables locales (reset a FP)
+    // Restaurar frame reservado y reset a FP
+    emitln(f, "    add sp, sp, #1024");
     emitln(f, "    mov sp, x29");
     emitln(f, "\n    mov w0, #0");
     emitln(f, "    ldp x29, x30, [sp], 16");

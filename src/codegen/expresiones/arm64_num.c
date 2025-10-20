@@ -338,6 +338,144 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
     } else if (strcmp(t, "ParseDouble") == 0) {
         emitir_parse_double(node->hijos[0], ftext);
         return DOUBLE;
+    } else if (strcmp(t, "ArrayLength") == 0) {
+        // child should be an array identifier; load pointer and read sizes[0]
+        AbstractExpresion *arr = node->hijos[0];
+        if (arr && strcmp(arr->node_type ? arr->node_type : "", "Identificador") == 0) {
+            IdentificadorExpresion *id = (IdentificadorExpresion *)arr;
+            VarEntry *v = buscar_variable(id->nombre);
+            if (v) {
+                char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", v->offset); emitln(ftext, ld);
+            } else {
+                char lg[128]; snprintf(lg, sizeof(lg), "    ldr x16, =g_%s\n    ldr x0, [x16]", id->nombre); emitln(ftext, lg);
+            }
+            emitln(ftext, "    // load sizes[0] from header: [x0+8]");
+            emitln(ftext, "    add x18, x0, #8");
+            emitln(ftext, "    ldr w1, [x18]");
+            return INT;
+        }
+        // Fallback: not an identifier; return 0
+        emitln(ftext, "    mov w1, #0");
+        return INT;
+    } else if (strcmp(t, "ArraysIndexof") == 0) {
+        // Arrays.indexOf(arrExpr, valExpr)
+        AbstractExpresion *arr = node->hijos[0];
+        AbstractExpresion *val = node->hijos[1];
+        if (!(arr && strcmp(arr->node_type ? arr->node_type : "", "Identificador") == 0)) {
+            emitln(ftext, "    mov w1, #-1");
+            return INT;
+        }
+        IdentificadorExpresion *id = (IdentificadorExpresion *)arr;
+        VarEntry *v = buscar_variable(id->nombre);
+        // Load array pointer in x9
+        if (v) {
+            char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x9, [x16]", v->offset); emitln(ftext, ld);
+        } else {
+            char lg[128]; snprintf(lg, sizeof(lg), "    ldr x16, =g_%s\n    ldr x9, [x16]", id->nombre); emitln(ftext, lg);
+        }
+        // Compute header and length n in w19; data base in x21
+        emitln(ftext, "    ldr w12, [x9]");
+        emitln(ftext, "    mov x15, #8");
+        emitln(ftext, "    uxtw x16, w12");
+        emitln(ftext, "    lsl x16, x16, #2");
+        emitln(ftext, "    add x15, x15, x16");
+        emitln(ftext, "    add x17, x15, #7");
+        emitln(ftext, "    and x17, x17, #-8");
+        emitln(ftext, "    add x18, x9, #8");
+        emitln(ftext, "    ldr w19, [x18]");
+        emitln(ftext, "    add x21, x9, x17");
+        // Determine base type and branch
+        TipoDato base_t = arm64_array_elem_tipo_for_var(id->nombre);
+        if (base_t == STRING) {
+            int lid = flujo_next_label_id();
+            // Evaluate search string into x23 (may be NULL)
+            if (!emitir_eval_string_ptr(val, ftext)) emitln(ftext, "    mov x1, #0");
+            emitln(ftext, "    mov x23, x1");
+            // Loop i en w20; mantener resultado en w24; al final mover a w1
+            emitln(ftext, "    mov w20, #0");
+            emitln(ftext, "    mov w24, #-1");
+            {
+                char l[64]; snprintf(l, sizeof(l), "L_idxof_loop_s_%d:", lid); emitln(ftext, l);
+            }
+            emitln(ftext, "    cmp w20, w19");
+            {
+                char b[64]; snprintf(b, sizeof(b), "    b.ge L_idxof_done_s_%d", lid); emitln(ftext, b);
+            }
+            emitln(ftext, "    add x22, x21, x20, lsl #3");
+            emitln(ftext, "    ldr x0, [x22]");
+            emitln(ftext, "    // Compare element vs search (handle NULL)");
+            emitln(ftext, "    cmp x23, #0");
+            {
+                char b[64]; snprintf(b, sizeof(b), "    b.eq L_cmp_null_s_%d", lid); emitln(ftext, b);
+            }
+            emitln(ftext, "    // strcmp(elem, search) == 0?");
+            emitln(ftext, "    mov x1, x23");
+            emitln(ftext, "    bl strcmp");
+            emitln(ftext, "    cmp w0, #0");
+            {
+                char b1[64]; snprintf(b1, sizeof(b1), "    b.eq L_idxof_found_s_%d", lid); emitln(ftext, b1);
+                char b2[64]; snprintf(b2, sizeof(b2), "    b L_idxof_next_s_%d", lid); emitln(ftext, b2);
+            }
+            {
+                char l[64]; snprintf(l, sizeof(l), "L_cmp_null_s_%d:", lid); emitln(ftext, l);
+            }
+            emitln(ftext, "    cmp x0, #0");
+            {
+                char b[64]; snprintf(b, sizeof(b), "    b.eq L_idxof_found_s_%d", lid); emitln(ftext, b);
+            }
+            {
+                char l[64]; snprintf(l, sizeof(l), "L_idxof_next_s_%d:", lid); emitln(ftext, l);
+            }
+            emitln(ftext, "    add w20, w20, #1");
+            {
+                char b[64]; snprintf(b, sizeof(b), "    b L_idxof_loop_s_%d", lid); emitln(ftext, b);
+            }
+            {
+                char l[64]; snprintf(l, sizeof(l), "L_idxof_found_s_%d:", lid); emitln(ftext, l);
+            }
+            emitln(ftext, "    mov w24, w20");
+            {
+                char l[64]; snprintf(l, sizeof(l), "L_idxof_done_s_%d:", lid); emitln(ftext, l);
+            }
+            // Mover resultado a w1 para el consumidor
+            emitln(ftext, "    mov w1, w24");
+            return INT;
+        } else {
+            int lid = flujo_next_label_id();
+            // Treat as 4-byte ints (covers INT/BOOLEAN/CHAR by numeric compare)
+            TipoDato vty = emitir_eval_numerico(val, ftext);
+            if (vty == DOUBLE) emitln(ftext, "    fcvtzs w22, d0"); else emitln(ftext, "    mov w22, w1");
+            emitln(ftext, "    mov w20, #0");
+            emitln(ftext, "    mov w24, #-1");
+            {
+                char l[64]; snprintf(l, sizeof(l), "L_idxof_loop_i_%d:", lid); emitln(ftext, l);
+            }
+            emitln(ftext, "    cmp w20, w19");
+            {
+                char b[64]; snprintf(b, sizeof(b), "    b.ge L_idxof_done_i_%d", lid); emitln(ftext, b);
+            }
+            // Use x14 as the element address to avoid clobbering w22 (search value)
+            emitln(ftext, "    add x14, x21, x20, lsl #2");
+            emitln(ftext, "    ldr w0, [x14]");
+            emitln(ftext, "    cmp w0, w22");
+            {
+                char b[64]; snprintf(b, sizeof(b), "    b.eq L_idxof_found_i_%d", lid); emitln(ftext, b);
+            }
+            emitln(ftext, "    add w20, w20, #1");
+            {
+                char b[64]; snprintf(b, sizeof(b), "    b L_idxof_loop_i_%d", lid); emitln(ftext, b);
+            }
+            {
+                char l[64]; snprintf(l, sizeof(l), "L_idxof_found_i_%d:", lid); emitln(ftext, l);
+            }
+            emitln(ftext, "    mov w24, w20");
+            {
+                char l[64]; snprintf(l, sizeof(l), "L_idxof_done_i_%d:", lid); emitln(ftext, l);
+            }
+            // Mover resultado a w1 para el consumidor
+            emitln(ftext, "    mov w1, w24");
+            return INT;
+        }
     }
     emitln(ftext, "    mov w1, #0");
     return INT;
