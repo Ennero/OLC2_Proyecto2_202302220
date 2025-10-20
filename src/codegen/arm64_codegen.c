@@ -272,6 +272,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "fmt_char:       .asciz \"%c\"\n");
     emitln(f, "true_str:       .asciz \"true\"");
     emitln(f, "false_str:      .asciz \"false\"\n");
+    emitln(f, "null_str:       .asciz \"null\"\n");
     // Buffer temporal para String.valueOf (no reentrante)
     emitln(f, "tmpbuf:         .skip 1024");
     // Buffer para codificación UTF-8 de un solo carácter
@@ -352,6 +353,112 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    strb w7, [x1, #3]");
     emitln(f, "    mov w3, #0");
     emitln(f, "    strb w3, [x1, #4]");
+    emitln(f, "    ret\n");
+
+    // --- Helpers: String.join sobre arreglos 1D ---
+    emitln(f, "// join_array_strings(x0=arr_ptr, x1=delim) -> x0=tmpbuf");
+    emitln(f, "join_array_strings:");
+    emitln(f, "    stp x29, x30, [sp, -16]!");
+    emitln(f, "    mov x29, sp");
+    emitln(f, "    sub sp, sp, #48");
+    emitln(f, "    stp x19, x20, [sp, #0]");
+    emitln(f, "    stp x21, x22, [sp, #16]");
+    emitln(f, "    stp x23, x24, [sp, #32]");
+    emitln(f, "    mov x9, x0"); // arr
+    emitln(f, "    mov x23, x1"); // preserve delim in callee-saved
+    // header size align
+    emitln(f, "    ldr w12, [x9]");
+    emitln(f, "    mov x15, #8");
+    emitln(f, "    uxtw x16, w12");
+    emitln(f, "    lsl x16, x16, #2");
+    emitln(f, "    add x15, x15, x16");
+    emitln(f, "    add x17, x15, #7");
+    emitln(f, "    and x17, x17, #-8");
+    emitln(f, "    add x18, x9, #8"); // sizes base
+    emitln(f, "    ldr w19, [x18]"); // n
+    // compute data base in callee-saved x21 to survive calls
+    emitln(f, "    add x21, x9, x17");
+    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    mov w2, #0");
+    emitln(f, "    strb w2, [x0]");
+    emitln(f, "    mov w20, #0"); // i
+    emitln(f, "1:");
+    emitln(f, "    cmp w20, w19");
+    emitln(f, "    b.ge 2f");
+    emitln(f, "    // if i>0 append delim");
+    emitln(f, "    cbz w20, 3f");
+    emitln(f, "    // x0 already points to tmpbuf");
+    emitln(f, "    mov x1, x23");
+    emitln(f, "    bl strcat");
+    emitln(f, "3:");
+    emitln(f, "    // load element ptr from data base (x21) + i*8");
+    emitln(f, "    add x22, x21, x20, lsl #3");
+    emitln(f, "    ldr x22, [x22]");
+    emitln(f, "    cbnz x22, 4f");
+    emitln(f, "    ldr x22, =null_str");
+    emitln(f, "4:");
+    emitln(f, "    mov x1, x22");
+    emitln(f, "    bl strcat");
+    emitln(f, "    add w20, w20, #1");
+    emitln(f, "    b 1b");
+    emitln(f, "2:");
+    emitln(f, "    ldp x23, x24, [sp, #32]");
+    emitln(f, "    ldp x21, x22, [sp, #16]");
+    emitln(f, "    ldp x19, x20, [sp, #0]");
+    emitln(f, "    add sp, sp, #48");
+    emitln(f, "    ldp x29, x30, [sp], 16");
+    emitln(f, "    ret\n");
+
+    emitln(f, "// join_array_ints(x0=arr_ptr, x1=delim) -> x0=tmpbuf");
+    emitln(f, "join_array_ints:");
+    emitln(f, "    stp x29, x30, [sp, -16]!");
+    emitln(f, "    mov x29, sp");
+    emitln(f, "    sub sp, sp, #112"); // 48(save regs) + 64(intbuf)
+    emitln(f, "    stp x19, x20, [sp, #0]");
+    emitln(f, "    stp x21, x22, [sp, #16]");
+    emitln(f, "    stp x23, x24, [sp, #32]");
+    emitln(f, "    mov x9, x0");
+    emitln(f, "    mov x23, x1"); // preserve delim
+    emitln(f, "    ldr w12, [x9]");
+    emitln(f, "    mov x15, #8");
+    emitln(f, "    uxtw x16, w12");
+    emitln(f, "    lsl x16, x16, #2");
+    emitln(f, "    add x15, x15, x16");
+    emitln(f, "    add x17, x15, #7");
+    emitln(f, "    and x17, x17, #-8");
+    emitln(f, "    add x18, x9, #8");
+    emitln(f, "    ldr w19, [x18]");
+    // compute data base in x21
+    emitln(f, "    add x21, x9, x17");
+    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    mov w2, #0");
+    emitln(f, "    strb w2, [x0]");
+    emitln(f, "    mov w20, #0");
+    emitln(f, "1:");
+    emitln(f, "    cmp w20, w19");
+    emitln(f, "    b.ge 2f");
+    emitln(f, "    cbz w20, 3f");
+    emitln(f, "    mov x1, x23");
+    emitln(f, "    bl strcat");
+    emitln(f, "3:");
+    emitln(f, "    add x22, x21, x20, lsl #2");
+    emitln(f, "    ldr w22, [x22]");
+    emitln(f, "    add x0, sp, #48"); // int buffer after saved regs
+    emitln(f, "    ldr x1, =fmt_int");
+    emitln(f, "    mov w2, w22");
+    emitln(f, "    bl sprintf");
+    emitln(f, "    add x1, sp, #48");
+    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    bl strcat");
+    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    add w20, w20, #1");
+    emitln(f, "    b 1b");
+    emitln(f, "2:");
+    emitln(f, "    ldp x23, x24, [sp, #32]");
+    emitln(f, "    ldp x21, x22, [sp, #16]");
+    emitln(f, "    ldp x19, x20, [sp, #0]");
+    emitln(f, "    add sp, sp, #112");
+    emitln(f, "    ldp x29, x30, [sp], 16");
     emitln(f, "    ret\n");
     // Recolectar funciones del AST
     arm64_funciones_reset();

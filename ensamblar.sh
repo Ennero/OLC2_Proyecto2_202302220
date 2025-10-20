@@ -24,7 +24,15 @@ aarch64-linux-gnu-gcc -c -O2 -o "$FMT_OBJ_FILE" ./src/utils/java_num_format.c
 
 echo "[2/3] Enlazando a binario"
 # Enlazamos contra la libc de aarch64 para tener printf y libm (fmod) disponibles
-aarch64-linux-gnu-gcc -no-pie -o "$BIN_FILE" "$OBJ_FILE" "$FMT_OBJ_FILE" -lm
+if [ "${USE_STATIC:-0}" = "1" ]; then
+	echo "[INFO] Enlazando de forma estática (-static)"
+	aarch64-linux-gnu-gcc -static -no-pie -o "$BIN_FILE" "$OBJ_FILE" "$FMT_OBJ_FILE" -lm || {
+		echo "[WARN] Enlace estático falló, reintentando dinámico..." >&2
+		aarch64-linux-gnu-gcc -no-pie -o "$BIN_FILE" "$OBJ_FILE" "$FMT_OBJ_FILE" -lm
+	}
+else
+	aarch64-linux-gnu-gcc -no-pie -o "$BIN_FILE" "$OBJ_FILE" "$FMT_OBJ_FILE" -lm
+fi
 
 echo "[3/3] Ejecutando en qemu-aarch64"
 # Si existe el sysroot de aarch64 en el sistema, usarlo para la libc y el loader

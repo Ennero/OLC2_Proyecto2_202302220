@@ -9,6 +9,8 @@ fmt_char:       .asciz "%c"
 true_str:       .asciz "true"
 false_str:      .asciz "false"
 
+null_str:       .asciz "null"
+
 tmpbuf:         .skip 1024
 charbuf:        .skip 8
 
@@ -334,6 +336,108 @@ char_to_utf8:
     strb w3, [x1, #4]
     ret
 
+// join_array_strings(x0=arr_ptr, x1=delim) -> x0=tmpbuf
+join_array_strings:
+    stp x29, x30, [sp, -16]!
+    mov x29, sp
+    sub sp, sp, #48
+    stp x19, x20, [sp, #0]
+    stp x21, x22, [sp, #16]
+    stp x23, x24, [sp, #32]
+    mov x9, x0
+    mov x23, x1
+    ldr w12, [x9]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x18, x9, #8
+    ldr w19, [x18]
+    add x21, x9, x17
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    mov w20, #0
+1:
+    cmp w20, w19
+    b.ge 2f
+    // if i>0 append delim
+    cbz w20, 3f
+    // x0 already points to tmpbuf
+    mov x1, x23
+    bl strcat
+3:
+    // load element ptr from data base (x21) + i*8
+    add x22, x21, x20, lsl #3
+    ldr x22, [x22]
+    cbnz x22, 4f
+    ldr x22, =null_str
+4:
+    mov x1, x22
+    bl strcat
+    add w20, w20, #1
+    b 1b
+2:
+    ldp x23, x24, [sp, #32]
+    ldp x21, x22, [sp, #16]
+    ldp x19, x20, [sp, #0]
+    add sp, sp, #48
+    ldp x29, x30, [sp], 16
+    ret
+
+// join_array_ints(x0=arr_ptr, x1=delim) -> x0=tmpbuf
+join_array_ints:
+    stp x29, x30, [sp, -16]!
+    mov x29, sp
+    sub sp, sp, #112
+    stp x19, x20, [sp, #0]
+    stp x21, x22, [sp, #16]
+    stp x23, x24, [sp, #32]
+    mov x9, x0
+    mov x23, x1
+    ldr w12, [x9]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x18, x9, #8
+    ldr w19, [x18]
+    add x21, x9, x17
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    mov w20, #0
+1:
+    cmp w20, w19
+    b.ge 2f
+    cbz w20, 3f
+    mov x1, x23
+    bl strcat
+3:
+    add x22, x21, x20, lsl #2
+    ldr w22, [x22]
+    add x0, sp, #48
+    ldr x1, =fmt_int
+    mov w2, w22
+    bl sprintf
+    add x1, sp, #48
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x0, =tmpbuf
+    add w20, w20, #1
+    b 1b
+2:
+    ldp x23, x24, [sp, #32]
+    ldp x21, x22, [sp, #16]
+    ldp x19, x20, [sp, #0]
+    add sp, sp, #112
+    ldp x29, x30, [sp], 16
+    ret
+
 main:
     stp x29, x30, [sp, -16]!
     mov x29, sp
@@ -405,19 +509,38 @@ main:
     ldr x1, =str_lit_9
     bl printf
     sub sp, sp, #16
-    mov x1, #0
+    mov w1, #100
+    mov w21, w1
+    ldr x19, =tmpbuf
+    mov x0, x19
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x1, x19
     sub x16, x29, #48
     str x1, [x16]
     sub sp, sp, #16
-    mov x1, #0
+    ldr x16, =dbl_lit_10
+    ldr d0, [x16]
+    ldr x19, =tmpbuf
+    mov x0, x19
+    mov x1, #1024
+    bl java_format_double
+    mov x1, x19
     sub x16, x29, #64
     str x1, [x16]
     sub sp, sp, #16
-    mov x1, #0
+    ldr x1, =true_str
     sub x16, x29, #80
     str x1, [x16]
     sub sp, sp, #16
-    mov x1, #0
+    mov w1, #65
+    mov w21, w1
+    ldr x19, =tmpbuf
+    mov x0, x19
+    mov w0, w21
+    bl char_to_utf8
+    mov x1, x0
     sub x16, x29, #96
     str x1, [x16]
     sub sp, sp, #16
@@ -429,20 +552,20 @@ main:
     sub x16, x29, #112
     ldr x1, [x16]
     cmp x1, #0
-    ldr x16, =str_lit_10
+    ldr x16, =str_lit_11
     csel x1, x16, x1, eq
     ldr x0, =fmt_string
     bl printf
     ldr x0, =fmt_string
-    ldr x1, =str_lit_11
+    ldr x1, =str_lit_12
     bl printf
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_12
+    ldr x1, =str_lit_13
     bl printf
     ldr x0, =fmt_string
-    ldr x1, =str_lit_13
+    ldr x1, =str_lit_14
     bl printf
     sub sp, sp, #16
     sub sp, sp, #16
@@ -466,7 +589,7 @@ main:
     add x19, x19, x17
     mov x21, #0
     add x20, x19, x21, lsl #3
-    ldr x1, =str_lit_14
+    ldr x1, =str_lit_15
     str x1, [x20]
     sub x16, x29, #128
     ldr x19, [x16]
@@ -480,7 +603,7 @@ main:
     add x19, x19, x17
     mov x21, #1
     add x20, x19, x21, lsl #3
-    ldr x1, =str_lit_15
+    ldr x1, =str_lit_16
     str x1, [x20]
     sub x16, x29, #128
     ldr x19, [x16]
@@ -494,7 +617,7 @@ main:
     add x19, x19, x17
     mov x21, #2
     add x20, x19, x21, lsl #3
-    ldr x1, =str_lit_16
+    ldr x1, =str_lit_17
     str x1, [x20]
     sub x16, x29, #128
     ldr x19, [x16]
@@ -508,7 +631,7 @@ main:
     add x19, x19, x17
     mov x21, #3
     add x20, x19, x21, lsl #3
-    ldr x1, =str_lit_17
+    ldr x1, =str_lit_18
     str x1, [x20]
     sub x16, x29, #128
     ldr x19, [x16]
@@ -522,10 +645,16 @@ main:
     add x19, x19, x17
     mov x21, #4
     add x20, x19, x21, lsl #3
-    ldr x1, =str_lit_18
+    ldr x1, =str_lit_19
     str x1, [x20]
     sub sp, sp, #16
-    mov x1, #0
+    ldr x1, =str_lit_20
+    mov x23, x1
+    sub x16, x29, #128
+    ldr x0, [x16]
+    mov x1, x23
+    bl join_array_strings
+    mov x1, x0
     sub x16, x29, #144
     str x1, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -533,12 +662,12 @@ main:
     sub x16, x29, #144
     ldr x1, [x16]
     cmp x1, #0
-    ldr x16, =str_lit_19
+    ldr x16, =str_lit_21
     csel x1, x16, x1, eq
     ldr x0, =fmt_string
     bl printf
     ldr x0, =fmt_string
-    ldr x1, =str_lit_20
+    ldr x1, =str_lit_22
     bl printf
     sub sp, sp, #16
     sub sp, sp, #16
@@ -621,7 +750,13 @@ main:
     mov w1, #5
     str w1, [x20]
     sub sp, sp, #16
-    mov x1, #0
+    ldr x1, =str_lit_23
+    mov x23, x1
+    sub x16, x29, #160
+    ldr x0, [x16]
+    mov x1, x23
+    bl join_array_ints
+    mov x1, x0
     sub x16, x29, #176
     str x1, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -629,14 +764,14 @@ main:
     sub x16, x29, #176
     ldr x1, [x16]
     cmp x1, #0
-    ldr x16, =str_lit_21
+    ldr x16, =str_lit_24
     csel x1, x16, x1, eq
     ldr x0, =fmt_string
     bl printf
     ldr x0, =fmt_string
-    ldr x1, =str_lit_22
+    ldr x1, =str_lit_25
     bl printf
-L_func_exit_6:
+L_func_exit_1:
     mov sp, x29
 
     mov w0, #0
@@ -654,19 +789,22 @@ str_lit_6:    .asciz "-25.5"
 str_lit_7:    .asciz "\n"
 str_lit_8:    .asciz "\n--- Pruebas de String.valueOf ---"
 str_lit_9:    .asciz "\n"
-str_lit_10:    .asciz "null"
-str_lit_11:    .asciz "\n"
-str_lit_12:    .asciz "\n--- Pruebas de String.join ---"
-str_lit_13:    .asciz "\n"
-str_lit_14:    .asciz "Hola"
-str_lit_15:    .asciz "Mundo"
-str_lit_16:    .asciz "desde"
-str_lit_17:    .asciz "el"
-str_lit_18:    .asciz "interprete"
-str_lit_19:    .asciz "null"
-str_lit_20:    .asciz "\n"
+dbl_lit_10:    .double 3.14159
+str_lit_11:    .asciz "null"
+str_lit_12:    .asciz "\n"
+str_lit_13:    .asciz "\n--- Pruebas de String.join ---"
+str_lit_14:    .asciz "\n"
+str_lit_15:    .asciz "Hola"
+str_lit_16:    .asciz "Mundo"
+str_lit_17:    .asciz "desde"
+str_lit_18:    .asciz "el"
+str_lit_19:    .asciz "interprete"
+str_lit_20:    .asciz " "
 str_lit_21:    .asciz "null"
 str_lit_22:    .asciz "\n"
+str_lit_23:    .asciz ", "
+str_lit_24:    .asciz "null"
+str_lit_25:    .asciz "\n"
 
 // --- Variables globales ---
 g_d1:    .quad 0

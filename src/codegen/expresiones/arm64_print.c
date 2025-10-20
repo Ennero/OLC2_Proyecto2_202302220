@@ -26,6 +26,9 @@ int expresion_es_cadena(AbstractExpresion *node) {
     if (strcmp(t, "StringValueof") == 0) {
         return 1;
     }
+    if (strcmp(t, "StringJoin") == 0) {
+        return 1;
+    }
     if (strcmp(t, "Identificador") == 0) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
         VarEntry *v = buscar_variable(id->nombre);
@@ -260,6 +263,14 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
         emitln(ftext, "    bl printf");
         return;
     }
+    if (strcmp(t, "StringJoin") == 0) {
+        if (!emitir_eval_string_ptr(node, ftext)) {
+            emitln(ftext, "    ldr x1, =null_str");
+        }
+        emitln(ftext, "    ldr x0, =fmt_string");
+        emitln(ftext, "    bl printf");
+        return;
+    }
     if (strcmp(t, "Primitivo") == 0) {
         PrimitivoExpresion *p = (PrimitivoExpresion *)node;
         if (p->tipo == STRING) {
@@ -484,6 +495,138 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
         emitln(ftext, "    bl array_element_addr_ptr");
         emitln(ftext, "    ldr x1, [x0]");
         if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+        return 1;
+    }
+    if (strcmp(t, "StringValueof") == 0) {
+        // Produce en x1 el string generado por valueOf(arg)
+        emitir_string_valueof(node->hijos[0], ftext);
+        return 1;
+    }
+    if (strcmp(t, "StringJoin") == 0) {
+        // Evaluar delimitador a puntero string en x23 (callee-saved, preservado por libc)
+        if (!emitir_eval_string_ptr(node->hijos[0], ftext)) {
+            return 0;
+        }
+        emitln(ftext, "    mov x23, x1");
+        AbstractExpresion *lista = node->hijos[1];
+        // Caso A: un solo argumento y es identificador de arreglo conocido
+        if (lista && lista->numHijos == 1 && lista->hijos[0] && strcmp(lista->hijos[0]->node_type, "Identificador") == 0) {
+            IdentificadorExpresion *id = (IdentificadorExpresion *)lista->hijos[0];
+            VarEntry *v = buscar_variable(id->nombre);
+            // Detectar si el identificador corresponde a un arreglo registrado
+            TipoDato bt = arm64_array_elem_tipo_for_var(id->nombre);
+            if (bt != NULO && v) {
+                // Cargar puntero al arreglo en x0 y llamar al helper según tipo base
+                char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", v->offset); emitln(ftext, ld);
+                // x1 = delimitador
+                emitln(ftext, "    mov x1, x23");
+                if (bt == STRING) emitln(ftext, "    bl join_array_strings");
+                else if (bt == INT) emitln(ftext, "    bl join_array_ints");
+                else {
+                    // Tipos no soportados aún: retornar cadena vacía
+                    emitln(ftext, "    ldr x0, =tmpbuf");
+                    emitln(ftext, "    mov w2, #0");
+                    emitln(ftext, "    strb w2, [x0]");
+                }
+                // Helpers retornan x0=tmpbuf; mover a x1 como contrato de esta función
+                emitln(ftext, "    mov x1, x0");
+                return 1;
+            }
+        }
+        // Caso B: varargs: concatenar cada elemento convertido a string en tmpbuf
+        // Inicializar tmpbuf como cadena vacía y reservar scratch en stack para formateo
+        emitln(ftext, "    ldr x0, =tmpbuf");
+        emitln(ftext, "    mov w2, #0");
+        emitln(ftext, "    strb w2, [x0]");
+        emitln(ftext, "    sub sp, sp, #128");
+        for (size_t i = 0; i < lista->numHijos; ++i) {
+            if (i > 0) {
+                emitln(ftext, "    ldr x0, =tmpbuf");
+                emitln(ftext, "    mov x1, x23");
+                emitln(ftext, "    bl strcat");
+            }
+            AbstractExpresion *arg = lista->hijos[i];
+            if (expresion_es_cadena(arg)) {
+                if (!emitir_eval_string_ptr(arg, ftext)) {
+                    emitln(ftext, "    ldr x1, =null_str");
+                } else {
+                    emitln(ftext, "    cmp x1, #0");
+                    emitln(ftext, "    ldr x16, =null_str");
+                    emitln(ftext, "    csel x1, x16, x1, eq");
+                }
+                emitln(ftext, "    ldr x0, =tmpbuf");
+                emitln(ftext, "    bl strcat");
+            } else if (nodo_es_resultado_booleano(arg)) {
+                emitir_eval_booleano(arg, ftext);
+                emitln(ftext, "    cmp w1, #0");
+                emitln(ftext, "    ldr x1, =false_str");
+                emitln(ftext, "    ldr x16, =true_str");
+                emitln(ftext, "    csel x1, x16, x1, ne");
+                emitln(ftext, "    ldr x0, =tmpbuf");
+                emitln(ftext, "    bl strcat");
+            } else {
+                // Evaluar numérico/char y formatear en [sp]
+                TipoDato ty = emitir_eval_numerico(arg, ftext);
+                if (ty == DOUBLE) {
+                    emitln(ftext, "    mov x0, sp");
+                    emitln(ftext, "    mov x1, #128");
+                    emitln(ftext, "    bl java_format_double");
+                    emitln(ftext, "    mov x1, sp");
+                    emitln(ftext, "    ldr x0, =tmpbuf");
+                    emitln(ftext, "    bl strcat");
+                } else {
+                    // INT/CHAR: si CHAR convertir a UTF-8 en charbuf
+                    // Detectar si el arg original es CHAR aproximando por su tipo estático cuando sea identificador/primitivo
+                    int is_char_local = 0;
+                    const char *at = arg->node_type ? arg->node_type : "";
+                    if (strcmp(at, "Primitivo") == 0) {
+                        PrimitivoExpresion *p = (PrimitivoExpresion *)arg;
+                        is_char_local = (p->tipo == CHAR);
+                        // Mapear booleano literal a "true"/"false"
+                        if (p->tipo == BOOLEAN) {
+                            int is_true = (p->valor && strcmp(p->valor, "true") == 0);
+                            emitln(ftext, is_true ? "    ldr x1, =true_str" : "    ldr x1, =false_str");
+                            emitln(ftext, "    ldr x0, =tmpbuf");
+                            emitln(ftext, "    bl strcat");
+                            continue;
+                        }
+                    } else if (strcmp(at, "Identificador") == 0) {
+                        IdentificadorExpresion *aid = (IdentificadorExpresion *)arg;
+                        VarEntry *vv = buscar_variable(aid->nombre);
+                        is_char_local = (vv && vv->tipo == CHAR);
+                        // Identificador booleano -> true/false
+                        if (vv && vv->tipo == BOOLEAN) {
+                            char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr w1, [x16]", vv->offset); emitln(ftext, l1);
+                            emitln(ftext, "    cmp w1, #0");
+                            emitln(ftext, "    ldr x1, =false_str");
+                            emitln(ftext, "    ldr x16, =true_str");
+                            emitln(ftext, "    csel x1, x16, x1, ne");
+                            emitln(ftext, "    ldr x0, =tmpbuf");
+                            emitln(ftext, "    bl strcat");
+                            continue;
+                        }
+                    }
+                    if (is_char_local) {
+                        emitln(ftext, "    mov w0, w1");
+                        emitln(ftext, "    bl char_to_utf8");
+                        emitln(ftext, "    mov x1, x0");
+                        emitln(ftext, "    ldr x0, =tmpbuf");
+                        emitln(ftext, "    bl strcat");
+                    } else {
+                        emitln(ftext, "    mov x0, sp");
+                        // Mover primero el valor a w2 antes de cargar el formato (x1)
+                        emitln(ftext, "    mov w2, w1");
+                        emitln(ftext, "    ldr x1, =fmt_int");
+                        emitln(ftext, "    bl sprintf");
+                        emitln(ftext, "    mov x1, sp");
+                        emitln(ftext, "    ldr x0, =tmpbuf");
+                        emitln(ftext, "    bl strcat");
+                    }
+                }
+            }
+        }
+        emitln(ftext, "    add sp, sp, #128");
+        emitln(ftext, "    ldr x1, =tmpbuf");
         return 1;
     }
     if (strcmp(t, "StringValueof") == 0) {

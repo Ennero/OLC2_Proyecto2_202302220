@@ -109,6 +109,9 @@ int arm64_emitir_reasignacion(AbstractExpresion *node, FILE *ftext) {
                     char st[128]; snprintf(st, sizeof(st), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
                 }
             }
+        } else if (expresion_es_cadena(rhs)) {
+            if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");
+            char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
         }
     } else if (v->tipo == BOOLEAN) {
         emitir_eval_booleano(rhs, ftext);
