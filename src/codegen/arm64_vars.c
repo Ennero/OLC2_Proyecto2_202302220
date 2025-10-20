@@ -4,6 +4,8 @@
 
 static VarEntry *vars_head = NULL;
 static int local_bytes = 0;
+// Bytes efectivamente reservados en el stack (sub sp, sp, #...)
+static int allocated_bytes = 0;
 // Pila de marcas de alcance: apilamos el valor de local_bytes al entrar a un bloque
 typedef struct ScopeMark { int bytes_mark; struct ScopeMark *next; } ScopeMark;
 static ScopeMark *scope_stack = NULL;
@@ -31,9 +33,12 @@ VarEntry *vars_agregar(const char *name, TipoDato tipo, int size_bytes, FILE *ft
         new_total += pad;
     }
     local_bytes = new_total;
-    char line[64];
-    snprintf(line, sizeof(line), "    sub sp, sp, #%d", sz);
-    emitln(ftext, line);
+    // Reservar en tiempo de emisión el delta nuevo una sola vez (high-water mark)
+    if (ftext && new_total > allocated_bytes) {
+        int delta = new_total - allocated_bytes;
+        char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", delta); emitln(ftext, sub);
+        allocated_bytes = new_total;
+    }
     VarEntry *v = (VarEntry *)calloc(1, sizeof(VarEntry));
     v->name = strdup(name);
     v->tipo = tipo;
@@ -53,9 +58,9 @@ VarEntry *vars_agregar_ext(const char *name, TipoDato tipo, int size_bytes, int 
 int vars_local_bytes(void) { return local_bytes; }
 
 void vars_epilogo(FILE *ftext) {
-    if (local_bytes > 0) {
-        char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", local_bytes); emitln(ftext, addb);
-    }
+    // Restaurar el stack al frame pointer para evitar desbalances por rutas de control
+    (void)ftext;
+    // El epílogo real lo emite el generador: "mov sp, x29"
 }
 
 void vars_reset(void) {
@@ -66,6 +71,7 @@ void vars_reset(void) {
         vars_head = nx;
     }
     local_bytes = 0;
+    allocated_bytes = 0;
     while (scope_stack) { ScopeMark *nx = scope_stack->next; free(scope_stack); scope_stack = nx; }
 }
 

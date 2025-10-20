@@ -1006,6 +1006,8 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
         char lab[128]; snprintf(lab, sizeof(lab), "fn_%s:", fi->name); emitln(f, lab);
         emitln(f, "    stp x29, x30, [sp, -16]!");
         emitln(f, "    mov x29, sp");
+    // Reservar frame completo para locales una sola vez (se ajustará tras conocer local_bytes)
+    // De momento, posponemos hasta después de declarar parámetros. Guardamos etiqueta para inserción.
         // Preparar estado de retorno para ReturnStatement
         __is_main_context = 0;
         __current_func_ret = fi->ret;
@@ -1022,13 +1024,14 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
                 char st[64]; snprintf(st, sizeof(st), "    str w%d, [x29, -%d]", p, v->offset); emitln(f, st);
             }
         }
+        // Reservas de locales se harán on-demand en vars_agregar; no reservar aquí
         // Generar cuerpo
         gen_node(f, fi->body);
         // Salida de función
         emit_label(f, "L_func_exit", __current_func_exit_id);
         __current_func_exit_id = -1;
-        // Restaurar stack de variables locales
-        vars_epilogo(f);
+        // Restaurar stack de variables locales (reset a FP) y epílogo estándar
+        emitln(f, "    mov sp, x29");
         emitln(f, "    ldp x29, x30, [sp], 16");
         emitln(f, "    ret\n");
         // Fin de función; continuar con la siguiente
@@ -1039,6 +1042,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "main:");
     emitln(f, "    stp x29, x30, [sp, -16]!");
     emitln(f, "    mov x29, sp\n");
+    // Reservar frame completo de main tras conocer local_bytes; de inicio 0, se actualizará después de declarar
 
     // Para poder generar secciones .data adicionales (dobles y strings) después,
     // escribiremos código en un archivo temporal y luego insertaremos .data y .text en orden.
@@ -1061,8 +1065,8 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     __current_func_exit_id = -1;
 
     // Epílogo
-    // Epílogo de variables locales
-    vars_epilogo(f);
+    // Epílogo de variables locales (reset a FP)
+    emitln(f, "    mov sp, x29");
     emitln(f, "\n    mov w0, #0");
     emitln(f, "    ldp x29, x30, [sp], 16");
     emitln(f, "    ret\n");
