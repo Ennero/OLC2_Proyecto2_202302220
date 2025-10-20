@@ -127,20 +127,24 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
     }
     emitln(ftext, "    ldr x19, =tmpbuf");
     emitln(ftext, "    mov x0, x19");
-    const char *lab = is_char ? "fmt_char" : alloc_fmt_label_for_tipo(ty == DOUBLE ? DOUBLE : INT);
-    {
-        char lfmt[64]; snprintf(lfmt, sizeof(lfmt), "    ldr x1, =%s", lab); emitln(ftext, lfmt);
-    }
-    if (ty == DOUBLE) {
-        emitln(ftext, "    bl sprintf");
-    } else if (is_char) {
-        emitln(ftext, "    mov w2, w21");
-        emitln(ftext, "    bl sprintf");
+    if (is_char) {
+        // Convertir code point a UTF-8 y devolver puntero en x1
+        emitln(ftext, "    mov w0, w21");
+        emitln(ftext, "    bl char_to_utf8");
+        emitln(ftext, "    mov x1, x0");
     } else {
-        emitln(ftext, "    mov w2, w21");
-        emitln(ftext, "    bl sprintf");
+        const char *lab = alloc_fmt_label_for_tipo(ty == DOUBLE ? DOUBLE : INT);
+        {
+            char lfmt[64]; snprintf(lfmt, sizeof(lfmt), "    ldr x1, =%s", lab); emitln(ftext, lfmt);
+        }
+        if (ty == DOUBLE) {
+            emitln(ftext, "    bl sprintf");
+        } else {
+            emitln(ftext, "    mov w2, w21");
+            emitln(ftext, "    bl sprintf");
+        }
+        emitln(ftext, "    mov x1, x19");
     }
-    emitln(ftext, "    mov x1, x19");
 }
 
 void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
@@ -176,9 +180,12 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
             emitln(ftext, "    bl printf");
             return;
         } else if (p->tipo == CHAR) {
-            // Imprimir caracter como %c
+            // Imprimir caracter como UTF-8 usando helper
             (void)emitir_eval_numerico(node, ftext);
-            emitln(ftext, "    ldr x0, =fmt_char");
+            emitln(ftext, "    mov w0, w1");
+            emitln(ftext, "    bl char_to_utf8");
+            emitln(ftext, "    mov x1, x0");
+            emitln(ftext, "    ldr x0, =fmt_string");
             emitln(ftext, "    bl printf");
             return;
         } else if (p->tipo == BOOLEAN) {
@@ -209,7 +216,11 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
         TipoDato dest = c->tipo_destino;
         TipoDato ty = emitir_eval_numerico(node, ftext);
         if (dest == CHAR) {
-            emitln(ftext, "    ldr x0, =fmt_char");
+            // Convertir a UTF-8 y imprimir como cadena
+            emitln(ftext, "    mov w0, w1");
+            emitln(ftext, "    bl char_to_utf8");
+            emitln(ftext, "    mov x1, x0");
+            emitln(ftext, "    ldr x0, =fmt_string");
             emitln(ftext, "    bl printf");
             return;
         } else if (dest == BOOLEAN) {
@@ -242,7 +253,11 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
             } else {
                 char l1[64]; snprintf(l1, sizeof(l1), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, l1);
                 if (v->tipo == CHAR) {
-                    emitln(ftext, "    ldr x0, =fmt_char");
+                    // Imprimir como UTF-8
+                    emitln(ftext, "    mov w0, w1");
+                    emitln(ftext, "    bl char_to_utf8");
+                    emitln(ftext, "    mov x1, x0");
+                    emitln(ftext, "    ldr x0, =fmt_string");
                 } else if (v->tipo == BOOLEAN) {
                     emitln(ftext, "    cmp w1, #0");
                     emitln(ftext, "    ldr x1, =false_str");

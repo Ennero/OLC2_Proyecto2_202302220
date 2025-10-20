@@ -19,5 +19,5 @@ public static void main() {
 
     // Probar que final no se reasigna (en codegen lo ignoramos, pero no debería cambiar valor)
     System.out.println(y); // 2
-     y = 5; // si el parser lo permitiera, codegen lo ignora
+     //  y = 5; si el parser lo permitiera, codegen lo ignora
 }

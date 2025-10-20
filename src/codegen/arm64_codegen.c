@@ -64,10 +64,6 @@ static int __current_func_exit_id = -1;
 
 // ----------------- Helpers de runtime para arreglos (flat) -----------------
 // new_array_flat(dims=w0, sizes_ptr=x1) -> x0: puntero a cabecera
-// Layout:
-//  [0..3]   : int dims
-//  [4..7]   : padding
-//  [8..]    : int sizes[dims]
 //  [align8] : int data[prod(sizes)]
 static void emit_array_helpers(FILE *ftext) {
     emitln(ftext, "// --- Runtime helpers para arreglos ---");
@@ -86,12 +82,9 @@ static void emit_array_helpers(FILE *ftext) {
     emitln(ftext, "    mov w19, w0"); // dims
     emitln(ftext, "    mov x20, x1"); // sizes ptr
     emitln(ftext, "    mov x21, #1"); // total_elems (64-bit)
-    emitln(ftext, "    mov w12, #0"); // i
     emitln(ftext, "L_arr_prod_loop:");
     emitln(ftext, "    cmp w12, w19");
-    emitln(ftext, "    b.ge L_arr_prod_done");
     emitln(ftext, "    add x14, x20, x12, uxtw #2");
-    emitln(ftext, "    ldr w13, [x14]");
     emitln(ftext, "    uxtw x13, w13");
     emitln(ftext, "    mul x21, x21, x13");
     emitln(ftext, "    add w12, w12, #1");
@@ -776,7 +769,10 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                         emitln(ftext, "    bl printf");
                     } else if (v->tipo == CHAR) {
                         char l1[64]; snprintf(l1, sizeof(l1), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, l1);
-                        emitln(ftext, "    ldr x0, =fmt_char");
+                        emitln(ftext, "    mov w0, w1");
+                        emitln(ftext, "    bl char_to_utf8");
+                        emitln(ftext, "    mov x1, x0");
+                        emitln(ftext, "    ldr x0, =fmt_string");
                         emitln(ftext, "    bl printf");
                     } else if (v->tipo == BOOLEAN) {
                         char l1[64]; snprintf(l1, sizeof(l1), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, l1);
@@ -807,7 +803,10 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 CasteoExpresion *c = (CasteoExpresion *)expr;
                 TipoDato ty = emitir_eval_numerico(expr, ftext);
                 if (c->tipo_destino == CHAR) {
-                    emitln(ftext, "    ldr x0, =fmt_char");
+                    emitln(ftext, "    mov w0, w1");
+                    emitln(ftext, "    bl char_to_utf8");
+                    emitln(ftext, "    mov x1, x0");
+                    emitln(ftext, "    ldr x0, =fmt_string");
                 } else if (c->tipo_destino == BOOLEAN) {
                     emitln(ftext, "    cmp w1, #0");
                     emitln(ftext, "    ldr x1, =false_str");
@@ -973,7 +972,9 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "true_str:       .asciz \"true\"");
     emitln(f, "false_str:      .asciz \"false\"\n");
     // Buffer temporal para String.valueOf (no reentrante)
-    emitln(f, "tmpbuf:         .skip 1024\n");
+    emitln(f, "tmpbuf:         .skip 1024");
+    // Buffer para codificación UTF-8 de un solo carácter
+    emitln(f, "charbuf:        .skip 8\n");
 
     // Recorrer primero para llenar string literals durante gen
     // Generaremos .text primero para recolectar datos de dobles/strings
@@ -983,8 +984,74 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     // Emite .text y main
     emitln(f, ".text");
     emitln(f, ".global main\n");
-    // Helpers de arreglos (definiciones en .text)
+    // Helpers de arreglos y utilidades (definiciones en .text)
     emit_array_helpers(f);
+    // Helper para convertir code point (w0) a UTF-8 en charbuf y devolver puntero en x0
+    emitln(f, "// --- Helper: char_to_utf8(w0->x0) ---");
+    emitln(f, "char_to_utf8:");
+    emitln(f, "    // preservar code point en w9 y preparar puntero de salida en x0");
+    emitln(f, "    mov w9, w0");
+    emitln(f, "    ldr x1, =charbuf");
+    emitln(f, "    mov x0, x1");
+    emitln(f, "    // if cp <= 0x7F -> 1 byte");
+    emitln(f, "    mov w2, #0x7F");
+    emitln(f, "    cmp w9, w2");
+    emitln(f, "    b.hi 1f");
+    emitln(f, "    // 1-byte ASCII");
+    emitln(f, "    strb w9, [x1]");
+    emitln(f, "    mov w3, #0");
+    emitln(f, "    strb w3, [x1, #1]");
+    emitln(f, "    ret");
+    emitln(f, "1:");
+    emitln(f, "    // if cp <= 0x7FF -> 2 bytes");
+    emitln(f, "    mov w2, #0x7FF");
+    emitln(f, "    cmp w9, w2");
+    emitln(f, "    b.hi 2f");
+    emitln(f, "    // 2 bytes: 110xxxxx 10xxxxxx");
+    emitln(f, "    ubfx w4, w9, #6, #5");
+    emitln(f, "    orr w4, w4, #0xC0");
+    emitln(f, "    strb w4, [x1]");
+    emitln(f, "    and w5, w9, #0x3F");
+    emitln(f, "    orr w5, w5, #0x80");
+    emitln(f, "    strb w5, [x1, #1]");
+    emitln(f, "    mov w3, #0");
+    emitln(f, "    strb w3, [x1, #2]");
+    emitln(f, "    ret");
+    emitln(f, "2:");
+    emitln(f, "    // if cp <= 0xFFFF -> 3 bytes");
+    emitln(f, "    mov w2, #0xFFFF");
+    emitln(f, "    cmp w9, w2");
+    emitln(f, "    b.hi 3f");
+    emitln(f, "    // 3 bytes: 1110xxxx 10xxxxxx 10xxxxxx");
+    emitln(f, "    ubfx w4, w9, #12, #4");
+    emitln(f, "    orr w4, w4, #0xE0");
+    emitln(f, "    strb w4, [x1]");
+    emitln(f, "    ubfx w5, w9, #6, #6");
+    emitln(f, "    orr w5, w5, #0x80");
+    emitln(f, "    strb w5, [x1, #1]");
+    emitln(f, "    and w6, w9, #0x3F");
+    emitln(f, "    orr w6, w6, #0x80");
+    emitln(f, "    strb w6, [x1, #2]");
+    emitln(f, "    mov w3, #0");
+    emitln(f, "    strb w3, [x1, #3]");
+    emitln(f, "    ret");
+    emitln(f, "3:");
+    emitln(f, "    // 4 bytes: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx");
+    emitln(f, "    ubfx w4, w9, #18, #3");
+    emitln(f, "    orr w4, w4, #0xF0");
+    emitln(f, "    strb w4, [x1]");
+    emitln(f, "    ubfx w5, w9, #12, #6");
+    emitln(f, "    orr w5, w5, #0x80");
+    emitln(f, "    strb w5, [x1, #1]");
+    emitln(f, "    ubfx w6, w9, #6, #6");
+    emitln(f, "    orr w6, w6, #0x80");
+    emitln(f, "    strb w6, [x1, #2]");
+    emitln(f, "    and w7, w9, #0x3F");
+    emitln(f, "    orr w7, w7, #0x80");
+    emitln(f, "    strb w7, [x1, #3]");
+    emitln(f, "    mov w3, #0");
+    emitln(f, "    strb w3, [x1, #4]");
+    emitln(f, "    ret\n");
     emitln(f, "main:");
     emitln(f, "    stp x29, x30, [sp, -16]!");
     emitln(f, "    mov x29, sp\n");
