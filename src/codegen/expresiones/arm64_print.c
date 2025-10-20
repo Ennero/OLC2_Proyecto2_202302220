@@ -70,17 +70,6 @@ void emitir_parse_double(AbstractExpresion *arg, FILE *ftext) {
 
 // String.valueOf: para MVP retornamos un string nuevo usando printf a buffer simple con sprintf
 // Sujeto a fugas controladas: asumimos que el caller sólo imprime o concatena de inmediato
-static const char *alloc_fmt_label_for_tipo(TipoDato t) {
-    switch (t) {
-        case INT: return "fmt_int";
-        case DOUBLE:
-        case FLOAT: return "fmt_double";
-        case BOOLEAN: return "fmt_string"; // true/false
-        case CHAR: return "fmt_char";
-        case STRING: return "fmt_string";
-        default: return "fmt_string";
-    }
-}
 
 // Emite en x1 el puntero a una cadena representando expr
 void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {

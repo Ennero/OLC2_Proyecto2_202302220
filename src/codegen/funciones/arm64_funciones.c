@@ -1,0 +1,99 @@
+#include "codegen/funciones/arm64_funciones.h"
+#include <string.h>
+#include <stdlib.h>
+#include "ast/nodos/estructuras/funciones/funcion.h"
+#include "ast/nodos/estructuras/funciones/parametro.h"
+#include "ast/nodos/estructuras/funciones/llamada.h"
+#include "codegen/arm64_print.h"
+#include "codegen/arm64_num.h"
+#include "codegen/arm64_bool.h"
+#include "codegen/arm64_core.h"
+
+static void emitln(FILE *f, const char *s) { core_emitln(f, s); }
+
+static Arm64FuncionInfo __funcs[64];
+static int __funcs_count = 0;
+
+void arm64_funciones_reset(void) {
+    for (int i = 0; i < __funcs_count; ++i) {
+        __funcs[i].name = NULL;
+        __funcs[i].body = NULL;
+        for (int j = 0; j < __funcs[i].param_count && j < 8; ++j) {
+            __funcs[i].param_names[j] = NULL;
+        }
+    }
+    __funcs_count = 0;
+}
+
+static Arm64FuncionInfo *funcs_lookup(const char *name) {
+    for (int i = 0; i < __funcs_count; ++i) {
+        if (strcmp(__funcs[i].name, name) == 0) return &__funcs[i];
+    }
+    return NULL;
+}
+
+void arm64_funciones_colectar(AbstractExpresion *n) {
+    if (!n) return;
+    if (n->node_type && strcmp(n->node_type, "FunctionDeclaration") == 0) {
+        if (__funcs_count < (int)(sizeof(__funcs)/sizeof(__funcs[0]))) {
+            FuncionDeclarationNode *fn = (FuncionDeclarationNode *)n;
+            Arm64FuncionInfo *fi = &__funcs[__funcs_count++];
+            memset(fi, 0, sizeof(*fi));
+            fi->name = fn->nombre;
+            fi->ret = fn->tipo_retorno;
+            AbstractExpresion *params_list = n->hijos[0];
+            fi->param_count = (int)(params_list ? params_list->numHijos : 0);
+            if (fi->param_count > 8) fi->param_count = 8;
+            for (int i = 0; i < fi->param_count; ++i) {
+                ParametroNode *pn = (ParametroNode *)params_list->hijos[i];
+                fi->param_types[i] = pn->tipo;
+                fi->param_names[i] = pn->nombre;
+            }
+            fi->body = n->hijos[1];
+        }
+    }
+    for (size_t i = 0; i < n->numHijos; ++i) arm64_funciones_colectar(n->hijos[i]);
+}
+
+int arm64_funciones_count(void) { return __funcs_count; }
+const Arm64FuncionInfo *arm64_funciones_get(int idx) { return (idx>=0 && idx<__funcs_count) ? &__funcs[idx] : NULL; }
+
+// Devuelve el tipo de retorno; para INT-like deja w1 con el valor; para DOUBLE deja d0
+TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext) {
+    if (!call_node || !(call_node->node_type && strcmp(call_node->node_type, "FunctionCall") == 0)) return INT;
+    LlamadaFuncionNode *ln = (LlamadaFuncionNode *)call_node;
+    Arm64FuncionInfo *fi = funcs_lookup(ln->nombre);
+    if (!fi) {
+        char line[128]; snprintf(line, sizeof(line), "    bl fn_%s", ln->nombre ? ln->nombre : "unknown"); emitln(ftext, line);
+        emitln(ftext, "    mov w1, w0");
+        return INT;
+    }
+    AbstractExpresion *args_list = (call_node->numHijos > 0) ? call_node->hijos[0] : NULL;
+    int nargs = args_list ? (int)args_list->numHijos : 0;
+    if (nargs > fi->param_count) nargs = fi->param_count;
+    for (int i = 0; i < nargs; ++i) {
+        AbstractExpresion *arg = args_list->hijos[i];
+        TipoDato esperado = fi->param_types[i];
+        if (esperado == STRING) {
+            if (!emitir_eval_string_ptr(arg, ftext)) emitln(ftext, "    mov x1, #0");
+            char mv[64]; snprintf(mv, sizeof(mv), "    mov x%d, x1", i); emitln(ftext, mv);
+        } else if (esperado == DOUBLE || esperado == FLOAT) {
+            TipoDato ty = emitir_eval_numerico(arg, ftext);
+            if (ty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
+            char mv[64]; snprintf(mv, sizeof(mv), "    fmov d%d, d0", i); emitln(ftext, mv);
+        } else {
+            TipoDato ty = emitir_eval_numerico(arg, ftext);
+            if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+            char mv[64]; snprintf(mv, sizeof(mv), "    mov w%d, w1", i); emitln(ftext, mv);
+        }
+    }
+    {
+        char line[128]; snprintf(line, sizeof(line), "    bl fn_%s", fi->name); emitln(ftext, line);
+    }
+    if (fi->ret == DOUBLE || fi->ret == FLOAT) {
+        return DOUBLE;
+    } else {
+        emitln(ftext, "    mov w1, w0");
+        return INT;
+    }
+}
