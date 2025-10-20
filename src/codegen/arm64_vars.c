@@ -84,6 +84,7 @@ void vars_push_scope(FILE *ftext) {
 }
 
 void vars_pop_scope(FILE *ftext) {
+    (void)ftext;
     if (!scope_stack) return;
     int target_bytes = scope_stack->bytes_mark;
     // Liberar entradas VarEntry hasta volver al offset del alcance anterior

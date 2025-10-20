@@ -31,8 +31,50 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Atributo para silenciar warnings de funciones no usadas (GCC/Clang)
+#ifndef UNUSED
+#define UNUSED __attribute__((unused))
+#endif
+
 // Pequeña util para escribir una línea en el archivo (delegar a core)
-static void emitln(FILE *f, const char *s) { core_emitln(f, s); }
+static void emitln(FILE *f, const char *s) {
+#ifdef ARM64_EMIT_GUARD
+    // Guard: evitar direccionamiento inmediato FP-relativo [x29, -imm]
+    if (s && strstr(s, "[x29, -") != NULL) {
+        fprintf(stderr, "WARN(codegen): emisión contiene [x29, -...]: %s\n", s);
+    }
+#endif
+    core_emitln(f, s);
+}
+
+// Helpers para acceso a variables locales (siempre vía x16 = x29 - offset)
+static void emit_addr_local(FILE *f, int offset) {
+    char line[64]; snprintf(line, sizeof(line), "    sub x16, x29, #%d", offset); emitln(f, line);
+}
+static void emit_load_local_w(FILE *f, int offset, const char *wreg) {
+    emit_addr_local(f, offset);
+    char line[64]; snprintf(line, sizeof(line), "    ldr %s, [x16]", wreg); emitln(f, line);
+}
+static void emit_load_local_d(FILE *f, int offset, const char *dreg) {
+    emit_addr_local(f, offset);
+    char line[64]; snprintf(line, sizeof(line), "    ldr %s, [x16]", dreg); emitln(f, line);
+}
+static void emit_load_local_x(FILE *f, int offset, const char *xreg) {
+    emit_addr_local(f, offset);
+    char line[64]; snprintf(line, sizeof(line), "    ldr %s, [x16]", xreg); emitln(f, line);
+}
+static void emit_store_local_w(FILE *f, int offset, const char *wreg) {
+    emit_addr_local(f, offset);
+    char line[64]; snprintf(line, sizeof(line), "    str %s, [x16]", wreg); emitln(f, line);
+}
+static void emit_store_local_d(FILE *f, int offset, const char *dreg) {
+    emit_addr_local(f, offset);
+    char line[64]; snprintf(line, sizeof(line), "    str %s, [x16]", dreg); emitln(f, line);
+}
+static void emit_store_local_x(FILE *f, int offset, const char *xreg) {
+    emit_addr_local(f, offset);
+    char line[64]; snprintf(line, sizeof(line), "    str %s, [x16]", xreg); emitln(f, line);
+}
 
 // Delegar manejo de literales a core
 static const char *add_string_literal(const char *text) { return core_add_string_literal(text); }
@@ -44,6 +86,7 @@ static const char *add_string_literal(const char *text) { return core_add_string
 // Tip alias para compatibilidad local
 typedef VarEntry VarEntry;
 static VarEntry *buscar_variable(const char *name) { return vars_buscar(name); }
+static VarEntry *agregar_variable(const char *name, TipoDato tipo, int size_bytes, FILE *ftext) UNUSED;
 static VarEntry *agregar_variable(const char *name, TipoDato tipo, int size_bytes, FILE *ftext) { return vars_agregar(name, tipo, size_bytes, ftext); }
 
 // ----------------- Helpers de labels -----------------
@@ -52,13 +95,17 @@ static void emit_label(FILE *f, const char *prefix, int id) { flujo_emit_label(f
 
 // ----------------- Pila simple de labels para 'break' -----------------
 // break/continue delegados a flujo helpers
+static void break_push(int id) UNUSED;
 static void break_push(int id) { flujo_break_push(id); }
 static int break_peek(void) { return flujo_break_peek(); }
+static void break_pop(void) UNUSED;
 static void break_pop(void) { flujo_break_pop(); }
 
 // ----------------- Pila simple de labels para 'continue' (loops) -----------------
+static void continue_push(int id) UNUSED;
 static void continue_push(int id) { flujo_continue_push(id); }
 static int continue_peek(void) { return flujo_continue_peek(); }
+static void continue_pop(void) UNUSED;
 static void continue_pop(void) { flujo_continue_pop(); }
 
 // ----------------- Etiqueta global de salida de función para 'return' -----------------
@@ -521,6 +568,10 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 TipoDato ty = emitir_eval_numerico(init, ftext);
                 if (ty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
                 char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d0, [x16]", v->offset); emitln(ftext, st);
+            } else if (decl->tipo == BOOLEAN) {
+                // Evaluar como booleano 0/1 en w1 y guardar
+                emitir_eval_booleano(init, ftext);
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w1, [x16]", v->offset); emitln(ftext, st);
             } else if (decl->tipo == STRING) {
                 if (strcmp(init->node_type, "Primitivo") == 0) {
                     PrimitivoExpresion *p = (PrimitivoExpresion *)init;
@@ -815,6 +866,9 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 // Evaluar puntero a string en x1 y guardar en [x16]
                 if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");
                 emitln(ftext, "    str x1, [x16]");
+            } else if (gi->tipo == BOOLEAN) {
+                emitir_eval_booleano(rhs, ftext);
+                emitln(ftext, "    str w1, [x16]");
             } else if (gi->tipo == DOUBLE || gi->tipo == FLOAT) {
                 TipoDato ty = emitir_eval_numerico(rhs, ftext);
                 if (ty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
@@ -848,6 +902,10 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                     char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
                 }
             }
+        } else if (v->tipo == BOOLEAN) {
+            // Evaluar como booleano y guardar 0/1
+            emitir_eval_booleano(rhs, ftext);
+            char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w1, [x16]", v->offset); emitln(ftext, st);
         } else if (v->tipo == DOUBLE || v->tipo == FLOAT) {
             TipoDato ty = emitir_eval_numerico(rhs, ftext);
             if (ty != DOUBLE) emitln(ftext, "    scvtf d0, w1");

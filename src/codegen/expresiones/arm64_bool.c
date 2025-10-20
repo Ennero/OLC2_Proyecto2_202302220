@@ -94,16 +94,20 @@ void emitir_eval_booleano(AbstractExpresion *node, FILE *ftext) {
             return;
         }
         TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
-        if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
+        // Preservar lhs en stack para evitar clobber durante evaluación de rhs
+        emitln(ftext, "    sub sp, sp, #16");
+        if (tl == DOUBLE) emitln(ftext, "    str d0, [sp]"); else emitln(ftext, "    str w1, [sp]");
         TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext);
-        if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
         int use_fp = (tl == DOUBLE || tr == DOUBLE);
         if (use_fp) {
-            if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
-            if (tr != DOUBLE) emitln(ftext, "    scvtf d9, w20");
+            if (tl == DOUBLE) emitln(ftext, "    ldr d8, [sp]"); else { emitln(ftext, "    ldr w19, [sp]"); emitln(ftext, "    scvtf d8, w19"); }
+            if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    scvtf d9, w1");
+            emitln(ftext, "    add sp, sp, #16");
             emitln(ftext, "    fcmp d8, d9");
         } else {
-            emitln(ftext, "    cmp w19, w20");
+            emitln(ftext, "    ldr w19, [sp]");
+            emitln(ftext, "    add sp, sp, #16");
+            emitln(ftext, "    cmp w19, w1");
         }
         if (strcmp(t, "IgualIgual") == 0) emitln(ftext, "    cset w1, eq");
         else if (strcmp(t, "Diferente") == 0) emitln(ftext, "    cset w1, ne");

@@ -24,7 +24,13 @@ static size_t utf8_encode_cp(int cp, char *out) {
 static int parse_unicode_escape_decimal(const char *digits, size_t maxlen) {
     size_t n = 0; long val = 0;
     while (n < maxlen && n < 5 && digits[n] >= '0' && digits[n] <= '9') { val = val*10 + (digits[n]-'0'); n++; }
-    if (val < 0) val = 0; if (val > 0x10FFFF) val = 0x10FFFF; return (int)val;
+    if (val < 0) {
+        val = 0;
+    }
+    if (val > 0x10FFFF) {
+        val = 0x10FFFF;
+    }
+    return (int)val;
 }
 
 static char *process_string_escapes_codegen(const char *input) {

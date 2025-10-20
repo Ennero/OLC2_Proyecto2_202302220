@@ -115,76 +115,92 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
         if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
         return INT;
     } else if (strcmp(t, "Suma") == 0) {
+        // Guardar lhs en stack para evitar clobber en evaluaciones anidadas
         TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
-        if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
+        emitln(ftext, "    sub sp, sp, #16");
+        if (tl == DOUBLE) emitln(ftext, "    str d0, [sp]"); else emitln(ftext, "    str w1, [sp]");
         TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext);
-        if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
         if (tl == DOUBLE || tr == DOUBLE) {
-            if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
-            if (tr != DOUBLE) emitln(ftext, "    scvtf d9, w20");
+            if (tl == DOUBLE) emitln(ftext, "    ldr d8, [sp]"); else { emitln(ftext, "    ldr w19, [sp]"); emitln(ftext, "    scvtf d8, w19"); }
+            if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    scvtf d9, w1");
             emitln(ftext, "    fadd d0, d8, d9");
+            emitln(ftext, "    add sp, sp, #16");
             return DOUBLE;
         } else {
-            emitln(ftext, "    add w1, w19, w20");
+            emitln(ftext, "    ldr w19, [sp]");
+            emitln(ftext, "    add sp, sp, #16");
+            emitln(ftext, "    add w1, w19, w1");
             return INT;
         }
     } else if (strcmp(t, "Resta") == 0) {
         TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
-        if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
+        emitln(ftext, "    sub sp, sp, #16");
+        if (tl == DOUBLE) emitln(ftext, "    str d0, [sp]"); else emitln(ftext, "    str w1, [sp]");
         TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext);
-        if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
         if (tl == DOUBLE || tr == DOUBLE) {
-            if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
-            if (tr != DOUBLE) emitln(ftext, "    scvtf d9, w20");
+            if (tl == DOUBLE) emitln(ftext, "    ldr d8, [sp]"); else { emitln(ftext, "    ldr w19, [sp]"); emitln(ftext, "    scvtf d8, w19"); }
+            if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    scvtf d9, w1");
             emitln(ftext, "    fsub d0, d8, d9");
+            emitln(ftext, "    add sp, sp, #16");
             return DOUBLE;
         } else {
-            emitln(ftext, "    sub w1, w19, w20");
+            emitln(ftext, "    ldr w19, [sp]");
+            emitln(ftext, "    add sp, sp, #16");
+            emitln(ftext, "    sub w1, w19, w1");
             return INT;
         }
     } else if (strcmp(t, "Multiplicacion") == 0) {
         TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
-        if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
+        emitln(ftext, "    sub sp, sp, #16");
+        if (tl == DOUBLE) emitln(ftext, "    str d0, [sp]"); else emitln(ftext, "    str w1, [sp]");
         TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext);
-        if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
         if (tl == DOUBLE || tr == DOUBLE) {
-            if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
-            if (tr != DOUBLE) emitln(ftext, "    scvtf d9, w20");
+            if (tl == DOUBLE) emitln(ftext, "    ldr d8, [sp]"); else { emitln(ftext, "    ldr w19, [sp]"); emitln(ftext, "    scvtf d8, w19"); }
+            if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    scvtf d9, w1");
             emitln(ftext, "    fmul d0, d8, d9");
+            emitln(ftext, "    add sp, sp, #16");
             return DOUBLE;
         } else {
-            emitln(ftext, "    mul w1, w19, w20");
+            emitln(ftext, "    ldr w19, [sp]");
+            emitln(ftext, "    add sp, sp, #16");
+            emitln(ftext, "    mul w1, w19, w1");
             return INT;
         }
     } else if (strcmp(t, "Division") == 0) {
         TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
-        if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
+        emitln(ftext, "    sub sp, sp, #16");
+        if (tl == DOUBLE) emitln(ftext, "    str d0, [sp]"); else emitln(ftext, "    str w1, [sp]");
         TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext);
-        if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
         if (tl == DOUBLE || tr == DOUBLE) {
-            if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
-            if (tr != DOUBLE) emitln(ftext, "    scvtf d9, w20");
+            if (tl == DOUBLE) emitln(ftext, "    ldr d8, [sp]"); else { emitln(ftext, "    ldr w19, [sp]"); emitln(ftext, "    scvtf d8, w19"); }
+            if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    scvtf d9, w1");
             emitln(ftext, "    fdiv d0, d8, d9");
+            emitln(ftext, "    add sp, sp, #16");
             return DOUBLE;
         } else {
-            emitln(ftext, "    sdiv w1, w19, w20");
+            emitln(ftext, "    ldr w19, [sp]");
+            emitln(ftext, "    add sp, sp, #16");
+            emitln(ftext, "    sdiv w1, w19, w1");
             return INT;
         }
     } else if (strcmp(t, "Modulo") == 0) {
         TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
-        if (tl == DOUBLE) emitln(ftext, "    fmov d8, d0"); else emitln(ftext, "    mov w19, w1");
+        emitln(ftext, "    sub sp, sp, #16");
+        if (tl == DOUBLE) emitln(ftext, "    str d0, [sp]"); else emitln(ftext, "    str w1, [sp]");
         TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext);
-        if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    mov w20, w1");
         if (tl == DOUBLE || tr == DOUBLE) {
-            if (tl != DOUBLE) emitln(ftext, "    scvtf d8, w19");
-            if (tr != DOUBLE) emitln(ftext, "    scvtf d9, w20");
+            if (tl == DOUBLE) emitln(ftext, "    ldr d8, [sp]"); else { emitln(ftext, "    ldr w19, [sp]"); emitln(ftext, "    scvtf d8, w19"); }
+            if (tr == DOUBLE) emitln(ftext, "    fmov d9, d0"); else emitln(ftext, "    scvtf d9, w1");
             emitln(ftext, "    fmov d0, d8");
             emitln(ftext, "    fmov d1, d9");
+            emitln(ftext, "    add sp, sp, #16");
             emitln(ftext, "    bl fmod");
             return DOUBLE;
         } else {
-            emitln(ftext, "    sdiv w21, w19, w20");
-            emitln(ftext, "    msub w1, w21, w20, w19");
+            emitln(ftext, "    ldr w19, [sp]");
+            emitln(ftext, "    add sp, sp, #16");
+            emitln(ftext, "    sdiv w21, w19, w1");
+            emitln(ftext, "    msub w1, w21, w1, w19");
             return INT;
         }
     } else if (strcmp(t, "NegacionUnaria") == 0) {
@@ -199,17 +215,15 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
     } else if (strcmp(t, "BitwiseAnd") == 0 || strcmp(t, "BitwiseOr") == 0 || strcmp(t, "BitwiseXor") == 0 ||
                strcmp(t, "LeftShift") == 0 || strcmp(t, "RightShift") == 0 || strcmp(t, "UnsignedRightShift") == 0) {
         TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
-        if (tl == DOUBLE) {
-            emitln(ftext, "    fcvtzs w19, d0");
-        } else {
-            emitln(ftext, "    mov w19, w1");
-        }
+        // Guardar lhs entero en stack para protegerlo
+        emitln(ftext, "    sub sp, sp, #16");
+        if (tl == DOUBLE) { emitln(ftext, "    fcvtzs w19, d0"); emitln(ftext, "    str w19, [sp]"); }
+        else { emitln(ftext, "    str w1, [sp]"); }
         TipoDato tr = emitir_eval_numerico(node->hijos[1], ftext);
-        if (tr == DOUBLE) {
-            emitln(ftext, "    fcvtzs w20, d0");
-        } else {
-            emitln(ftext, "    mov w20, w1");
-        }
+        if (tr == DOUBLE) { emitln(ftext, "    fcvtzs w20, d0"); }
+        else { emitln(ftext, "    mov w20, w1"); }
+        emitln(ftext, "    ldr w19, [sp]");
+        emitln(ftext, "    add sp, sp, #16");
         if (strcmp(t, "BitwiseAnd") == 0) emitln(ftext, "    and w1, w19, w20");
         else if (strcmp(t, "BitwiseOr") == 0) emitln(ftext, "    orr w1, w19, w20");
         else if (strcmp(t, "BitwiseXor") == 0) emitln(ftext, "    eor w1, w19, w20");

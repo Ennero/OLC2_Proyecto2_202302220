@@ -123,28 +123,38 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
     }
 
     TipoDato ty = emitir_eval_numerico(arg, ftext);
-    if (ty != DOUBLE) {
-        emitln(ftext, "    mov w21, w1");
-    }
-    emitln(ftext, "    ldr x19, =tmpbuf");
-    emitln(ftext, "    mov x0, x19");
     if (is_char) {
+        // char -> UTF-8
+        if (ty == DOUBLE) {
+            // convertir double->int para caracteres
+            emitln(ftext, "    fcvtzs w21, d0");
+        } else {
+            emitln(ftext, "    mov w21, w1");
+        }
+        emitln(ftext, "    ldr x19, =tmpbuf");
+        emitln(ftext, "    mov x0, x19");
         // Convertir code point a UTF-8 y devolver puntero en x1
         emitln(ftext, "    mov w0, w21");
         emitln(ftext, "    bl char_to_utf8");
         emitln(ftext, "    mov x1, x0");
     } else {
-        const char *lab = alloc_fmt_label_for_tipo(ty == DOUBLE ? DOUBLE : INT);
-        {
-            char lfmt[64]; snprintf(lfmt, sizeof(lfmt), "    ldr x1, =%s", lab); emitln(ftext, lfmt);
-        }
         if (ty == DOUBLE) {
-            emitln(ftext, "    bl sprintf");
+            // Usar formateo Java-like para doubles: java_format_double(d0, tmpbuf, 1024)
+            emitln(ftext, "    ldr x19, =tmpbuf");
+            emitln(ftext, "    mov x0, x19");
+            emitln(ftext, "    mov x1, #1024");
+            emitln(ftext, "    bl java_format_double");
+            emitln(ftext, "    mov x1, x19");
         } else {
+            // Enteros: sprintf a tmpbuf con %d
+            emitln(ftext, "    mov w21, w1");
+            emitln(ftext, "    ldr x19, =tmpbuf");
+            emitln(ftext, "    mov x0, x19");
+            emitln(ftext, "    ldr x1, =fmt_int");
             emitln(ftext, "    mov w2, w21");
             emitln(ftext, "    bl sprintf");
+            emitln(ftext, "    mov x1, x19");
         }
-        emitln(ftext, "    mov x1, x19");
     }
 }
 
@@ -153,7 +163,17 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
     if (strcmp(t, "Suma") == 0) {
         if (!expresion_es_cadena(node)) {
             TipoDato ty = emitir_eval_numerico(node, ftext);
-            if (ty == DOUBLE) emitln(ftext, "    ldr x0, =fmt_double"); else emitln(ftext, "    ldr x0, =fmt_int");
+            if (ty == DOUBLE) {
+                // double -> formatear con java_format_double y luego imprimir como string
+                emitln(ftext, "    ldr x19, =tmpbuf");
+                emitln(ftext, "    mov x0, x19");
+                emitln(ftext, "    mov x1, #1024");
+                emitln(ftext, "    bl java_format_double");
+                emitln(ftext, "    ldr x0, =fmt_string");
+                emitln(ftext, "    mov x1, x19");
+            } else {
+                emitln(ftext, "    ldr x0, =fmt_int");
+            }
             emitln(ftext, "    bl printf");
             return;
         }
@@ -205,8 +225,14 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
             emitln(ftext, "    bl printf");
             return;
         } else {
+            // DOUBLE/FLOAT -> usar java_format_double
             (void)emitir_eval_numerico(node, ftext);
-            emitln(ftext, "    ldr x0, =fmt_double");
+            emitln(ftext, "    ldr x19, =tmpbuf");
+            emitln(ftext, "    mov x0, x19");
+            emitln(ftext, "    mov x1, #1024");
+            emitln(ftext, "    bl java_format_double");
+            emitln(ftext, "    ldr x0, =fmt_string");
+            emitln(ftext, "    mov x1, x19");
             emitln(ftext, "    bl printf");
             return;
         }
@@ -242,14 +268,20 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
     if (strcmp(t, "Identificador") == 0) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
         VarEntry *v = buscar_variable(id->nombre);
-        if (v && v->tipo == STRING) {
+            if (v && v->tipo == STRING) {
             char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
             emitln(ftext, "    ldr x0, =fmt_string");
             emitln(ftext, "    bl printf");
         } else if (v) {
             if (v->tipo == DOUBLE || v->tipo == FLOAT) {
                 char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr d0, [x16]", v->offset); emitln(ftext, l1);
-                emitln(ftext, "    ldr x0, =fmt_double");
+                // Formatear double a string y luego imprimir
+                emitln(ftext, "    ldr x19, =tmpbuf");
+                emitln(ftext, "    mov x0, x19");
+                emitln(ftext, "    mov x1, #1024");
+                emitln(ftext, "    bl java_format_double");
+                emitln(ftext, "    ldr x0, =fmt_string");
+                emitln(ftext, "    mov x1, x19");
                 emitln(ftext, "    bl printf");
             } else {
                 char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr w1, [x16]", v->offset); emitln(ftext, l1);
@@ -276,7 +308,12 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
             if (gi) {
                 if (gi->tipo == DOUBLE || gi->tipo == FLOAT) {
                     char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr d0, [x16]", id->nombre); emitln(ftext, l1);
-                    emitln(ftext, "    ldr x0, =fmt_double");
+                    emitln(ftext, "    ldr x19, =tmpbuf");
+                    emitln(ftext, "    mov x0, x19");
+                    emitln(ftext, "    mov x1, #1024");
+                    emitln(ftext, "    bl java_format_double");
+                    emitln(ftext, "    ldr x0, =fmt_string");
+                    emitln(ftext, "    mov x1, x19");
                     emitln(ftext, "    bl printf");
                 } else if (gi->tipo == STRING) {
                     char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", id->nombre); emitln(ftext, l1);
@@ -320,7 +357,16 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
         emitln(ftext, "    bl printf");
     } else {
         TipoDato ty = emitir_eval_numerico(node, ftext);
-        if (ty == DOUBLE) emitln(ftext, "    ldr x0, =fmt_double"); else emitln(ftext, "    ldr x0, =fmt_int");
+        if (ty == DOUBLE) {
+            emitln(ftext, "    ldr x19, =tmpbuf");
+            emitln(ftext, "    mov x0, x19");
+            emitln(ftext, "    mov x1, #1024");
+            emitln(ftext, "    bl java_format_double");
+            emitln(ftext, "    ldr x0, =fmt_string");
+            emitln(ftext, "    mov x1, x19");
+        } else {
+            emitln(ftext, "    ldr x0, =fmt_int");
+        }
         emitln(ftext, "    bl printf");
     }
 }

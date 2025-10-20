@@ -247,11 +247,13 @@ main:
     sub sp, sp, #16
     sub x16, x29, #16
     ldr w1, [x16]
-    mov w19, w1
+    sub sp, sp, #16
+    str w1, [sp]
     sub x16, x29, #32
     ldr w1, [x16]
-    mov w20, w1
-    add w1, w19, w20
+    ldr w19, [sp]
+    add sp, sp, #16
+    add w1, w19, w1
     sub x16, x29, #48
     str w1, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -321,11 +323,13 @@ main:
     sub sp, sp, #16
     sub x16, x29, #64
     ldr w1, [x16]
-    mov w19, w1
+    sub sp, sp, #16
+    str w1, [sp]
     sub x16, x29, #80
     ldr w1, [x16]
-    mov w20, w1
-    sub w1, w19, w20
+    ldr w19, [sp]
+    add sp, sp, #16
+    sub w1, w19, w1
     sub x16, x29, #96
     str w1, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -395,11 +399,13 @@ main:
     sub sp, sp, #16
     sub x16, x29, #112
     ldr w1, [x16]
-    mov w19, w1
+    sub sp, sp, #16
+    str w1, [sp]
     sub x16, x29, #128
     ldr w1, [x16]
-    mov w20, w1
-    mul w1, w19, w20
+    ldr w19, [sp]
+    add sp, sp, #16
+    mul w1, w19, w1
     sub x16, x29, #144
     str w1, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -470,12 +476,14 @@ main:
     sub sp, sp, #16
     sub x16, x29, #160
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     sub x16, x29, #176
     ldr w1, [x16]
-    mov w20, w1
-    scvtf d9, w20
+    ldr d8, [sp]
+    scvtf d9, w1
     fdiv d0, d8, d9
+    add sp, sp, #16
     sub x16, x29, #192
     str d0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -487,8 +495,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -518,8 +526,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -541,12 +549,14 @@ main:
     sub sp, sp, #16
     sub x16, x29, #208
     ldr w1, [x16]
-    mov w19, w1
+    sub sp, sp, #16
+    str w1, [sp]
     sub x16, x29, #224
     ldr w1, [x16]
-    mov w20, w1
-    sdiv w21, w19, w20
-    msub w1, w21, w20, w19
+    ldr w19, [sp]
+    add sp, sp, #16
+    sdiv w21, w19, w1
+    msub w1, w21, w1, w19
     sub x16, x29, #240
     str w1, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -616,11 +626,13 @@ main:
     sub sp, sp, #16
     sub x16, x29, #272
     ldr w1, [x16]
-    mov w19, w1
+    sub sp, sp, #16
+    str w1, [sp]
     sub x16, x29, #256
     ldr w1, [x16]
-    mov w20, w1
-    sub w1, w19, w20
+    ldr w19, [sp]
+    add sp, sp, #16
+    sub w1, w19, w1
     sub x16, x29, #288
     str w1, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -688,10 +700,13 @@ main:
     sub sp, sp, #16
     sub x16, x29, #304
     ldr w1, [x16]
-    mov w19, w1
+    sub sp, sp, #16
+    str w1, [sp]
     sub x16, x29, #320
     ldr w1, [x16]
     mov w20, w1
+    ldr w19, [sp]
+    add sp, sp, #16
     asr w1, w19, w20
     sub x16, x29, #336
     str w1, [x16]
@@ -770,21 +785,30 @@ main:
     sub sp, sp, #16
     sub x16, x29, #352
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     ldr x16, =dbl_lit_52
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fsub d0, d8, d9
-    fmov d8, d0
+    add sp, sp, #16
+    sub sp, sp, #16
+    str d0, [sp]
     ldr x16, =dbl_lit_53
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fmul d0, d8, d9
-    fmov d8, d0
+    add sp, sp, #16
+    sub sp, sp, #16
+    str d0, [sp]
     ldr x16, =dbl_lit_54
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fdiv d0, d8, d9
+    add sp, sp, #16
     sub x16, x29, #368
     str d0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -793,8 +817,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -805,8 +829,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -824,21 +848,30 @@ main:
     sub sp, sp, #16
     sub x16, x29, #384
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     ldr x16, =dbl_lit_59
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fmul d0, d8, d9
-    fmov d8, d0
+    add sp, sp, #16
+    sub sp, sp, #16
+    str d0, [sp]
     ldr x16, =dbl_lit_60
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fdiv d0, d8, d9
-    fmov d8, d0
+    add sp, sp, #16
+    sub sp, sp, #16
+    str d0, [sp]
     ldr x16, =dbl_lit_61
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fadd d0, d8, d9
+    add sp, sp, #16
     sub x16, x29, #400
     str d0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -847,8 +880,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -859,8 +892,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -878,21 +911,30 @@ main:
     sub sp, sp, #16
     sub x16, x29, #416
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     ldr x16, =dbl_lit_66
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fmul d0, d8, d9
-    fmov d8, d0
+    add sp, sp, #16
+    sub sp, sp, #16
+    str d0, [sp]
     ldr x16, =dbl_lit_67
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fdiv d0, d8, d9
-    fmov d8, d0
+    add sp, sp, #16
+    sub sp, sp, #16
+    str d0, [sp]
     ldr x16, =dbl_lit_68
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fadd d0, d8, d9
+    add sp, sp, #16
     sub x16, x29, #432
     str d0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -901,8 +943,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -913,8 +955,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -952,26 +994,35 @@ main:
     sub sp, sp, #16
     sub x16, x29, #448
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     sub x16, x29, #464
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fmul d0, d8, d9
+    add sp, sp, #16
     sub x16, x29, #480
     str d0, [x16]
     sub sp, sp, #16
     ldr x16, =dbl_lit_76
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     sub x16, x29, #448
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     sub x16, x29, #464
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fadd d0, d8, d9
+    add sp, sp, #16
+    ldr d8, [sp]
     fmov d9, d0
     fmul d0, d8, d9
+    add sp, sp, #16
     sub x16, x29, #496
     str d0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -983,8 +1034,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -995,8 +1046,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1015,8 +1066,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1035,8 +1086,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1063,31 +1114,43 @@ main:
     sub sp, sp, #16
     sub x16, x29, #528
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     sub x16, x29, #512
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fmul d0, d8, d9
-    fmov d8, d0
+    add sp, sp, #16
+    sub sp, sp, #16
+    str d0, [sp]
     sub x16, x29, #512
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fmul d0, d8, d9
+    add sp, sp, #16
     sub x16, x29, #544
     str d0, [x16]
     sub sp, sp, #16
     ldr x16, =dbl_lit_90
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     sub x16, x29, #528
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fmul d0, d8, d9
-    fmov d8, d0
+    add sp, sp, #16
+    sub sp, sp, #16
+    str d0, [sp]
     sub x16, x29, #512
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fmul d0, d8, d9
+    add sp, sp, #16
     sub x16, x29, #560
     str d0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -1099,8 +1162,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1119,8 +1182,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1139,8 +1202,8 @@ main:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1163,7 +1226,22 @@ main:
     sub x16, x29, #576
     str w1, [x16]
     sub sp, sp, #16
+    sub x16, x29, #576
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    mov w1, #2
+    ldr w19, [sp]
+    add sp, sp, #16
+    sdiv w21, w19, w1
+    msub w1, w21, w1, w19
+    sub sp, sp, #16
+    str w1, [sp]
     mov w1, #0
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, eq
     sub x16, x29, #592
     str w1, [x16]
     sub x16, x29, #592
@@ -1225,10 +1303,12 @@ L_end_2:
     str w1, [x16]
     sub x16, x29, #608
     ldr w1, [x16]
-    mov w19, w1
+    sub sp, sp, #16
+    str w1, [sp]
     mov w1, #0
-    mov w20, w1
-    cmp w19, w20
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
     cset w1, gt
     cmp w1, #0
     beq L_else_3
@@ -1259,10 +1339,12 @@ L_then_3:
 L_else_3:
     sub x16, x29, #608
     ldr w1, [x16]
-    mov w19, w1
+    sub sp, sp, #16
+    str w1, [sp]
     mov w1, #0
-    mov w20, w1
-    cmp w19, w20
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
     cset w1, lt
     cmp w1, #0
     beq L_else_4
@@ -1320,7 +1402,22 @@ L_end_3:
     sub x16, x29, #624
     str w1, [x16]
     sub sp, sp, #16
+    sub x16, x29, #624
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    mov w1, #4
+    ldr w19, [sp]
+    add sp, sp, #16
+    sdiv w21, w19, w1
+    msub w1, w21, w1, w19
+    sub sp, sp, #16
+    str w1, [sp]
     mov w1, #0
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, eq
     sub x16, x29, #640
     str w1, [x16]
     sub x16, x29, #640
@@ -1401,10 +1498,12 @@ L_end_5:
     str x1, [x16]
     sub x16, x29, #672
     ldr w1, [x16]
-    mov w19, w1
+    sub sp, sp, #16
+    str w1, [sp]
     mov w1, #90
-    mov w20, w1
-    cmp w19, w20
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
     cset w1, ge
     cmp w1, #0
     beq L_else_6
@@ -1416,10 +1515,12 @@ L_then_6:
 L_else_6:
     sub x16, x29, #672
     ldr w1, [x16]
-    mov w19, w1
+    sub sp, sp, #16
+    str w1, [sp]
     mov w1, #80
-    mov w20, w1
-    cmp w19, w20
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
     cset w1, ge
     cmp w1, #0
     beq L_else_7
@@ -1431,10 +1532,12 @@ L_then_7:
 L_else_7:
     sub x16, x29, #672
     ldr w1, [x16]
-    mov w19, w1
+    sub sp, sp, #16
+    str w1, [sp]
     mov w1, #70
-    mov w20, w1
-    cmp w19, w20
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
     cset w1, ge
     cmp w1, #0
     beq L_else_8
@@ -1446,10 +1549,12 @@ L_then_8:
 L_else_8:
     sub x16, x29, #672
     ldr w1, [x16]
-    mov w19, w1
+    sub sp, sp, #16
+    str w1, [sp]
     mov w1, #60
-    mov w20, w1
-    cmp w19, w20
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
     cset w1, ge
     cmp w1, #0
     beq L_else_9
@@ -1468,10 +1573,12 @@ L_end_7:
 L_end_6:
     sub x16, x29, #672
     ldr w1, [x16]
-    mov w19, w1
+    sub sp, sp, #16
+    str w1, [sp]
     mov w1, #60
-    mov w20, w1
-    cmp w19, w20
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
     cset w1, ge
     cmp w1, #0
     beq L_else_10
@@ -1732,51 +1839,69 @@ L_end_10:
     sub sp, sp, #16
     sub x16, x29, #864
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     sub x16, x29, #880
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fmul d0, d8, d9
-    fmov d8, d0
+    add sp, sp, #16
+    sub sp, sp, #16
+    str d0, [sp]
     ldr x16, =dbl_lit_164
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fdiv d0, d8, d9
+    add sp, sp, #16
     sub x16, x29, #912
     str d0, [x16]
     sub sp, sp, #16
     sub x16, x29, #864
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     sub x16, x29, #912
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fsub d0, d8, d9
+    add sp, sp, #16
     sub x16, x29, #928
     str d0, [x16]
     sub sp, sp, #16
     sub x16, x29, #928
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     sub x16, x29, #896
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fmul d0, d8, d9
-    fmov d8, d0
+    add sp, sp, #16
+    sub sp, sp, #16
+    str d0, [sp]
     ldr x16, =dbl_lit_165
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fdiv d0, d8, d9
+    add sp, sp, #16
     sub x16, x29, #944
     str d0, [x16]
     sub sp, sp, #16
     sub x16, x29, #928
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     sub x16, x29, #944
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fadd d0, d8, d9
+    add sp, sp, #16
     sub x16, x29, #960
     str d0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -1800,8 +1925,8 @@ L_end_10:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1817,8 +1942,8 @@ L_end_10:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1837,8 +1962,8 @@ L_end_10:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1854,8 +1979,8 @@ L_end_10:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1866,8 +1991,8 @@ L_end_10:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1883,8 +2008,8 @@ L_end_10:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1903,11 +2028,14 @@ L_end_10:
     sub sp, sp, #16
     sub x16, x29, #976
     ldr d0, [x16]
-    fmov d8, d0
+    sub sp, sp, #16
+    str d0, [sp]
     sub x16, x29, #960
     ldr d0, [x16]
+    ldr d8, [sp]
     fmov d9, d0
     fsub d0, d8, d9
+    add sp, sp, #16
     sub x16, x29, #992
     str d0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -1919,8 +2047,8 @@ L_end_10:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1936,8 +2064,8 @@ L_end_10:
     ldr d0, [x16]
     ldr x19, =tmpbuf
     mov x0, x19
-    ldr x1, =fmt_double
-    bl sprintf
+    mov x1, #1024
+    bl java_format_double
     mov x1, x19
     ldr x0, =fmt_string
     bl printf
@@ -1961,15 +2089,39 @@ L_end_10:
     sub x16, x29, #1024
     str w1, [x16]
     sub sp, sp, #16
-    mov w1, #0
+    sub x16, x29, #1024
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    mov w1, #18
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, ge
     sub x16, x29, #1040
     str w1, [x16]
     sub sp, sp, #16
-    mov w1, #0
+    sub x16, x29, #1024
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    mov w1, #18
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, ge
     sub x16, x29, #1056
     str w1, [x16]
     sub sp, sp, #16
-    mov w1, #0
+    sub x16, x29, #1024
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    mov w1, #15
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, ge
     sub x16, x29, #1072
     str w1, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
@@ -2076,15 +2228,39 @@ L_end_13:
     sub x16, x29, #1104
     str w1, [x16]
     sub sp, sp, #16
-    mov w1, #0
+    sub x16, x29, #1104
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    mov w1, #18
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, ge
     sub x16, x29, #1120
     str w1, [x16]
     sub sp, sp, #16
-    mov w1, #0
+    sub x16, x29, #1104
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    mov w1, #18
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, ge
     sub x16, x29, #1136
     str w1, [x16]
     sub sp, sp, #16
-    mov w1, #0
+    sub x16, x29, #1104
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    mov w1, #18
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, ge
     sub x16, x29, #1152
     str w1, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
