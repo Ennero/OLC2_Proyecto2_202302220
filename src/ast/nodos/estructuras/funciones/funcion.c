@@ -2,8 +2,10 @@
 #include "parametro.h"
 #include "ast/nodos/builders.h"
 #include "context/context.h"
+#include "error_reporter.h"
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 // Interpretar una declaración
 Result interpretDeclaracionFuncion(AbstractExpresion *self, Context *context)

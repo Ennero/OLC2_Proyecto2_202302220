@@ -904,6 +904,9 @@ int main(int argc, char **argv)
             errors = errors->next;
         }
 
+        // Determinar el código de salida ANTES de liberar los reportes
+        int had_errors = (get_error_list() != NULL);
+
         free_output_buffer();
         free_symbol_report();
         free_error_report();
@@ -912,7 +915,7 @@ int main(int argc, char **argv)
         {
             g_free(current_file_path);
         }
-        return (get_error_list() == NULL) ? 0 : 1;
+        return had_errors ? 1 : 0;
     }
 
     // Modo GUI por defecto

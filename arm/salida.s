@@ -221,85 +221,116 @@ main:
     mov x29, sp
 
     sub sp, sp, #16
-    mov w1, #3
+    mov w19, w1
+    mov w20, w1
+    add w1, w19, w20
     str w1, [x29, -16]
-    sub sp, sp, #16
-    mov w1, #2
-    str w1, [x29, -32]
+    ldr w1, [x29, -16]
+    mov w0, w1
+    // return: unwind 16 bytes
+    add sp, sp, #16
+    b L_func_exit_8
+    add sp, sp, #16
     // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    mov w1, #3
-    mov w19, w1
-    mov w1, #342
-    mov w20, w1
-    mul w1, w19, w20
-    mov w19, w1
-    mov w1, #3
-    mov w19, w1
-    mov w1, #65
-    mov w19, w1
-    mov w1, #2
-    mov w20, w1
-    add w1, w19, w20
-    mov w20, w1
-    mul w1, w19, w20
-    mov w20, w1
-    add w1, w19, w20
-    ldr x0, =fmt_int
-    bl printf
+    // print expr node_type: Primitivo
     ldr x0, =fmt_string
     ldr x1, =str_lit_1
-    bl printf
-    sub sp, sp, #16
-    mov w1, #10
-    str w1, [x29, -48]
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Identificador
-    ldr w1, [x29, -48]
-    ldr x0, =fmt_int
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
+    // return: unwind 0 bytes
+    b L_func_exit_8
     sub sp, sp, #16
-    mov w1, #20
-    str w1, [x29, -64]
+    mov w1, #0
+    str w1, [x29, -16]
+L_while_cond_9:
+    ldr w1, [x29, -16]
+    mov w19, w1
+    mov w20, w1
+    cmp w19, w20
+    cset w1, lt
+    cmp w1, #0
+    beq L_break_9
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Identificador
-    ldr w1, [x29, -64]
-    ldr x0, =fmt_int
-    bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_3
     bl printf
+    ldr w1, [x29, -16]
+    mov w19, w1
+    mov w1, #1
+    mov w20, w1
+    add w1, w19, w20
+    str w1, [x29, -16]
+L_continue_9:
+    b L_while_cond_9
+L_break_9:
     add sp, sp, #16
     // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Identificador
-    ldr w1, [x29, -48]
-    ldr x0, =fmt_int
-    bl printf
+    // print expr node_type: Primitivo
     ldr x0, =fmt_string
     ldr x1, =str_lit_4
-    bl printf
-    add sp, sp, #16
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Identificador
-    ldr w1, [x29, -16]
-    ldr x0, =fmt_int
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_5
     bl printf
     // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Identificador
-    ldr w1, [x29, -32]
-    ldr x0, =fmt_int
-    bl printf
+    // print expr node_type: Primitivo
     ldr x0, =fmt_string
     ldr x1, =str_lit_6
     bl printf
-    add sp, sp, #32
-L_func_exit_4:
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_7
+    bl printf
+    sub sp, sp, #16
+    mov w1, #0
+    str w1, [x29, -16]
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Suma
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_8
+    bl printf
+    ldr w1, [x29, -16]
+    ldr x0, =fmt_int
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_9
+    bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_10
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_11
+    bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_12
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_13
+    bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_14
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_15
+    bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_16
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_17
+    bl printf
+    add sp, sp, #16
+L_func_exit_8:
 
     mov w0, #0
     ldp x29, x30, [sp], 16
@@ -307,9 +338,20 @@ L_func_exit_4:
 
 // --- Literales recolectados ---
 .data
-str_lit_1:    .asciz "\n"
+str_lit_1:    .asciz "Hola desde una función void!"
 str_lit_2:    .asciz "\n"
 str_lit_3:    .asciz "\n"
-str_lit_4:    .asciz "\n"
+str_lit_4:    .asciz "Esta función prueba los errores."
 str_lit_5:    .asciz "\n"
-str_lit_6:    .asciz "\n"
+str_lit_6:    .asciz "--- Iniciando Prueba de Funciones ---"
+str_lit_7:    .asciz "\n"
+str_lit_8:    .asciz "El resultado de sumar(10, 5) es: "
+str_lit_9:    .asciz "\n"
+str_lit_10:    .asciz "----------------------------------------"
+str_lit_11:    .asciz "\n"
+str_lit_12:    .asciz "----------------------------------------"
+str_lit_13:    .asciz "\n"
+str_lit_14:    .asciz "----------------------------------------"
+str_lit_15:    .asciz "\n"
+str_lit_16:    .asciz "--- Pruebas de Funciones Finalizadas ---"
+str_lit_17:    .asciz "\n"

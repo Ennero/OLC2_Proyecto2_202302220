@@ -16,8 +16,8 @@ public static void main() {
     System.out.println(y);
     System.out.println(z);
 
-    boolean t = (boolean) 2; // non-zero -> true
-    boolean f = (boolean) 0;
-    System.out.println(t);
-    System.out.println(f);
+    // boolean t = (boolean) 2; // non-zero -> true
+    // boolean f = (boolean) 0;
+    // System.out.println(t);
+    // System.out.println(f);
 }

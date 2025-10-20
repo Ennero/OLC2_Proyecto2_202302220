@@ -19,6 +19,9 @@
 #include "ast/nodos/expresiones/relacionales/relacionales.h"
 #include "ast/nodos/expresiones/logicas/logicas.h"
 #include "context/result.h"
+#include "codegen/instrucciones/arm64_flujo.h"
+#include "codegen/instrucciones/arm64_condicionales.h"
+#include "codegen/instrucciones/arm64_ciclos.h"
 #include "parser.tab.h" // Para tokens como TOKEN_LSHIFT en asignaciones compuestas
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,24 +43,19 @@ static VarEntry *buscar_variable(const char *name) { return vars_buscar(name); }
 static VarEntry *agregar_variable(const char *name, TipoDato tipo, int size_bytes, FILE *ftext) { return vars_agregar(name, tipo, size_bytes, ftext); }
 
 // ----------------- Helpers de labels -----------------
-static int __label_seq = 0;
-static void emit_label(FILE *f, const char *prefix, int id) {
-    char lab[64]; snprintf(lab, sizeof(lab), "%s_%d:", prefix, id); emitln(f, lab);
-}
+// Etiquetas via helpers compartidos en flujo
+static void emit_label(FILE *f, const char *prefix, int id) { flujo_emit_label(f, prefix, id); }
 
 // ----------------- Pila simple de labels para 'break' -----------------
-static int break_label_stack[64];
-static int break_label_sp = 0;
-static void break_push(int id) { if (break_label_sp < (int)(sizeof(break_label_stack)/sizeof(break_label_stack[0]))) break_label_stack[break_label_sp++] = id; }
-static int break_peek(void) { return break_label_sp > 0 ? break_label_stack[break_label_sp - 1] : -1; }
-static void break_pop(void) { if (break_label_sp > 0) break_label_sp--; }
+// break/continue delegados a flujo helpers
+static void break_push(int id) { flujo_break_push(id); }
+static int break_peek(void) { return flujo_break_peek(); }
+static void break_pop(void) { flujo_break_pop(); }
 
 // ----------------- Pila simple de labels para 'continue' (loops) -----------------
-static int continue_label_stack[64];
-static int continue_label_sp = 0;
-static void continue_push(int id) { if (continue_label_sp < (int)(sizeof(continue_label_stack)/sizeof(continue_label_stack[0]))) continue_label_stack[continue_label_sp++] = id; }
-static int continue_peek(void) { return continue_label_sp > 0 ? continue_label_stack[continue_label_sp - 1] : -1; }
-static void continue_pop(void) { if (continue_label_sp > 0) continue_label_sp--; }
+static void continue_push(int id) { flujo_continue_push(id); }
+static int continue_peek(void) { return flujo_continue_peek(); }
+static void continue_pop(void) { flujo_continue_pop(); }
 
 // ----------------- Etiqueta global de salida de función para 'return' -----------------
 static int __current_func_exit_id = -1;
@@ -211,6 +209,9 @@ static void emit_array_helpers(FILE *ftext) {
 // Recorre el árbol emitiendo código para Print con literales primitivos
 static void gen_node(FILE *ftext, AbstractExpresion *node) {
     if (!node) return;
+    // Delegar condicionales y ciclos a módulos especializados
+    if (arm64_emitir_condicional(node, ftext, (EmitirNodoFn)gen_node)) return;
+    if (arm64_emitir_ciclo(node, ftext, (EmitirNodoFn)gen_node)) return;
     // ReturnStatement: evaluar opcionalmente la expresión y saltar al epílogo
     if (node->node_type && strcmp(node->node_type, "ReturnStatement") == 0) {
         if (node->numHijos > 0 && node->hijos[0]) {
@@ -266,35 +267,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         return;
     }
     // IfStatement: emitir saltos con labels y no recorrer hijos antes
-    if (node->node_type && strcmp(node->node_type, "IfStatement") == 0) {
-        int id = ++__label_seq;
-        char thenp[32], elsep[32], endp[32];
-        snprintf(thenp, sizeof(thenp), "L_then");
-        snprintf(elsep, sizeof(elsep), "L_else");
-        snprintf(endp, sizeof(endp),  "L_end");
-        // Evaluar condición como booleano
-        emitir_eval_booleano(node->hijos[0], ftext);
-        emitln(ftext, "    cmp w1, #0");
-        // Si hay else/else-if, saltar a ELSE si cond == 0, de lo contrario THEN
-        if (node->numHijos > 2 && node->hijos[2] != NULL) {
-            char br_else[64]; snprintf(br_else, sizeof(br_else), "    beq %s_%d", elsep, id); emitln(ftext, br_else);
-        } else {
-            char br_end[64]; snprintf(br_end, sizeof(br_end), "    beq %s_%d", endp, id); emitln(ftext, br_end);
-        }
-        // THEN
-        emit_label(ftext, thenp, id);
-        gen_node(ftext, node->hijos[1]);
-        // Al finalizar THEN, saltar a END si existe rama else
-        if (node->numHijos > 2 && node->hijos[2] != NULL) {
-            char br_end2[64]; snprintf(br_end2, sizeof(br_end2), "    b %s_%d", endp, id); emitln(ftext, br_end2);
-            // ELSE
-            emit_label(ftext, elsep, id);
-            gen_node(ftext, node->hijos[2]);
-        }
-        // END
-        emit_label(ftext, endp, id);
-        return;
-    }
+    // If/Switch fueron absorbidos por arm64_condicionales
     // Manejo especial de bloques: crean un nuevo alcance de variables
     if (node->node_type && strcmp(node->node_type, "Bloque") == 0) {
         vars_push_scope(ftext);
@@ -305,204 +278,11 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         return;
     }
 
-    // SwitchStatement: evaluación del selector y salto a case/defecto, con soporte de 'break'
-    if (node->node_type && strcmp(node->node_type, "SwitchStatement") == 0) {
-        emitln(ftext, "    // --- Generando switch ---");
-        // hijos: [0]=selector, [1]=lista de casos (Case | DefaultCase)
-        AbstractExpresion *selector = node->hijos[0];
-        AbstractExpresion *case_list = node->hijos[1];
-        int sid = ++__label_seq; // id único para este switch
+    // Switch también delegado
 
-        // Determinar si trabajaremos como string o numérico
-        int is_stringy = expresion_es_cadena(selector);
+    // While delegado
 
-        if (is_stringy) {
-            // Evaluar selector a puntero de cadena en x1 y guardarlo en x19
-            int ok = emitir_eval_string_ptr(selector, ftext);
-            if (!ok) {
-                // Fallback: usar String.valueOf(selector)
-                emitir_string_valueof(selector, ftext);
-            }
-            emitln(ftext, "    mov x19, x1");
-        } else {
-            // Evaluar como numérico (preferimos entero). Guardar en w19
-            TipoDato ty = emitir_eval_numerico(selector, ftext);
-            if (ty == DOUBLE) {
-                emitln(ftext, "    fcvtzs w19, d0");
-            } else {
-                emitln(ftext, "    mov w19, w1");
-            }
-        }
-
-        // Buscar si hay default
-        int has_default = 0;
-        for (size_t i = 0; i < (case_list ? case_list->numHijos : 0); i++) {
-            AbstractExpresion *c = case_list->hijos[i];
-            if (c && c->node_type && strcmp(c->node_type, "DefaultCase") == 0) { has_default = 1; break; }
-        }
-
-        // Cadena de comparaciones -> saltos a labels de case_i o default
-        for (size_t i = 0; i < (case_list ? case_list->numHijos : 0); i++) {
-            AbstractExpresion *c = case_list->hijos[i];
-            if (!c || !c->node_type) continue;
-            if (strcmp(c->node_type, "DefaultCase") == 0) continue;
-            // label destino para este case
-            char lab_case[64]; snprintf(lab_case, sizeof(lab_case), "L_case_%zu_%d", i, sid);
-            if (is_stringy) {
-                emitln(ftext, "    // comparar selector string con case string");
-                // Evaluar expr del case a puntero x1 y comparar con x19 usando strcmp
-                if (!emitir_eval_string_ptr(c->hijos[0], ftext)) {
-                    // Si no es string directo, convertir via valueOf
-                    emitir_string_valueof(c->hijos[0], ftext);
-                }
-                emitln(ftext, "    mov x0, x19");
-                emitln(ftext, "    // strcmp(x0, x1) == 0 ? goto case");
-                emitln(ftext, "    bl strcmp");
-                emitln(ftext, "    cmp w0, #0");
-                char br_eq[96]; snprintf(br_eq, sizeof(br_eq), "    beq %s", lab_case); emitln(ftext, br_eq);
-            } else {
-                emitln(ftext, "    // comparar selector int con case int");
-                // Evaluar a entero en w20 y comparar con w19
-                TipoDato tcase = emitir_eval_numerico(c->hijos[0], ftext);
-                if (tcase == DOUBLE) emitln(ftext, "    fcvtzs w20, d0"); else emitln(ftext, "    mov w20, w1");
-                emitln(ftext, "    cmp w19, w20");
-                char br_eq[96]; snprintf(br_eq, sizeof(br_eq), "    beq %s", lab_case); emitln(ftext, br_eq);
-            }
-        }
-
-        // Si no hubo match, saltar a default si existe, sino a break/end
-        if (has_default) {
-            char jdef[64]; snprintf(jdef, sizeof(jdef), "    b L_default_%d", sid); emitln(ftext, jdef);
-        } else {
-            char jend[64]; snprintf(jend, sizeof(jend), "    b L_break_%d", sid); emitln(ftext, jend);
-        }
-
-        // Empujar etiqueta de break para permitir 'break;' dentro de los casos
-        break_push(sid);
-
-        // Emitir los cuerpos de cada case en orden, permitiendo fallthrough natural
-        for (size_t i = 0; i < (case_list ? case_list->numHijos : 0); i++) {
-            AbstractExpresion *c = case_list->hijos[i];
-            if (!c || !c->node_type) continue;
-            if (strcmp(c->node_type, "DefaultCase") == 0) {
-                emit_label(ftext, "L_default", sid);
-                if (c->numHijos > 0 && c->hijos[0]) gen_node(ftext, c->hijos[0]);
-            } else {
-                char lab_case[64]; snprintf(lab_case, sizeof(lab_case), "L_case_%zu", i);
-                emit_label(ftext, lab_case, sid);
-                if (c->numHijos > 1 && c->hijos[1]) gen_node(ftext, c->hijos[1]);
-            }
-        }
-
-        // Etiqueta de ruptura / fin del switch
-        emit_label(ftext, "L_break", sid);
-        break_pop();
-        return;
-    }
-
-    // WhileStatement: chequear condición, cuerpo, soporte de break/continue
-    if (node->node_type && strcmp(node->node_type, "WhileStatement") == 0) {
-        int wid = ++__label_seq;
-        // El while no introduce por sí mismo nuevas variables (el bloque interno sí), pero
-        // para seguridad de futuras extensiones, no abrimos scope extra aquí.
-
-        // Preparar labels: condición, continue (vuelve a condición), break (salida)
-        char lcond[32], lcont[32], lbreak[32];
-        snprintf(lcond, sizeof(lcond),  "L_while_cond");
-        snprintf(lcont, sizeof(lcont),  "L_continue");
-        snprintf(lbreak, sizeof(lbreak), "L_break");
-
-        // Empujar etiquetas de control
-        break_push(wid);
-        continue_push(wid);
-
-        // Condición
-        emit_label(ftext, lcond, wid);
-        emitir_eval_booleano(node->hijos[0], ftext);
-        emitln(ftext, "    cmp w1, #0");
-        {
-            char bexit[64]; snprintf(bexit, sizeof(bexit), "    beq %s_%d", lbreak, wid); emitln(ftext, bexit);
-        }
-        // Cuerpo
-        gen_node(ftext, node->hijos[1]);
-        // Continue: regresar a condición
-        emit_label(ftext, lcont, wid);
-        {
-            char bcond[64]; snprintf(bcond, sizeof(bcond), "    b %s_%d", lcond, wid); emitln(ftext, bcond);
-        }
-        // Salida del while (break)
-        emit_label(ftext, lbreak, wid);
-        continue_pop();
-        break_pop();
-        return;
-    }
-
-    // ForStatement: init; cond; body; update; con break/continue correctos
-    if (node->node_type && strcmp(node->node_type, "ForStatement") == 0) {
-        int fid = ++__label_seq;
-        // Hacer scope para variables de init (p.ej., int i=0)
-        vars_push_scope(ftext);
-
-        // Hijos esperados: [0]=init (opt), [1]=cond (opt), [2]=update (opt), [3]=bloque (o NULL); si [3]==NULL y hay 5 hijos, usar [4]
-        AbstractExpresion *init = node->numHijos > 0 ? node->hijos[0] : NULL;
-        AbstractExpresion *cond = node->numHijos > 1 ? node->hijos[1] : NULL;
-        AbstractExpresion *update = node->numHijos > 2 ? node->hijos[2] : NULL;
-        AbstractExpresion *bloque = NULL;
-        if (node->numHijos > 3) {
-            bloque = node->hijos[3];
-            if (bloque == NULL && node->numHijos > 4) bloque = node->hijos[4];
-        }
-
-        if (init) {
-            // Declaración o asignación inicial
-            gen_node(ftext, init);
-        }
-
-        // Preparar labels: condición, cuerpo (implícito), continue (update), break (salida)
-        char lcond[32], lcont[32], lbreak[32];
-        snprintf(lcond, sizeof(lcond),  "L_for_cond");
-        snprintf(lcont, sizeof(lcont),  "L_continue");
-        snprintf(lbreak, sizeof(lbreak), "L_break");
-
-        // Empujar control de flujo
-        break_push(fid);
-        continue_push(fid);
-
-        // Condición (si existe)
-        emit_label(ftext, lcond, fid);
-        if (cond) {
-            emitir_eval_booleano(cond, ftext);
-            emitln(ftext, "    cmp w1, #0");
-            char bexit[64]; snprintf(bexit, sizeof(bexit), "    beq %s_%d", lbreak, fid); emitln(ftext, bexit);
-        }
-        // Cuerpo
-        if (bloque) {
-            gen_node(ftext, bloque);
-        }
-
-        // Continue: ejecutar update aquí y volver a condición
-        emit_label(ftext, lcont, fid);
-        if (update) {
-            // Soportar tanto i=i+1 como i++
-            const char *t = update->node_type ? update->node_type : "";
-            if (strcmp(t, "AsignacionCompuesta") == 0 || strcmp(t, "Reasignacion") == 0) {
-                gen_node(ftext, update);
-            } else {
-                // Evaluar para efectos secundarios (p. ej., Postfix)
-                (void)emitir_eval_numerico(update, ftext);
-            }
-        }
-        {
-            char bcond[64]; snprintf(bcond, sizeof(bcond), "    b %s_%d", lcond, fid); emitln(ftext, bcond);
-        }
-        // Salida del for (break)
-        emit_label(ftext, lbreak, fid);
-        continue_pop();
-        break_pop();
-        // Cerrar scope de variables del for
-        vars_pop_scope(ftext);
-        return;
-    }
+    // For delegado
 
     // Recorremos primero hijos (pre-orden simple para statements) excepto Bloque/IfStatement (ya manejados)
     for (size_t i = 0; i < node->numHijos; i++) {
@@ -1061,7 +841,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     // Simplificamos: guardamos el file pointer y generamos directo, y al final emitimos la parte .data restante.
 
     // Establecer etiqueta de salida para 'return'
-    __current_func_exit_id = ++__label_seq;
+    __current_func_exit_id = flujo_next_label_id();
 
     // Generación del cuerpo
     gen_node(f, root);
