@@ -3,6 +3,7 @@
 #include "codegen/arm64_core.h"
 #include "codegen/arm64_print.h"
 #include "codegen/arm64_vars.h"
+#include "codegen/arm64_globals.h"
 #include "ast/nodos/expresiones/terminales/primitivos.h"
 #include "ast/nodos/expresiones/terminales/identificadores.h"
 #include "ast/nodos/expresiones/relacionales/relacionales.h"
@@ -82,9 +83,61 @@ void emitir_eval_booleano(AbstractExpresion *node, FILE *ftext) {
     if (strcmp(t, "IgualIgual") == 0 || strcmp(t, "Diferente") == 0 ||
         strcmp(t, "MayorQue") == 0 || strcmp(t, "MenorQue") == 0 ||
         strcmp(t, "MayorIgual") == 0 || strcmp(t, "MenorIgual") == 0) {
-        // Rechazar comparaciones entre strings: deberían ser con .equals()
+        // Casos especiales: comparaciones con null
+        // Si uno de los lados es NULL y el otro es string (literal/identificador), comparar puntero con 0
         const char *lt = node->hijos[0]->node_type ? node->hijos[0]->node_type : "";
         const char *rt = node->hijos[1]->node_type ? node->hijos[1]->node_type : "";
+        int left_is_null = (strcmp(lt, "Primitivo") == 0 && ((PrimitivoExpresion*)node->hijos[0])->tipo == NULO);
+        int right_is_null = (strcmp(rt, "Primitivo") == 0 && ((PrimitivoExpresion*)node->hijos[1])->tipo == NULO);
+        if (left_is_null || right_is_null) {
+            // Evaluar el otro lado como puntero y comparar con 0
+            int comparing_eq = (strcmp(t, "IgualIgual") == 0);
+            AbstractExpresion *other = left_is_null ? node->hijos[1] : node->hijos[0];
+            int got_ptr = 0;
+            // 1) Camino normal: si podemos evaluarlo como string ptr
+            if (emitir_eval_string_ptr(other, ftext)) {
+                got_ptr = 1;
+            } else {
+                const char *ot = other->node_type ? other->node_type : "";
+                // 2) Identificador: cargar como puntero desde local o global
+                if (strcmp(ot, "Identificador") == 0) {
+                    IdentificadorExpresion *oid = (IdentificadorExpresion *)other;
+                    VarEntry *ov = buscar_variable(oid->nombre);
+                    if (ov) {
+                        char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", ov->offset); emitln(ftext, l1);
+                        got_ptr = 1;
+                    } else {
+                        const GlobalInfo *gi = globals_lookup(oid->nombre);
+                        if (gi && gi->tipo == STRING) {
+                            char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", oid->nombre); emitln(ftext, l1);
+                            got_ptr = 1;
+                        }
+                    }
+                } else if (strcmp(ot, "Primitivo") == 0) {
+                    // Literal cadena
+                    PrimitivoExpresion *pp = (PrimitivoExpresion *)other;
+                    if (pp->tipo == STRING) {
+                        const char *lab = core_add_string_literal(pp->valor ? pp->valor : "");
+                        char l2[64]; snprintf(l2, sizeof(l2), "    ldr x1, =%s", lab); emitln(ftext, l2);
+                        got_ptr = 1;
+                    }
+                } else if (strcmp(ot, "StringValueof") == 0) {
+                    // valueOf siempre produce cadena en x1
+                    emitir_string_valueof(other->hijos[0], ftext);
+                    got_ptr = 1;
+                }
+            }
+            if (!got_ptr) {
+                // No pudimos evaluarlo como cadena: comparar no es válido -> false para == null
+                emitln(ftext, comparing_eq ? "    mov w1, #0" : "    mov w1, #1");
+                return;
+            }
+            // x1 contiene puntero; comparar con 0
+            emitln(ftext, "    cmp x1, #0");
+            emitln(ftext, comparing_eq ? "    cset w1, eq" : "    cset w1, ne");
+            return;
+        }
+        // Rechazar comparaciones entre strings por contenido: deberían ser con .equals()
         if ((strcmp(lt, "Primitivo") == 0 && ((PrimitivoExpresion*)node->hijos[0])->tipo == STRING) ||
             (strcmp(rt, "Primitivo") == 0 && ((PrimitivoExpresion*)node->hijos[1])->tipo == STRING) ||
             (strcmp(lt, "Identificador") == 0 && vars_buscar(((IdentificadorExpresion*)node->hijos[0])->nombre) && vars_buscar(((IdentificadorExpresion*)node->hijos[0])->nombre)->tipo == STRING) ||

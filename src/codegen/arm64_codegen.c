@@ -575,9 +575,34 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
             } else if (decl->tipo == STRING) {
                 if (strcmp(init->node_type, "Primitivo") == 0) {
                     PrimitivoExpresion *p = (PrimitivoExpresion *)init;
-                    const char *lab = add_string_literal(p->valor ? p->valor : "");
-                    char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, =%s", lab); emitln(ftext, l1);
-                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                    if (p->tipo == STRING) {
+                        const char *lab = add_string_literal(p->valor ? p->valor : "");
+                        char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, =%s", lab); emitln(ftext, l1);
+                        char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                    } else if (p->tipo == NULO) {
+                        // Inicialización explícita a null
+                        char st[128]; snprintf(st, sizeof(st), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                    }
+                } else if (strcmp(init->node_type ? init->node_type : "", "Identificador") == 0) {
+                    // Inicializar desde otra variable string (local/global)
+                    IdentificadorExpresion *rid = (IdentificadorExpresion *)init;
+                    VarEntry *rv = buscar_variable(rid->nombre);
+                    if (rv && rv->tipo == STRING) {
+                        char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", rv->offset); emitln(ftext, l1);
+                        char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                    } else {
+                        const GlobalInfo *gi = globals_lookup(rid->nombre);
+                        if (gi && gi->tipo == STRING) {
+                            char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", rid->nombre); emitln(ftext, l1);
+                            char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                        } else {
+                            // Desconocido: por seguridad, inicializar a null
+                            char st[128]; snprintf(st, sizeof(st), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                        }
+                    }
+                } else {
+                    // Caso no manejado: inicializar a null por defecto para seguridad
+                    char st[128]; snprintf(st, sizeof(st), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
                 }
             } else {
                 // Inicializa a entero/bool/char; si RHS es double, convertir implícitamente
@@ -762,7 +787,11 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                         emitln(ftext, "    ldr x0, =fmt_double");
                         emitln(ftext, "    bl printf");
                     } else if (v->tipo == STRING) {
+                        const char *null_lab = add_string_literal("null");
                         char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
+                        emitln(ftext, "    cmp x1, #0");
+                        char lnull[64]; snprintf(lnull, sizeof(lnull), "    ldr x16, =%s", null_lab); emitln(ftext, lnull);
+                        emitln(ftext, "    csel x1, x16, x1, eq");
                         emitln(ftext, "    ldr x0, =fmt_string");
                         emitln(ftext, "    bl printf");
                     } else if (v->tipo == CHAR) {
@@ -893,6 +922,9 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                     const char *lab = add_string_literal(p->valor ? p->valor : "");
                     char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, =%s", lab); emitln(ftext, l1);
                     char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                } else if (p->tipo == NULO) {
+                    // Asignación a null
+                    char st[128]; snprintf(st, sizeof(st), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
                 }
             } else if (rhs->node_type && strcmp(rhs->node_type, "Identificador") == 0) {
                 IdentificadorExpresion *rid = (IdentificadorExpresion *)rhs;
@@ -900,6 +932,15 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 if (rv) {
                     char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", rv->offset); emitln(ftext, l1);
                     char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                } else {
+                    const GlobalInfo *gi = globals_lookup(rid->nombre);
+                    if (gi && gi->tipo == STRING) {
+                        char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", rid->nombre); emitln(ftext, l1);
+                        char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                    } else {
+                        // Desconocido: escribir null
+                        char st[128]; snprintf(st, sizeof(st), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                    }
                 }
             }
         } else if (v->tipo == BOOLEAN) {

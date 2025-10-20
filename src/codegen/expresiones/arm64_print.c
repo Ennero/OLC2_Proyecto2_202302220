@@ -97,6 +97,30 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
         return;
     }
 
+    // 2.1) Identificador booleano (variable local/global)
+    if (strcmp(t, "Identificador") == 0) {
+        IdentificadorExpresion *id = (IdentificadorExpresion *)arg;
+        VarEntry *v = buscar_variable(id->nombre);
+        if (v && v->tipo == BOOLEAN) {
+            char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr w1, [x16]", v->offset); emitln(ftext, l1);
+            emitln(ftext, "    cmp w1, #0");
+            emitln(ftext, "    ldr x1, =false_str");
+            emitln(ftext, "    ldr x16, =true_str");
+            emitln(ftext, "    csel x1, x16, x1, ne");
+            return;
+        }
+        // Fallback a global booleano
+        const GlobalInfo *gi = globals_lookup(id->nombre);
+        if (gi && gi->tipo == BOOLEAN) {
+            char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr w1, [x16]", id->nombre); emitln(ftext, l1);
+            emitln(ftext, "    cmp w1, #0");
+            emitln(ftext, "    ldr x1, =false_str");
+            emitln(ftext, "    ldr x16, =true_str");
+            emitln(ftext, "    csel x1, x16, x1, ne");
+            return;
+        }
+    }
+
     // 2) Literal booleano
     if (strcmp(t, "Primitivo") == 0 && ((PrimitivoExpresion*)arg)->tipo == BOOLEAN) {
         PrimitivoExpresion *p = (PrimitivoExpresion*)arg;
@@ -107,7 +131,16 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
 
     // 3) Si ya es cadena (literal, id string, concatenación), evalúalo como puntero a string
     if (expresion_es_cadena(arg)) {
-        if (!emitir_eval_string_ptr(arg, ftext)) emitln(ftext, "    mov x1, #0");
+        const char *null_lab = add_string_literal("null");
+        if (!emitir_eval_string_ptr(arg, ftext)) {
+            // Si no se pudo evaluar como string, retornar "null"
+            char lz[64]; snprintf(lz, sizeof(lz), "    ldr x1, =%s", null_lab); emitln(ftext, lz);
+            return;
+        }
+        // Si el puntero es NULL, sustituir por "null"
+        emitln(ftext, "    cmp x1, #0");
+        char l2[64]; snprintf(l2, sizeof(l2), "    ldr x16, =%s", null_lab); emitln(ftext, l2);
+        emitln(ftext, "    csel x1, x16, x1, eq");
         return;
     }
 
@@ -269,7 +302,12 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
         VarEntry *v = buscar_variable(id->nombre);
             if (v && v->tipo == STRING) {
+            const char *null_lab = add_string_literal("null");
             char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
+            // Sustituir NULL por "null"
+            emitln(ftext, "    cmp x1, #0");
+            char lnull[64]; snprintf(lnull, sizeof(lnull), "    ldr x16, =%s", null_lab); emitln(ftext, lnull);
+            emitln(ftext, "    csel x1, x16, x1, eq");
             emitln(ftext, "    ldr x0, =fmt_string");
             emitln(ftext, "    bl printf");
         } else if (v) {
@@ -316,7 +354,12 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
                     emitln(ftext, "    mov x1, x19");
                     emitln(ftext, "    bl printf");
                 } else if (gi->tipo == STRING) {
+                    const char *null_lab = add_string_literal("null");
                     char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", id->nombre); emitln(ftext, l1);
+                    // Sustituir NULL por "null"
+                    emitln(ftext, "    cmp x1, #0");
+                    char lnull[64]; snprintf(lnull, sizeof(lnull), "    ldr x16, =%s", null_lab); emitln(ftext, lnull);
+                    emitln(ftext, "    csel x1, x16, x1, eq");
                     emitln(ftext, "    ldr x0, =fmt_string");
                     emitln(ftext, "    bl printf");
                 } else if (gi->tipo == CHAR) {
@@ -392,7 +435,13 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
             char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
             return 1;
         }
-        // Fallback: no local; intentar global como entero -> no es cadena. Para MVP, retornamos 0.
+        // Fallback: intentar global string conocido
+        const GlobalInfo *gi = globals_lookup(id->nombre);
+        if (gi && gi->tipo == STRING) {
+            char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", id->nombre); emitln(ftext, l1);
+            return 1;
+        }
+        // Si no, no es string evaluable
     }
     return 0;
 }
