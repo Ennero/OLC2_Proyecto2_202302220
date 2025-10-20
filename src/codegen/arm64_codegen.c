@@ -4,6 +4,7 @@
 #include "codegen/arm64_num.h"
 #include "codegen/arm64_bool.h"
 #include "codegen/arm64_print.h"
+#include "codegen/arm64_globals.h"
 #include "ast/nodos/estructuras/funciones/funcion.h"
 #include "ast/nodos/estructuras/funciones/llamada.h"
 #include "ast/nodos/estructuras/funciones/parametro.h"
@@ -121,6 +122,21 @@ static void funcs_collect(AbstractExpresion *n) {
         }
     }
     for (size_t i = 0; i < n->numHijos; ++i) funcs_collect(n->hijos[i]);
+}
+
+// ----------------- Recolección de variables globales -----------------
+static void globals_collect(AbstractExpresion *n) {
+    if (!n) return;
+    if (n->node_type && strcmp(n->node_type, "Declaracion") == 0) {
+        DeclaracionVariable *d = (DeclaracionVariable *)n;
+        // Solo file-scope: heurística simple, considerar global si no estamos dentro de función: este recolector se llama en raíz.
+        // Arrays globales no soportados aún en codegen: ignorar si dimensiones > 0
+        if (d->dimensiones == 0) {
+            AbstractExpresion *init = (n->numHijos > 0) ? n->hijos[0] : NULL;
+            globals_register(d->nombre, d->tipo, d->es_constante ? 1 : 0, init);
+        }
+    }
+    for (size_t i = 0; i < n->numHijos; ++i) globals_collect(n->hijos[i]);
 }
 
 // ----------------- Emisión de llamada a función -----------------
@@ -785,7 +801,31 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
     if (node->node_type && strcmp(node->node_type, "Reasignacion") == 0) {
         ReasignacionExpresion *rea = (ReasignacionExpresion *)node;
         VarEntry *v = buscar_variable(rea->nombre);
-    if (!v) return;
+        if (!v) {
+            // Fallback: asignación a variable global
+            const GlobalInfo *gi = globals_lookup(rea->nombre);
+            if (!gi) return;
+            if (gi->is_const) { emitln(ftext, "    // reasignación a global constante ignorada"); return; }
+            AbstractExpresion *rhs = node->hijos[0];
+            // Dirección del símbolo global en x16
+            {
+                char adr[128]; snprintf(adr, sizeof(adr), "    ldr x16, =g_%s", rea->nombre); emitln(ftext, adr);
+            }
+            if (gi->tipo == STRING) {
+                // Evaluar puntero a string en x1 y guardar en [x16]
+                if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");
+                emitln(ftext, "    str x1, [x16]");
+            } else if (gi->tipo == DOUBLE || gi->tipo == FLOAT) {
+                TipoDato ty = emitir_eval_numerico(rhs, ftext);
+                if (ty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
+                emitln(ftext, "    str d0, [x16]");
+            } else {
+                TipoDato ty = emitir_eval_numerico(rhs, ftext);
+                if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                emitln(ftext, "    str w1, [x16]");
+            }
+            return;
+        }
         if (v->is_const) {
             emitln(ftext, "    // reasignación a constante ignorada en codegen");
             return;
@@ -823,7 +863,59 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
     if (node->node_type && strcmp(node->node_type, "AsignacionCompuesta") == 0) {
         AsignacionCompuestaExpresion *ac = (AsignacionCompuestaExpresion *)node;
         VarEntry *v = buscar_variable(ac->nombre);
-        if (!v) return;
+        if (!v) {
+            // Fallback: asignación compuesta sobre global
+            const GlobalInfo *gi = globals_lookup(ac->nombre);
+            if (!gi) return;
+            if (gi->is_const) { emitln(ftext, "    // asignación compuesta sobre global constante ignorada"); return; }
+            AbstractExpresion *rhs = node->hijos[0];
+            int op = ac->op_type;
+            // Cargar dirección global en x16
+            {
+                char adr[128]; snprintf(adr, sizeof(adr), "    ldr x16, =g_%s", ac->nombre); emitln(ftext, adr);
+            }
+            if (op == '&' || op == '|' || op == '^' || op == TOKEN_LSHIFT || op == TOKEN_RSHIFT || op == TOKEN_URSHIFT) {
+                // Operaciones enteras
+                emitln(ftext, "    ldr w19, [x16]");
+                TipoDato tr = emitir_eval_numerico(rhs, ftext);
+                if (tr == DOUBLE) emitln(ftext, "    fcvtzs w20, d0"); else emitln(ftext, "    mov w20, w1");
+                if (op == '&') emitln(ftext, "    and w1, w19, w20");
+                else if (op == '|') emitln(ftext, "    orr w1, w19, w20");
+                else if (op == '^') emitln(ftext, "    eor w1, w19, w20");
+                else if (op == TOKEN_LSHIFT) emitln(ftext, "    lsl w1, w19, w20");
+                else if (op == TOKEN_RSHIFT) emitln(ftext, "    asr w1, w19, w20");
+                else /* TOKEN_URSHIFT */ emitln(ftext, "    lsr w1, w19, w20");
+                emitln(ftext, "    str w1, [x16]");
+            } else if (op == '+' || op == '-' || op == '*' || op == '/' || op == '%') {
+                // Numérico con posible double
+                int gi_is_double = (gi->tipo == DOUBLE || gi->tipo == FLOAT);
+                if (gi_is_double) {
+                    emitln(ftext, "    ldr d8, [x16]");
+                } else {
+                    emitln(ftext, "    ldr w19, [x16]");
+                }
+                TipoDato tr = emitir_eval_numerico(rhs, ftext);
+                int use_fp = gi_is_double || (tr == DOUBLE);
+                if (use_fp) {
+                    if (!gi_is_double) emitln(ftext, "    scvtf d8, w19");
+                    if (tr != DOUBLE) emitln(ftext, "    scvtf d9, w1"); else emitln(ftext, "    fmov d9, d0");
+                    if (op == '+') emitln(ftext, "    fadd d0, d8, d9");
+                    else if (op == '-') emitln(ftext, "    fsub d0, d8, d9");
+                    else if (op == '*') emitln(ftext, "    fmul d0, d8, d9");
+                    else if (op == '/') emitln(ftext, "    fdiv d0, d8, d9");
+                    else /* % */ { emitln(ftext, "    fmov d0, d8"); emitln(ftext, "    fmov d1, d9"); emitln(ftext, "    bl fmod"); }
+                    emitln(ftext, "    str d0, [x16]");
+                } else {
+                    if (op == '+') emitln(ftext, "    add w1, w19, w1");
+                    else if (op == '-') emitln(ftext, "    sub w1, w19, w1");
+                    else if (op == '*') emitln(ftext, "    mul w1, w19, w1");
+                    else if (op == '/') emitln(ftext, "    sdiv w1, w19, w1");
+                    else /* % */ { emitln(ftext, "    sdiv w21, w19, w1"); emitln(ftext, "    msub w1, w21, w1, w19"); }
+                    emitln(ftext, "    str w1, [x16]");
+                }
+            }
+            return;
+        }
         if (v->is_const) { emitln(ftext, "    // asignación compuesta sobre constante ignorada"); return; }
         AbstractExpresion *rhs = node->hijos[0];
         int op = ac->op_type;
@@ -997,6 +1089,9 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     // Recolectar funciones del AST
     funcs_reset();
     funcs_collect(root);
+    // Recolectar globales
+    globals_reset();
+    globals_collect(root);
 
     // Emitir cada función como fn_<nombre>
     for (int i = 0; i < __funcs_count; ++i) {
@@ -1073,10 +1168,13 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
 
     // Volvemos a .data y emitimos literales recolectados (strings y doubles)
     core_emit_collected_literals(f);
+    // Emitimos variables globales al final de .data
+    globals_emit_data(f);
 
     fclose(f);
     // liberar estructuras
     core_reset_literals();
     vars_reset();
+    globals_reset();
     return 0;
 }

@@ -3,6 +3,7 @@
 #include "codegen/arm64_bool.h"
 #include "codegen/arm64_core.h"
 #include "codegen/arm64_vars.h"
+#include "codegen/arm64_globals.h"
 #include "ast/nodos/expresiones/terminales/primitivos.h"
 #include "ast/nodos/expresiones/terminales/identificadores.h"
 #include "ast/nodos/instrucciones/instruccion/casteos.h"
@@ -269,6 +270,43 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
                 }
                 emitln(ftext, "    bl printf");
             }
+        } else {
+            // Fallback a global: si conocemos tipo DOUBLE/STRING/CHAR/BOOLEAN, imprimir acorde; si no, como int
+            const GlobalInfo *gi = globals_lookup(id->nombre);
+            if (gi) {
+                if (gi->tipo == DOUBLE || gi->tipo == FLOAT) {
+                    char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr d0, [x16]", id->nombre); emitln(ftext, l1);
+                    emitln(ftext, "    ldr x0, =fmt_double");
+                    emitln(ftext, "    bl printf");
+                } else if (gi->tipo == STRING) {
+                    char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", id->nombre); emitln(ftext, l1);
+                    emitln(ftext, "    ldr x0, =fmt_string");
+                    emitln(ftext, "    bl printf");
+                } else if (gi->tipo == CHAR) {
+                    char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr w1, [x16]", id->nombre); emitln(ftext, l1);
+                    emitln(ftext, "    mov w0, w1");
+                    emitln(ftext, "    bl char_to_utf8");
+                    emitln(ftext, "    mov x1, x0");
+                    emitln(ftext, "    ldr x0, =fmt_string");
+                    emitln(ftext, "    bl printf");
+                } else if (gi->tipo == BOOLEAN) {
+                    char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr w1, [x16]", id->nombre); emitln(ftext, l1);
+                    emitln(ftext, "    cmp w1, #0");
+                    emitln(ftext, "    ldr x1, =false_str");
+                    emitln(ftext, "    ldr x17, =true_str");
+                    emitln(ftext, "    csel x1, x17, x1, ne");
+                    emitln(ftext, "    ldr x0, =fmt_string");
+                    emitln(ftext, "    bl printf");
+                } else {
+                    char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr w1, [x16]", id->nombre); emitln(ftext, l1);
+                    emitln(ftext, "    ldr x0, =fmt_int");
+                    emitln(ftext, "    bl printf");
+                }
+            } else {
+                char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr w1, [x16]", id->nombre); emitln(ftext, l1);
+                emitln(ftext, "    ldr x0, =fmt_int");
+                emitln(ftext, "    bl printf");
+            }
         }
         return;
     }
@@ -308,6 +346,7 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
             char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, [x29, -%d]", v->offset); emitln(ftext, l1);
             return 1;
         }
+        // Fallback: no local; intentar global como entero -> no es cadena. Para MVP, retornamos 0.
     }
     return 0;
 }

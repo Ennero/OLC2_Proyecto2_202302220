@@ -1,6 +1,7 @@
 #include "codegen/arm64_num.h"
 #include "codegen/arm64_core.h"
 #include "codegen/arm64_vars.h"
+#include "codegen/arm64_globals.h"
 #include "ast/nodos/expresiones/terminales/primitivos.h"
 #include "ast/nodos/expresiones/terminales/identificadores.h"
 #include "ast/nodos/expresiones/aritmeticas/aritmeticas.h"
@@ -66,12 +67,22 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
     } else if (strcmp(t, "Identificador") == 0) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
         VarEntry *v = buscar_variable(id->nombre);
-        if (!v) return INT;
-        if (v->tipo == DOUBLE || v->tipo == FLOAT) {
-            char line[64]; snprintf(line, sizeof(line), "    ldr d0, [x29, -%d]", v->offset); emitln(ftext, line);
+        if (v) {
+            if (v->tipo == DOUBLE || v->tipo == FLOAT) {
+                char line[64]; snprintf(line, sizeof(line), "    ldr d0, [x29, -%d]", v->offset); emitln(ftext, line);
+                return DOUBLE;
+            } else { // INT/BOOLEAN/CHAR
+                char line[64]; snprintf(line, sizeof(line), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, line);
+                return INT;
+            }
+        }
+        // Fallback: global, intentar determinar tipo
+        const GlobalInfo *gi = globals_lookup(id->nombre);
+        if (gi && (gi->tipo == DOUBLE || gi->tipo == FLOAT)) {
+            char sym[128]; snprintf(sym, sizeof(sym), "    ldr x16, =g_%s\n    ldr d0, [x16]", id->nombre); emitln(ftext, sym);
             return DOUBLE;
-        } else { // INT/BOOLEAN/CHAR
-            char line[64]; snprintf(line, sizeof(line), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, line);
+        } else {
+            char sym[128]; snprintf(sym, sizeof(sym), "    ldr x16, =g_%s\n    ldr w1, [x16]", id->nombre); emitln(ftext, sym);
             return INT;
         }
     } else if (strcmp(t, "ArrayAccess") == 0) {
@@ -254,25 +265,40 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
         if (lvalue && strcmp(lvalue->node_type ? lvalue->node_type : "", "Identificador") == 0) {
             IdentificadorExpresion *id = (IdentificadorExpresion *)lvalue;
             VarEntry *v = buscar_variable(id->nombre);
-            if (!v) { emitln(ftext, "    mov w1, #0"); return INT; }
-            // Cargar valor actual y guardar como retorno
-            if (v->tipo == DOUBLE || v->tipo == FLOAT) {
-                char ld[64]; snprintf(ld, sizeof(ld), "    ldr d0, [x29, -%d]", v->offset); emitln(ftext, ld);
-                // devolver antiguo en d0
-                // calcular nuevo
-                // cargar constante 1.0 en d1
-                const char *one = core_add_double_literal("1.0");
-                char l1[96]; snprintf(l1, sizeof(l1), "    ldr x16, =%s\n    ldr d1, [x16]", one); emitln(ftext, l1);
-                if (op == TOKEN_INCREMENTO) emitln(ftext, "    fadd d1, d0, d1"); else emitln(ftext, "    fsub d1, d0, d1");
-                char st[64]; snprintf(st, sizeof(st), "    str d1, [x29, -%d]", v->offset); emitln(ftext, st);
-                return DOUBLE;
+            if (v) {
+                // Cargar valor actual y guardar como retorno
+                if (v->tipo == DOUBLE || v->tipo == FLOAT) {
+                    char ld[64]; snprintf(ld, sizeof(ld), "    ldr d0, [x29, -%d]", v->offset); emitln(ftext, ld);
+                    const char *one = core_add_double_literal("1.0");
+                    char l1[96]; snprintf(l1, sizeof(l1), "    ldr x16, =%s\n    ldr d1, [x16]", one); emitln(ftext, l1);
+                    if (op == TOKEN_INCREMENTO) emitln(ftext, "    fadd d1, d0, d1"); else emitln(ftext, "    fsub d1, d0, d1");
+                    char st[64]; snprintf(st, sizeof(st), "    str d1, [x29, -%d]", v->offset); emitln(ftext, st);
+                    return DOUBLE;
+                } else {
+                    char ld[64]; snprintf(ld, sizeof(ld), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, ld);
+                    if (op == TOKEN_INCREMENTO) emitln(ftext, "    add w20, w1, #1"); else emitln(ftext, "    sub w20, w1, #1");
+                    char st[64]; snprintf(st, sizeof(st), "    str w20, [x29, -%d]", v->offset); emitln(ftext, st);
+                    return INT;
+                }
             } else {
-                char ld[64]; snprintf(ld, sizeof(ld), "    ldr w1, [x29, -%d]", v->offset); emitln(ftext, ld);
-                // w1 contiene antiguo (retorno)
-                // calcular nuevo en w20
-                if (op == TOKEN_INCREMENTO) emitln(ftext, "    add w20, w1, #1"); else emitln(ftext, "    sub w20, w1, #1");
-                char st[64]; snprintf(st, sizeof(st), "    str w20, [x29, -%d]", v->offset); emitln(ftext, st);
-                return INT;
+                // Postfix sobre global
+                const GlobalInfo *gi = globals_lookup(id->nombre);
+                if (!gi) { emitln(ftext, "    mov w1, #0"); return INT; }
+                // Dirección global
+                char adr[128]; snprintf(adr, sizeof(adr), "    ldr x16, =g_%s", id->nombre); emitln(ftext, adr);
+                if (gi->tipo == DOUBLE || gi->tipo == FLOAT) {
+                    emitln(ftext, "    ldr d0, [x16]");
+                    const char *one = core_add_double_literal("1.0");
+                    char l1[96]; snprintf(l1, sizeof(l1), "    ldr x17, =%s\n    ldr d1, [x17]", one); emitln(ftext, l1);
+                    if (op == TOKEN_INCREMENTO) emitln(ftext, "    fadd d1, d0, d1"); else emitln(ftext, "    fsub d1, d0, d1");
+                    emitln(ftext, "    str d1, [x16]");
+                    return DOUBLE;
+                } else {
+                    emitln(ftext, "    ldr w1, [x16]");
+                    if (op == TOKEN_INCREMENTO) emitln(ftext, "    add w20, w1, #1"); else emitln(ftext, "    sub w20, w1, #1");
+                    emitln(ftext, "    str w20, [x16]");
+                    return INT;
+                }
             }
         } else {
             // TODO: soporte a ArrayAccess
