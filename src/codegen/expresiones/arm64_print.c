@@ -4,6 +4,7 @@
 #include "codegen/arm64_core.h"
 #include "codegen/arm64_vars.h"
 #include "codegen/arm64_globals.h"
+#include "codegen/estructuras/arm64_arreglos.h"
 #include "ast/nodos/expresiones/terminales/primitivos.h"
 #include "ast/nodos/expresiones/terminales/identificadores.h"
 #include "ast/nodos/instrucciones/instruccion/casteos.h"
@@ -29,6 +30,16 @@ int expresion_es_cadena(AbstractExpresion *node) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
         VarEntry *v = buscar_variable(id->nombre);
         return v && v->tipo == STRING;
+    }
+    if (strcmp(t, "ArrayAccess") == 0) {
+        // Si es acceso a arreglo de strings, considerarlo cadena
+        int depth = 0; AbstractExpresion *it = node;
+        while (it && it->node_type && strcmp(it->node_type, "ArrayAccess") == 0) { depth++; it = it->hijos[0]; }
+        if (it && it->node_type && strcmp(it->node_type, "Identificador") == 0) {
+            IdentificadorExpresion *id = (IdentificadorExpresion *)it;
+            return arm64_array_elem_tipo_for_var(id->nombre) == STRING;
+        }
+        return 0;
     }
     if (strcmp(t, "Suma") == 0) {
         return expresion_es_cadena(node->hijos[0]) || expresion_es_cadena(node->hijos[1]);
@@ -182,6 +193,41 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
 
 void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
     const char *t = node->node_type ? node->node_type : "";
+    if (strcmp(t, "ArrayAccess") == 0) {
+        // Imprimir elementos de arreglo según su tipo base
+        int depth = 0; AbstractExpresion *it = node;
+        while (it && it->node_type && strcmp(it->node_type, "ArrayAccess") == 0) { depth++; it = it->hijos[0]; }
+        if (it && it->node_type && strcmp(it->node_type, "Identificador") == 0) {
+            IdentificadorExpresion *id = (IdentificadorExpresion *)it;
+            TipoDato base_t = arm64_array_elem_tipo_for_var(id->nombre);
+            if (base_t == STRING) {
+                const char *null_lab = add_string_literal("null");
+                if (!emitir_eval_string_ptr(node, ftext)) {
+                    char lz[64]; snprintf(lz, sizeof(lz), "    ldr x1, =%s", null_lab); emitln(ftext, lz);
+                }
+                // Sustituir NULL por "null"
+                emitln(ftext, "    cmp x1, #0");
+                char lnull[64]; snprintf(lnull, sizeof(lnull), "    ldr x16, =%s", null_lab); emitln(ftext, lnull);
+                emitln(ftext, "    csel x1, x16, x1, eq");
+                emitln(ftext, "    ldr x0, =fmt_string");
+                emitln(ftext, "    bl printf");
+                return;
+            } else if (base_t == CHAR) {
+                (void)emitir_eval_numerico(node, ftext);
+                emitln(ftext, "    mov w0, w1");
+                emitln(ftext, "    bl char_to_utf8");
+                emitln(ftext, "    mov x1, x0");
+                emitln(ftext, "    ldr x0, =fmt_string");
+                emitln(ftext, "    bl printf");
+                return;
+            }
+        }
+        // Fallback: imprimir como int
+        (void)emitir_eval_numerico(node, ftext);
+        emitln(ftext, "    ldr x0, =fmt_int");
+        emitln(ftext, "    bl printf");
+        return;
+    }
     if (strcmp(t, "Suma") == 0) {
         if (!expresion_es_cadena(node)) {
             TipoDato ty = emitir_eval_numerico(node, ftext);
@@ -412,6 +458,33 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
             char l2[64]; snprintf(l2, sizeof(l2), "    ldr x1, =%s", lab); emitln(ftext, l2);
             return 1;
         }
+    }
+    if (strcmp(t, "ArrayAccess") == 0) {
+        // Soportar obtener puntero a elemento de arreglo de strings: usa array_element_addr_ptr
+        int depth = 0; AbstractExpresion *it = node;
+        while (it && it->node_type && strcmp(it->node_type, "ArrayAccess") == 0) { depth++; it = it->hijos[0]; }
+        if (!(it && it->node_type && strcmp(it->node_type, "Identificador") == 0)) return 0;
+        IdentificadorExpresion *id = (IdentificadorExpresion *)it;
+        VarEntry *v = buscar_variable(id->nombre);
+        if (!v) return 0;
+        // Reservar stack para indices
+        int bytes = ((depth * 4) + 15) & ~15;
+        if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
+        it = node; for (int i = 0; i < depth; ++i) {
+            AbstractExpresion *idx = it->hijos[1];
+            TipoDato ty = emitir_eval_numerico(idx, ftext);
+            if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+            char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st);
+            it = it->hijos[0];
+        }
+        // Cargar puntero base del arreglo
+        { char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", v->offset); emitln(ftext, ld); }
+        emitln(ftext, "    mov x1, sp");
+        { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
+        emitln(ftext, "    bl array_element_addr_ptr");
+        emitln(ftext, "    ldr x1, [x0]");
+        if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+        return 1;
     }
     if (strcmp(t, "StringValueof") == 0) {
         emitir_string_valueof(node->hijos[0], ftext);

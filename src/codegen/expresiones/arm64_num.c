@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include "ast/nodos/instrucciones/instruccion/casteos.h"
 #include "codegen/arm64_print.h"
+#include "codegen/estructuras/arm64_arreglos.h"
 #include "ast/nodos/expresiones/postfix.h"
 #include "parser.tab.h" // tokens for ++/--
 
@@ -97,6 +98,8 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)it;
         VarEntry *v = buscar_variable(id->nombre);
         if (!v) { emitln(ftext, "    mov w1, #0"); return INT; }
+        // Determinar tipo base del arreglo si se registró
+        TipoDato base_t = arm64_array_elem_tipo_for_var(id->nombre);
         int bytes = ((depth * 4) + 15) & ~15;
         if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
         it = node; for (int i = 0; i < depth; ++i) {
@@ -106,12 +109,18 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
             char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st);
             it = it->hijos[0];
         }
-        // x0 = arr, x1 = indices, w2 = depth
-    { char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", v->offset); emitln(ftext, ld); }
-        emitln(ftext, "    mov x1, sp");
-        { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
-        emitln(ftext, "    bl array_element_addr");
-        emitln(ftext, "    ldr w1, [x0]");
+        if (base_t == STRING) {
+            // No es numérico; retornar 0 evitando usar helper de punteros aquí
+            emitln(ftext, "    mov w1, #0");
+        } else {
+            // x0 = arr, x1 = indices, w2 = depth
+            { char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", v->offset); emitln(ftext, ld); }
+            emitln(ftext, "    mov x1, sp");
+            { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
+            emitln(ftext, "    bl array_element_addr");
+            if (base_t == CHAR) emitln(ftext, "    ldrb w1, [x0]");
+            else emitln(ftext, "    ldr w1, [x0]");
+        }
         if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
         return INT;
     } else if (strcmp(t, "Suma") == 0) {
