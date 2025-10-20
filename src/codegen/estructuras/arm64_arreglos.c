@@ -56,13 +56,22 @@ int arm64_emitir_asignacion_arreglo(AbstractExpresion *node, FILE *ftext) {
     TipoDato base_t = arm64_array_elem_tipo_for_var(id->nombre);
     if (base_t == STRING) emitln(ftext, "    bl array_element_addr_ptr");
     else emitln(ftext, "    bl array_element_addr");
+    // Guardar la dirección destino (x0) en la pila para no perderla durante la evaluación del RHS
+    emitln(ftext, "    sub sp, sp, #16");
+    emitln(ftext, "    str x0, [sp]");
     TipoDato rty = emitir_eval_numerico(rhs, ftext);
     if (base_t == STRING) {
         if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");
-        emitln(ftext, "    str x1, [x0]");
+        // Restaurar dirección y almacenar
+        emitln(ftext, "    ldr x9, [sp]");
+        emitln(ftext, "    add sp, sp, #16");
+        emitln(ftext, "    str x1, [x9]");
     } else {
         if (rty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-        emitln(ftext, "    str w1, [x0]");
+        // Restaurar dirección y almacenar
+        emitln(ftext, "    ldr x9, [sp]");
+        emitln(ftext, "    add sp, sp, #16");
+        emitln(ftext, "    str w1, [x9]");
     }
     if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
     return 1;

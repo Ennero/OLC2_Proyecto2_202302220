@@ -490,7 +490,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
             VarEntry *v = vars_agregar_ext(fi->param_names[p], fi->param_types[p], size, 0, f);
             if (fi->param_types[p] == DOUBLE || fi->param_types[p] == FLOAT) {
                 char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d%d, [x16]", v->offset, p); emitln(f, st);
-            } else if (fi->param_types[p] == STRING) {
+            } else if (fi->param_types[p] == STRING || fi->param_types[p] == ARRAY) {
                 char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x%d, [x16]", v->offset, p); emitln(f, st);
             } else {
                 char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w%d, [x16]", v->offset, p); emitln(f, st);

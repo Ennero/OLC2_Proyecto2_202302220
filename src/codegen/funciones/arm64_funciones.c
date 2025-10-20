@@ -8,6 +8,9 @@
 #include "codegen/arm64_num.h"
 #include "codegen/arm64_bool.h"
 #include "codegen/arm64_core.h"
+#include "ast/nodos/expresiones/terminales/identificadores.h"
+#include "codegen/arm64_vars.h"
+#include "codegen/arm64_globals.h"
 
 static void emitln(FILE *f, const char *s) { core_emitln(f, s); }
 
@@ -46,7 +49,8 @@ void arm64_funciones_colectar(AbstractExpresion *n) {
             if (fi->param_count > 8) fi->param_count = 8;
             for (int i = 0; i < fi->param_count; ++i) {
                 ParametroNode *pn = (ParametroNode *)params_list->hijos[i];
-                fi->param_types[i] = pn->tipo;
+                // Si el parámetro es un arreglo (dimensiones > 0), trátalo como ARRAY (puntero)
+                fi->param_types[i] = (pn->dimensiones > 0) ? ARRAY : pn->tipo;
                 fi->param_names[i] = pn->nombre;
             }
             fi->body = n->hijos[1];
@@ -76,6 +80,28 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
         TipoDato esperado = fi->param_types[i];
         if (esperado == STRING) {
             if (!emitir_eval_string_ptr(arg, ftext)) emitln(ftext, "    mov x1, #0");
+            char mv[64]; snprintf(mv, sizeof(mv), "    mov x%d, x1", i); emitln(ftext, mv);
+        } else if (esperado == ARRAY) {
+            // Pasar arreglos por referencia (puntero al header)
+            if (arg && arg->node_type && strcmp(arg->node_type, "Identificador") == 0) {
+                IdentificadorExpresion *aid = (IdentificadorExpresion *)arg;
+                VarEntry *av = vars_buscar(aid->nombre);
+                if (av) {
+                    char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x1, [x16]", av->offset); emitln(ftext, ld);
+                } else {
+                    const GlobalInfo *gi = globals_lookup(aid->nombre);
+                    if (gi) {
+                        char lg[128]; snprintf(lg, sizeof(lg), "    ldr x16, =g_%s\n    ldr x1, [x16]", aid->nombre); emitln(ftext, lg);
+                    } else {
+                        emitln(ftext, "    mov x1, #0");
+                    }
+                }
+            } else {
+                // Si no es identificador directo, evaluar como cadena de puntero (no soportado plenamente)
+                // Por ahora intentamos tratarlo como acceso a arreglo -> obtener base del arreglo
+                emitln(ftext, "    // TODO: pasar expresiones de arreglo no-identificador por referencia");
+                emitln(ftext, "    mov x1, #0");
+            }
             char mv[64]; snprintf(mv, sizeof(mv), "    mov x%d, x1", i); emitln(ftext, mv);
         } else if (esperado == DOUBLE || esperado == FLOAT) {
             TipoDato ty = emitir_eval_numerico(arg, ftext);
