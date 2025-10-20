@@ -164,6 +164,16 @@
 				"$gcc"
 			],
 			"group": "build"
+		},
+		{
+			"label": "build-project",
+			"type": "shell",
+			"command": "make",
+			"args": [],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
 		}
 	],
 	"version": "2.0.0"

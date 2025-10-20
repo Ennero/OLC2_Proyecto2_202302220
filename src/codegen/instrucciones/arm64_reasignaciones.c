@@ -6,6 +6,7 @@
 #include "codegen/arm64_print.h"
 #include "codegen/arm64_bool.h"
 #include "codegen/arm64_globals.h"
+#include "codegen/estructuras/arm64_arreglos.h"
 #include "ast/nodos/instrucciones/instruccion/reasignacion.h"
 #include "ast/nodos/expresiones/terminales/primitivos.h"
 #include "ast/nodos/expresiones/terminales/identificadores.h"
@@ -44,6 +45,45 @@ int arm64_emitir_reasignacion(AbstractExpresion *node, FILE *ftext) {
     }
     if (v->is_const) { emitln(ftext, "    // reasignación a constante ignorada en codegen"); return 1; }
     AbstractExpresion *rhs = node->hijos[0];
+    // Soporte para reasignación de arreglos
+    if (v->tipo == ARRAY) {
+        const char *rtype = rhs->node_type ? rhs->node_type : "";
+        if (strcmp(rtype, "ArrayCreation") == 0) {
+            // rhs->hijos[1] es la lista de dimensiones
+            AbstractExpresion *lista = rhs->hijos[1];
+            int dims = (int)(lista ? lista->numHijos : 0);
+            int bytes = ((dims * 4) + 15) & ~15;
+            if (bytes > 0) {
+                char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub);
+                for (int i = 0; i < dims; ++i) {
+                    TipoDato ty = emitir_eval_numerico(lista->hijos[i], ftext);
+                    if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                    char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st);
+                }
+                char mv0[64]; snprintf(mv0, sizeof(mv0), "    mov w0, #%d", dims); emitln(ftext, mv0);
+                emitln(ftext, "    mov x1, sp");
+                // Elegir helper según tipo base del arreglo registrado
+                TipoDato base_t = arm64_array_elem_tipo_for_var(rea->nombre);
+                if (base_t == STRING) emitln(ftext, "    bl new_array_flat_ptr");
+                else emitln(ftext, "    bl new_array_flat");
+                char stp[96]; snprintf(stp, sizeof(stp), "    sub x16, x29, #%d\n    str x0, [x16]", v->offset); emitln(ftext, stp);
+                char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb);
+            } else {
+                // dims == 0: asignar NULL
+                char stp[128]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stp);
+            }
+            return 1;
+        } else if (strcmp(rtype, "Primitivo") == 0) {
+            PrimitivoExpresion *p = (PrimitivoExpresion *)rhs;
+            if (p->tipo == NULO) {
+                char stp[128]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stp);
+                return 1;
+            }
+        }
+        // Otros tipos de asignación a arreglo no soportados aquí
+        emitln(ftext, "    // reasignación a arreglo: tipo RHS no soportado, ignorado");
+        return 1;
+    }
     if (v->tipo == STRING) {
         if (rhs->node_type && strcmp(rhs->node_type, "Primitivo") == 0) {
             PrimitivoExpresion *p = (PrimitivoExpresion *)rhs;
