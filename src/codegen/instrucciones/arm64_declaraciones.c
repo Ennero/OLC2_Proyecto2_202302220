@@ -22,7 +22,7 @@ int arm64_emitir_declaracion(AbstractExpresion *node, FILE *ftext) {
         VarEntry *v = vars_agregar_ext(decl->nombre, ARRAY, 8, decl->es_constante ? 1 : 0, ftext);
         // Registrar tipo base del arreglo para codegen
         arm64_registrar_arreglo(decl->nombre, decl->tipo);
-        if (node->numHijos > 0 && node->hijos[0] && strcmp(node->hijos[0]->node_type ? node->hijos[0]->node_type : "", "ArrayCreation") == 0) {
+    if (node->numHijos > 0 && node->hijos[0] && strcmp(node->hijos[0]->node_type ? node->hijos[0]->node_type : "", "ArrayCreation") == 0) {
             AbstractExpresion *arr_create = node->hijos[0];
             AbstractExpresion *lista = arr_create->hijos[1];
             int dims = (int)(lista ? lista->numHijos : 0);
@@ -44,7 +44,7 @@ int arm64_emitir_declaracion(AbstractExpresion *node, FILE *ftext) {
             } else {
                 char stp[128]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stp);
             }
-        } else if (node->numHijos > 0 && node->hijos[0] && strcmp(node->hijos[0]->node_type ? node->hijos[0]->node_type : "", "ArrayInitializer") == 0) {
+    } else if (node->numHijos > 0 && node->hijos[0] && strcmp(node->hijos[0]->node_type ? node->hijos[0]->node_type : "", "ArrayInitializer") == 0) {
             // Soportar inicializador 1D: {a,b,c}
             AbstractExpresion *arr_init = node->hijos[0];
             AbstractExpresion *lista = (arr_init->numHijos > 0) ? arr_init->hijos[0] : NULL;
@@ -90,6 +90,11 @@ int arm64_emitir_declaracion(AbstractExpresion *node, FILE *ftext) {
                     emitln(ftext, "    str w1, [x20]");
                 }
             }
+        } else if (node->numHijos > 0 && node->hijos[0] && strcmp(node->hijos[0]->node_type ? node->hijos[0]->node_type : "", "FunctionCall") == 0) {
+            // Inicialización de arreglo desde retorno de función: se espera puntero en x0
+            TipoDato rty = arm64_emitir_llamada_funcion(node->hijos[0], ftext);
+            (void)rty; // ignoramos, asumimos contrato x0
+            char stp[96]; snprintf(stp, sizeof(stp), "    sub x16, x29, #%d\n    str x0, [x16]", v->offset); emitln(ftext, stp);
         } else {
             // Sin inicializador conocido -> NULL
             char stp[128]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stp);
@@ -104,18 +109,26 @@ int arm64_emitir_declaracion(AbstractExpresion *node, FILE *ftext) {
     if (node->numHijos > 0) {
         AbstractExpresion *init = node->hijos[0];
         if (init && init->node_type && strcmp(init->node_type, "FunctionCall") == 0) {
-            TipoDato rty = emitir_eval_numerico(init, ftext); // se revalúa abajo por tipo
-            // Mejor usar funciones: pero mantenemos compatibilidad
-            // Para coherencia, volvemos a emitir llamada con arm64_emitir_llamada_funcion en el caller
-            // Aquí mantenemos lógica previa: mover valores según tipo
+            // Emite la llamada como tal y mueve el retorno según el tipo declarado
+            TipoDato call_ret = arm64_emitir_llamada_funcion(init, ftext);
             if (decl->tipo == DOUBLE || decl->tipo == FLOAT) {
-                if (rty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
+                if (call_ret != DOUBLE) emitln(ftext, "    scvtf d0, w1");
                 char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d0, [x16]", v->offset); emitln(ftext, st);
             } else if (decl->tipo == STRING) {
-                if (!emitir_eval_string_ptr(init, ftext)) emitln(ftext, "    mov x1, #0");
+                // Para STRING, el contrato de arm64_emitir_llamada_funcion no garantiza x1, así que evaluamos explícitamente si es STRING
+                if (call_ret == DOUBLE) {
+                    // No aplicable; forzar NULL
+                    emitln(ftext, "    mov x1, #0");
+                } else {
+                    // Si la función devolvió int-like en w1, usar valueOf o NULL; como inicialización directa de string desde fn no estándar, usar 0
+                    emitln(ftext, "    mov x1, #0");
+                }
                 char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+            } else if (decl->tipo == ARRAY) {
+                // Se espera que funciones que retornan arreglos pongan puntero en x0; guardarlo
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x0, [x16]", v->offset); emitln(ftext, st);
             } else {
-                if (rty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                if (call_ret == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
                 char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w1, [x16]", v->offset); emitln(ftext, st);
             }
         } else if (decl->tipo == DOUBLE || decl->tipo == FLOAT) {

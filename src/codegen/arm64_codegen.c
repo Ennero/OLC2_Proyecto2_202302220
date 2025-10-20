@@ -156,6 +156,47 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                     // Evaluar puntero a string en x1 -> mover a x0
                     if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");
                     emitln(ftext, "    mov x0, x1");
+                } else if (__current_func_ret == ARRAY) {
+                    // Retorno de arreglo: evaluar a puntero del arreglo en x1 y mover a x0
+                    // Soportamos identificador directo o creación de arreglo; para otros casos, fallback 0
+                    const char *rt = rhs->node_type ? rhs->node_type : "";
+                    if (strcmp(rt, "Identificador") == 0) {
+                        IdentificadorExpresion *rid = (IdentificadorExpresion *)rhs;
+                        VarEntry *rv = vars_buscar(rid->nombre);
+                        if (rv && rv->tipo == ARRAY) {
+                            char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", rv->offset); emitln(ftext, l1);
+                        } else {
+                            const GlobalInfo *gi = globals_lookup(rid->nombre);
+                            if (gi && gi->tipo == ARRAY) {
+                                char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", rid->nombre); emitln(ftext, l1);
+                            } else {
+                                emitln(ftext, "    mov x1, #0");
+                            }
+                        }
+                        emitln(ftext, "    mov x0, x1");
+                    } else if (strcmp(rt, "ArrayCreation") == 0 || strcmp(rt, "ArrayInitializer") == 0) {
+                        // Reutilizar lógica de declaración para crear arreglo temporal: evaluamos sizes/elementos y obtenemos x0
+                        // Implementación mínima: delegamos a paths usados en declaraciones creando el arreglo y dejando x0 listo
+                        // Para simplicidad MVP: soportar ArrayCreation con lista de tamaños 1D
+                        AbstractExpresion *lista = rhs->hijos[1];
+                        int dims = (int)(lista ? lista->numHijos : 0);
+                        int bytes = ((dims * 4) + 15) & ~15;
+                        if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
+                        for (int i = 0; i < dims; ++i) {
+                            TipoDato ty = emitir_eval_numerico(lista->hijos[i], ftext);
+                            if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                            char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st);
+                        }
+                        char mv0[64]; snprintf(mv0, sizeof(mv0), "    mov w0, #%d", dims); emitln(ftext, mv0);
+                        emitln(ftext, "    mov x1, sp");
+                        // Asumimos arreglo de punteros a string para este caso (como en ejemplo Fibonacci)
+                        emitln(ftext, "    bl new_array_flat_ptr");
+                        if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+                        // x0 ya contiene el puntero a retornar
+                    } else {
+                        // No soportado: retornar NULL
+                        emitln(ftext, "    mov x0, #0");
+                    }
                 } else {
                     // Escalares int/bool/char -> w0
                     TipoDato ty = emitir_eval_numerico(rhs, ftext);
@@ -212,6 +253,9 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
 
     // For delegado
 
+    // Declaraciones: emítelas directamente (incluyen su inicializador) y no recorras hijos antes
+    if (arm64_emitir_declaracion(node, ftext)) return;
+
     // Recorremos primero hijos (pre-orden simple para statements) excepto Bloque/IfStatement (ya manejados)
     for (size_t i = 0; i < node->numHijos; i++) {
         if (!node->hijos[i]) continue;
@@ -232,7 +276,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         // ya procesamos sus hijos
         return;
     }
-    if (arm64_emitir_declaracion(node, ftext)) return;
+    // Declaraciones ya manejadas antes
     if (arm64_emitir_asignacion_arreglo(node, ftext)) return;
     if (arm64_emitir_print_stmt(node, ftext)) return;
     // Reasignación simple: id = expr

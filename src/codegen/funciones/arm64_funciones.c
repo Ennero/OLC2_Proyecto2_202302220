@@ -43,7 +43,8 @@ void arm64_funciones_colectar(AbstractExpresion *n) {
             Arm64FuncionInfo *fi = &__funcs[__funcs_count++];
             memset(fi, 0, sizeof(*fi));
             fi->name = fn->nombre;
-            fi->ret = fn->tipo_retorno;
+            // Si la función retorna un arreglo (retorno_dimensiones > 0), tratar el retorno como ARRAY (puntero)
+            fi->ret = (fn->retorno_dimensiones > 0) ? ARRAY : fn->tipo_retorno;
             AbstractExpresion *params_list = n->hijos[0];
             fi->param_count = (int)(params_list ? params_list->numHijos : 0);
             if (fi->param_count > 8) fi->param_count = 8;
@@ -118,6 +119,10 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
     }
     if (fi->ret == DOUBLE || fi->ret == FLOAT) {
         return DOUBLE;
+    } else if (fi->ret == ARRAY) {
+        // Mantener puntero en x0; opcionalmente reflejar en x1 para consumidores puntuales
+        emitln(ftext, "    mov x1, x0");
+        return ARRAY;
     } else {
         emitln(ftext, "    mov w1, w0");
         return INT;

@@ -438,117 +438,97 @@ join_array_ints:
     ldp x29, x30, [sp], 16
     ret
 
-fn_burbuja:
+fn_generarReporteFibonacci:
     stp x29, x30, [sp, -16]!
     mov x29, sp
     sub sp, sp, #1024
     sub sp, sp, #16
     sub x16, x29, #16
-    str x0, [x16]
+    str w0, [x16]
     sub sp, sp, #16
-    sub x16, x29, #32
-    str w1, [x16]
-    sub x16, x29, #32
+    sub sp, sp, #16
+    sub x16, x29, #16
     ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    mov w1, #1
-    ldr w19, [sp]
+    str w1, [sp, #0]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    sub x16, x29, #32
+    str x0, [x16]
     add sp, sp, #16
-    cmp w19, w1
-    cset w1, eq
-    cmp w1, #0
-    beq L_end_2
-L_then_2:
-    b L_func_exit_1
-L_end_2:
     sub sp, sp, #16
     mov w1, #0
     sub x16, x29, #48
     str w1, [x16]
-L_for_cond_3:
-    sub x16, x29, #48
-    ldr w1, [x16]
     sub sp, sp, #16
-    str w1, [sp]
-    sub x16, x29, #32
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
     mov w1, #1
-    ldr w19, [sp]
-    add sp, sp, #16
-    sub w1, w19, w1
+    sub x16, x29, #64
+    str w1, [x16]
+    sub sp, sp, #16
+    mov w1, #0
+    sub x16, x29, #80
+    str w1, [x16]
+L_while_cond_2:
+    sub x16, x29, #80
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    sub x16, x29, #16
+    ldr w1, [x16]
     ldr w19, [sp]
     add sp, sp, #16
     cmp w19, w1
     cset w1, lt
     cmp w1, #0
-    beq L_break_3
+    beq L_break_2
     sub sp, sp, #16
-    sub x16, x29, #48
+    sub x16, x29, #80
     ldr w1, [x16]
     str w1, [sp, #0]
-    sub x16, x29, #16
+    sub x16, x29, #32
     ldr x0, [x16]
     mov x1, sp
     mov w2, #1
-    bl array_element_addr
-    ldr w1, [x0]
+    bl array_element_addr_ptr
+    sub sp, sp, #16
+    str x0, [sp]
+    mov w1, #0
+    sub x16, x29, #48
+    ldr w1, [x16]
+    mov w21, w1
+    ldr x19, =tmpbuf
+    mov x0, x19
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, x19
+    bl strdup
+    mov x1, x0
+    ldr x9, [sp]
+    add sp, sp, #16
+    str x1, [x9]
     add sp, sp, #16
     sub sp, sp, #16
-    str w1, [sp]
-    sub sp, sp, #16
+    sub x16, x29, #64
+    ldr w1, [x16]
+    sub x16, x29, #96
+    str w1, [x16]
     sub x16, x29, #48
     ldr w1, [x16]
     sub sp, sp, #16
     str w1, [sp]
-    mov w1, #1
+    sub x16, x29, #64
+    ldr w1, [x16]
     ldr w19, [sp]
     add sp, sp, #16
     add w1, w19, w1
-    str w1, [sp, #0]
-    sub x16, x29, #16
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr
-    ldr w1, [x0]
-    add sp, sp, #16
-    ldr w19, [sp]
-    add sp, sp, #16
-    cmp w19, w1
-    cset w1, gt
-    cmp w1, #0
-    beq L_end_4
-L_then_4:
-    sub sp, sp, #16
-    sub sp, sp, #16
-    sub x16, x29, #48
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #16
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr
-    ldr w1, [x0]
-    add sp, sp, #16
     sub x16, x29, #64
     str w1, [x16]
-    sub sp, sp, #16
-    sub x16, x29, #48
+    sub x16, x29, #96
     ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #16
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    sub sp, sp, #16
     sub x16, x29, #48
+    str w1, [x16]
+    sub x16, x29, #80
     ldr w1, [x16]
     sub sp, sp, #16
     str w1, [sp]
@@ -556,64 +536,15 @@ L_then_4:
     ldr w19, [sp]
     add sp, sp, #16
     add w1, w19, w1
-    str w1, [sp, #0]
-    sub x16, x29, #16
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr
-    ldr w1, [x0]
-    add sp, sp, #16
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    sub x16, x29, #48
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    mov w1, #1
-    ldr w19, [sp]
-    add sp, sp, #16
-    add w1, w19, w1
-    str w1, [sp, #0]
-    sub x16, x29, #16
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    sub x16, x29, #64
-    ldr w1, [x16]
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-L_end_4:
-L_continue_3:
-    sub x16, x29, #48
-    ldr w1, [x16]
-    add w20, w1, #1
-    sub x16, x29, #48
-    str w20, [x16]
-    b L_for_cond_3
-L_break_3:
-    sub x16, x29, #16
+    sub x16, x29, #80
+    str w1, [x16]
+L_continue_2:
+    b L_while_cond_2
+L_break_2:
+    sub x16, x29, #32
     ldr x1, [x16]
     mov x0, x1
-    sub x16, x29, #32
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    mov w1, #1
-    ldr w19, [sp]
-    add sp, sp, #16
-    sub w1, w19, w1
-    mov w1, w1
-    bl fn_burbuja
-    mov w1, w0
+    b L_func_exit_1
 L_func_exit_1:
     add sp, sp, #1024
     mov sp, x29
@@ -626,283 +557,27 @@ main:
 
     sub sp, sp, #1024
     sub sp, sp, #16
-    sub sp, sp, #16
-    mov w1, #5
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat
+    mov w1, #10
+    mov w0, w1
+    bl fn_generarReporteFibonacci
+    mov x1, x0
     sub x16, x29, #16
     str x0, [x16]
-    add sp, sp, #16
-    sub x16, x29, #16
-    ldr x19, [x16]
-    ldr w12, [x19]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x19, x19, x17
-    mov x21, #0
-    add x20, x19, x21, lsl #2
-    mov w1, #5
-    str w1, [x20]
-    sub x16, x29, #16
-    ldr x19, [x16]
-    ldr w12, [x19]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x19, x19, x17
-    mov x21, #1
-    add x20, x19, x21, lsl #2
-    mov w1, #1
-    str w1, [x20]
-    sub x16, x29, #16
-    ldr x19, [x16]
-    ldr w12, [x19]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x19, x19, x17
-    mov x21, #2
-    add x20, x19, x21, lsl #2
-    mov w1, #4
-    str w1, [x20]
-    sub x16, x29, #16
-    ldr x19, [x16]
-    ldr w12, [x19]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x19, x19, x17
-    mov x21, #3
-    add x20, x19, x21, lsl #2
-    mov w1, #2
-    str w1, [x20]
-    sub x16, x29, #16
-    ldr x19, [x16]
-    ldr w12, [x19]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x19, x19, x17
-    mov x21, #4
-    add x20, x19, x21, lsl #2
-    mov w1, #8
-    str w1, [x20]
     // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
+    // print expr node_type: StringJoin
     ldr x1, =str_lit_1
+    mov x23, x1
+    sub x16, x29, #16
+    ldr x0, [x16]
+    mov x1, x23
+    bl join_array_strings
+    mov x1, x0
+    ldr x0, =fmt_string
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-    sub sp, sp, #16
-    mov w1, #0
-    sub x16, x29, #32
-    str w1, [x16]
-L_for_cond_6:
-    sub x16, x29, #32
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    sub x16, x29, #16
-    ldr x0, [x16]
-    // load sizes[0] from header: [x0+8]
-    add x18, x0, #8
-    ldr w1, [x18]
-    ldr w19, [sp]
-    add sp, sp, #16
-    cmp w19, w1
-    cset w1, lt
-    cmp w1, #0
-    beq L_break_6
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: ArrayAccess
-    sub sp, sp, #16
-    sub x16, x29, #32
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #16
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr
-    ldr w1, [x0]
-    add sp, sp, #16
-    ldr x0, =fmt_int
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_3
-    bl printf
-    sub x16, x29, #32
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    sub x16, x29, #16
-    ldr x0, [x16]
-    // load sizes[0] from header: [x0+8]
-    add x18, x0, #8
-    ldr w1, [x18]
-    sub sp, sp, #16
-    str w1, [sp]
-    mov w1, #1
-    ldr w19, [sp]
-    add sp, sp, #16
-    sub w1, w19, w1
-    ldr w19, [sp]
-    add sp, sp, #16
-    cmp w19, w1
-    cset w1, lt
-    cmp w1, #0
-    beq L_end_7
-L_then_7:
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_4
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_5
-    bl printf
-L_end_7:
-L_continue_6:
-    sub x16, x29, #32
-    ldr w1, [x16]
-    add w20, w1, #1
-    sub x16, x29, #32
-    str w20, [x16]
-    b L_for_cond_6
-L_break_6:
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_6
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_7
-    bl printf
-    sub x16, x29, #16
-    ldr x1, [x16]
-    mov x0, x1
-    sub x16, x29, #16
-    ldr x0, [x16]
-    // load sizes[0] from header: [x0+8]
-    add x18, x0, #8
-    ldr w1, [x18]
-    mov w1, w1
-    bl fn_burbuja
-    mov w1, w0
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_8
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_9
-    bl printf
-    sub sp, sp, #16
-    mov w1, #0
-    sub x16, x29, #48
-    str w1, [x16]
-L_for_cond_8:
-    sub x16, x29, #48
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    sub x16, x29, #16
-    ldr x0, [x16]
-    // load sizes[0] from header: [x0+8]
-    add x18, x0, #8
-    ldr w1, [x18]
-    ldr w19, [sp]
-    add sp, sp, #16
-    cmp w19, w1
-    cset w1, lt
-    cmp w1, #0
-    beq L_break_8
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: ArrayAccess
-    sub sp, sp, #16
-    sub x16, x29, #48
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #16
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr
-    ldr w1, [x0]
-    add sp, sp, #16
-    ldr x0, =fmt_int
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_10
-    bl printf
-    sub x16, x29, #48
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    sub x16, x29, #16
-    ldr x0, [x16]
-    // load sizes[0] from header: [x0+8]
-    add x18, x0, #8
-    ldr w1, [x18]
-    sub sp, sp, #16
-    str w1, [sp]
-    mov w1, #1
-    ldr w19, [sp]
-    add sp, sp, #16
-    sub w1, w19, w1
-    ldr w19, [sp]
-    add sp, sp, #16
-    cmp w19, w1
-    cset w1, lt
-    cmp w1, #0
-    beq L_end_9
-L_then_9:
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_11
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_12
-    bl printf
-L_end_9:
-L_continue_8:
-    sub x16, x29, #48
-    ldr w1, [x16]
-    add w20, w1, #1
-    sub x16, x29, #48
-    str w20, [x16]
-    b L_for_cond_8
-L_break_8:
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_13
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_14
-    bl printf
-L_func_exit_5:
+L_func_exit_3:
     add sp, sp, #1024
     mov sp, x29
 
@@ -912,21 +587,11 @@ L_func_exit_5:
 
 // --- Literales recolectados ---
 .data
-str_lit_1:    .asciz "Antes: ["
+str_lit_1:    .asciz ", "
 str_lit_2:    .asciz "\n"
-str_lit_3:    .asciz "\n"
-str_lit_4:    .asciz ", "
-str_lit_5:    .asciz "\n"
-str_lit_6:    .asciz "]"
-str_lit_7:    .asciz "\n"
-str_lit_8:    .asciz "Después: ["
-str_lit_9:    .asciz "\n"
-str_lit_10:    .asciz "\n"
-str_lit_11:    .asciz ", "
-str_lit_12:    .asciz "\n"
-str_lit_13:    .asciz "]"
-str_lit_14:    .asciz "\n"
 
 // --- Variables globales ---
+g_a:    .quad 0
+g_b:    .quad 1
 g_i:    .quad 0
-g_temp:    .quad 0
+g_tmp:    .quad 0
