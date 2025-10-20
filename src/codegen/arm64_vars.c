@@ -87,14 +87,9 @@ void vars_pop_scope(FILE *ftext) {
         free(vars_head);
         vars_head = nx;
     }
-    // Ajustar pila: devolver sp el delta de bytes locales liberados
-    int delta = local_bytes - target_bytes;
-    if (delta > 0) {
-        char line[64];
-        snprintf(line, sizeof(line), "    add sp, sp, #%d", delta);
-        emitln(ftext, line);
-        local_bytes = target_bytes;
-    }
+    // No ajustar el stack en tiempo de ejecución aquí.
+    // Mantener local_bytes como el "high-water mark" de la función para que
+    // el epílogo único de la función (vars_epilogo) restaure todo de una vez.
     // Pop scope mark
     ScopeMark *old = scope_stack; scope_stack = scope_stack->next; free(old);
 }

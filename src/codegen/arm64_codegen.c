@@ -4,6 +4,9 @@
 #include "codegen/arm64_num.h"
 #include "codegen/arm64_bool.h"
 #include "codegen/arm64_print.h"
+#include "ast/nodos/estructuras/funciones/funcion.h"
+#include "ast/nodos/estructuras/funciones/llamada.h"
+#include "ast/nodos/estructuras/funciones/parametro.h"
 #include "ast/AbstractExpresion.h"
 #include "ast/nodos/instrucciones/instrucciones.h"
 #include "ast/nodos/expresiones/listaExpresiones.h"
@@ -59,6 +62,117 @@ static void continue_pop(void) { flujo_continue_pop(); }
 
 // ----------------- Etiqueta global de salida de función para 'return' -----------------
 static int __current_func_exit_id = -1;
+static int __is_main_context = 0;
+static TipoDato __current_func_ret = NULO;
+
+// ----------------- Registro simple de funciones declaradas -----------------
+typedef struct FuncInfo {
+    char *name;
+    TipoDato ret;
+    int param_count;
+    // Limitar a 8 params para este MVP
+    TipoDato param_types[8];
+    char *param_names[8];
+    // Apuntador al bloque/cuerpo AST
+    AbstractExpresion *body;
+} FuncInfo;
+
+static FuncInfo __funcs[64];
+static int __funcs_count = 0;
+
+static FuncInfo *funcs_lookup(const char *name) {
+    for (int i = 0; i < __funcs_count; ++i) {
+        if (strcmp(__funcs[i].name, name) == 0) return &__funcs[i];
+    }
+    return NULL;
+}
+
+static void funcs_reset(void) {
+    for (int i = 0; i < __funcs_count; ++i) {
+        // nombres y param_names apuntan a memoria de AST; no liberar aquí
+        __funcs[i].name = NULL;
+        __funcs[i].body = NULL;
+        for (int j = 0; j < __funcs[i].param_count && j < 8; ++j) {
+            __funcs[i].param_names[j] = NULL;
+        }
+    }
+    __funcs_count = 0;
+}
+
+static void funcs_collect(AbstractExpresion *n) {
+    if (!n) return;
+    if (n->node_type && strcmp(n->node_type, "FunctionDeclaration") == 0) {
+        if (__funcs_count < (int)(sizeof(__funcs)/sizeof(__funcs[0]))) {
+            FuncionDeclarationNode *fn = (FuncionDeclarationNode *)n;
+            FuncInfo *fi = &__funcs[__funcs_count++];
+            memset(fi, 0, sizeof(*fi));
+            fi->name = fn->nombre;
+            fi->ret = fn->tipo_retorno;
+            // hijos[0] = params list, hijos[1] = cuerpo/bloque
+            AbstractExpresion *params_list = n->hijos[0];
+            fi->param_count = (int)(params_list ? params_list->numHijos : 0);
+            if (fi->param_count > 8) fi->param_count = 8; // límite
+            for (int i = 0; i < fi->param_count; ++i) {
+                ParametroNode *pn = (ParametroNode *)params_list->hijos[i];
+                fi->param_types[i] = pn->tipo;
+                fi->param_names[i] = pn->nombre;
+            }
+            fi->body = n->hijos[1];
+        }
+    }
+    for (size_t i = 0; i < n->numHijos; ++i) funcs_collect(n->hijos[i]);
+}
+
+// ----------------- Emisión de llamada a función -----------------
+// Devuelve el tipo de retorno; para INT-like deja w1 con el valor; para DOUBLE deja d0
+static TipoDato emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext) {
+    if (!call_node || !(call_node->node_type && strcmp(call_node->node_type, "FunctionCall") == 0)) return INT;
+    LlamadaFuncionNode *ln = (LlamadaFuncionNode *)call_node;
+    FuncInfo *fi = funcs_lookup(ln->nombre);
+    if (!fi) {
+        // No conocida en codegen; llamar de todos modos (asumir INT) sin args
+        char line[128]; snprintf(line, sizeof(line), "    bl fn_%s", ln->nombre ? ln->nombre : "unknown"); emitln(ftext, line);
+        emitln(ftext, "    mov w1, w0");
+        return INT;
+    }
+    // Evaluar y mover argumentos a registros x0.. o d0..
+    AbstractExpresion *args_list = (call_node->numHijos > 0) ? call_node->hijos[0] : NULL;
+    int nargs = args_list ? (int)args_list->numHijos : 0;
+    if (nargs > fi->param_count) nargs = fi->param_count;
+    for (int i = 0; i < nargs; ++i) {
+        AbstractExpresion *arg = args_list->hijos[i];
+        TipoDato esperado = fi->param_types[i];
+        if (esperado == STRING) {
+            // Evaluar puntero a string en x1
+            if (!emitir_eval_string_ptr(arg, ftext)) {
+                emitln(ftext, "    mov x1, #0");
+            }
+            char mv[64]; snprintf(mv, sizeof(mv), "    mov x%d, x1", i); emitln(ftext, mv);
+        } else if (esperado == DOUBLE || esperado == FLOAT) {
+            // Evaluar numérico y convertir a double si es necesario -> d0
+            TipoDato ty = emitir_eval_numerico(arg, ftext);
+            if (ty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
+            char mv[64]; snprintf(mv, sizeof(mv), "    fmov d%d, d0", i); emitln(ftext, mv);
+        } else {
+            // INT-like
+            TipoDato ty = emitir_eval_numerico(arg, ftext);
+            if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+            char mv[64]; snprintf(mv, sizeof(mv), "    mov w%d, w1", i); emitln(ftext, mv);
+        }
+    }
+    // Llamar
+    {
+        char line[128]; snprintf(line, sizeof(line), "    bl fn_%s", fi->name); emitln(ftext, line);
+    }
+    // Mover retorno a convención local (w1/d0)
+    if (fi->ret == DOUBLE || fi->ret == FLOAT) {
+        // Resultado ya está en d0
+        return DOUBLE;
+    } else {
+        emitln(ftext, "    mov w1, w0");
+        return INT;
+    }
+}
 
 // ----------------- Helpers de runtime para arreglos (flat) -----------------
 // new_array_flat(dims=w0, sizes_ptr=x1) -> x0: puntero a cabecera
@@ -209,6 +323,15 @@ static void emit_array_helpers(FILE *ftext) {
 // Recorre el árbol emitiendo código para Print con literales primitivos
 static void gen_node(FILE *ftext, AbstractExpresion *node) {
     if (!node) return;
+    // Ignorar declaraciones de funciones en codegen (solo generamos el cuerpo de 'main')
+    if (node->node_type && strcmp(node->node_type, "FunctionDeclaration") == 0) {
+        return;
+    }
+    // Llamadas a función como sentencia
+    if (node->node_type && strcmp(node->node_type, "FunctionCall") == 0) {
+        (void)emitir_llamada_funcion(node, ftext);
+        return;
+    }
     // Delegar condicionales y ciclos a módulos especializados
     if (arm64_emitir_condicional(node, ftext, (EmitirNodoFn)gen_node)) return;
     if (arm64_emitir_ciclo(node, ftext, (EmitirNodoFn)gen_node)) return;
@@ -216,27 +339,36 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
     if (node->node_type && strcmp(node->node_type, "ReturnStatement") == 0) {
         if (node->numHijos > 0 && node->hijos[0]) {
             AbstractExpresion *rhs = node->hijos[0];
-            // Intentar evaluar como numérico; si es DOUBLE convertir a int para código de salida (w0)
-            if (nodo_es_resultado_booleano(rhs) || (rhs->node_type && strcmp(rhs->node_type, "Primitivo") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Identificador") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Suma") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Resta") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Multiplicacion") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Division") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Modulo") == 0) || (rhs->node_type && strcmp(rhs->node_type, "NegacionUnaria") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Casteo") == 0)) {
-                TipoDato ty = emitir_eval_numerico(rhs, ftext);
-                if (ty == DOUBLE) emitln(ftext, "    fcvtzs w0, d0"); else emitln(ftext, "    mov w0, w1");
-            } else if (expresion_es_cadena(rhs)) {
-                // No se retorna cadena al sistema; poner 0
-                emitln(ftext, "    mov w0, #0");
+            // Evaluar expresión de retorno
+            if (__is_main_context) {
+                // En main, retornar código de salida (int en w0)
+                if (nodo_es_resultado_booleano(rhs) || (rhs->node_type && strcmp(rhs->node_type, "Primitivo") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Identificador") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Suma") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Resta") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Multiplicacion") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Division") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Modulo") == 0) || (rhs->node_type && strcmp(rhs->node_type, "NegacionUnaria") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Casteo") == 0)) {
+                    TipoDato ty = emitir_eval_numerico(rhs, ftext);
+                    if (ty == DOUBLE) emitln(ftext, "    fcvtzs w0, d0"); else emitln(ftext, "    mov w0, w1");
+                } else if (expresion_es_cadena(rhs)) {
+                    emitln(ftext, "    mov w0, #0");
+                } else {
+                    emitln(ftext, "    mov w0, #0");
+                }
             } else {
-                // Fallback
-                emitln(ftext, "    mov w0, #0");
+                // En funciones: colocar retorno en registro segun tipo
+                if (__current_func_ret == DOUBLE || __current_func_ret == FLOAT) {
+                    TipoDato ty = emitir_eval_numerico(rhs, ftext);
+                    if (ty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
+                    // d0 lleva retorno
+                } else if (__current_func_ret == STRING) {
+                    // Evaluar puntero a string en x1 -> mover a x0
+                    if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");
+                    emitln(ftext, "    mov x0, x1");
+                } else {
+                    // Escalares int/bool/char -> w0
+                    TipoDato ty = emitir_eval_numerico(rhs, ftext);
+                    if (ty == DOUBLE) emitln(ftext, "    fcvtzs w0, d0"); else emitln(ftext, "    mov w0, w1");
+                }
             }
         }
         if (__current_func_exit_id >= 0) {
-            // Asegurar balance de pila: devolver los bytes locales aún asignados
-            int bytes_out = vars_local_bytes();
-            {
-                char cmt[96]; snprintf(cmt, sizeof(cmt), "    // return: unwind %d bytes", bytes_out); emitln(ftext, cmt);
-            }
-            if (bytes_out > 0) {
-                char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes_out); emitln(ftext, addb);
-            }
+            // Saltar al epílogo de función; ahí se restaurará el stack con vars_epilogo
             char br[64]; snprintf(br, sizeof(br), "    b L_func_exit_%d", __current_func_exit_id); emitln(ftext, br);
         } else {
             // No hay etiqueta de función (no debería ocurrir); emitir epílogo inline mínimo
@@ -349,7 +481,26 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         v = vars_agregar_ext(decl->nombre, decl->tipo, size, is_const, ftext);
         if (node->numHijos > 0) {
             AbstractExpresion *init = node->hijos[0];
-            if (decl->tipo == DOUBLE || decl->tipo == FLOAT) {
+            if (init && init->node_type && strcmp(init->node_type, "FunctionCall") == 0) {
+                // Inicializar con llamada a función
+                TipoDato rty = emitir_llamada_funcion(init, ftext);
+                if (decl->tipo == DOUBLE || decl->tipo == FLOAT) {
+                    if (rty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
+                    char st[64]; snprintf(st, sizeof(st), "    str d0, [x29, -%d]", v->offset); emitln(ftext, st);
+                } else if (decl->tipo == STRING) {
+                    if (!expresion_es_cadena(init)) {
+                        // Evaluar nuevamente como string ptr si no fue pasado
+                        if (!emitir_eval_string_ptr(init, ftext)) emitln(ftext, "    mov x1, #0");
+                    } else {
+                        // ya debería estar en x1, pero por seguridad
+                        if (!emitir_eval_string_ptr(init, ftext)) emitln(ftext, "    mov x1, #0");
+                    }
+                    char st[64]; snprintf(st, sizeof(st), "    str x1, [x29, -%d]", v->offset); emitln(ftext, st);
+                } else {
+                    if (rty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                    char st[64]; snprintf(st, sizeof(st), "    str w1, [x29, -%d]", v->offset); emitln(ftext, st);
+                }
+            } else if (decl->tipo == DOUBLE || decl->tipo == FLOAT) {
                 // Inicializa a double/float; si RHS es int, convertir implícitamente
                 TipoDato ty = emitir_eval_numerico(init, ftext);
                 if (ty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
@@ -731,6 +882,17 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
     }
 }
 
+// Búsqueda recursiva del nodo MainFunction en el AST (file-scope)
+static AbstractExpresion *find_main(AbstractExpresion *n) {
+    if (!n) return NULL;
+    if (n->node_type && strcmp(n->node_type, "MainFunction") == 0) return n;
+    for (size_t i = 0; i < n->numHijos; ++i) {
+        AbstractExpresion *m = find_main(n->hijos[i]);
+        if (m) return m;
+    }
+    return NULL;
+}
+
 int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     // Crear carpeta de salida si no existe
     FILE *f = fopen(out_path, "w");
@@ -761,7 +923,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     // pero necesitamos escribir .data de strings antes de .text.
     // Solución: escribimos placeholder; generamos el cuerpo a un buffer temporal.
 
-    // Emite .text y main
+    // Emite .text, helpers y funciones declaradas
     emitln(f, ".text");
     emitln(f, ".global main\n");
     // Helpers de arreglos y utilidades (definiciones en .text)
@@ -832,6 +994,48 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    mov w3, #0");
     emitln(f, "    strb w3, [x1, #4]");
     emitln(f, "    ret\n");
+    // Recolectar funciones del AST
+    funcs_reset();
+    funcs_collect(root);
+
+    // Emitir cada función como fn_<nombre>
+    for (int i = 0; i < __funcs_count; ++i) {
+        FuncInfo *fi = &__funcs[i];
+        // Reset de estado de variables por función
+        vars_reset();
+        char lab[128]; snprintf(lab, sizeof(lab), "fn_%s:", fi->name); emitln(f, lab);
+        emitln(f, "    stp x29, x30, [sp, -16]!");
+        emitln(f, "    mov x29, sp");
+        // Preparar estado de retorno para ReturnStatement
+        __is_main_context = 0;
+        __current_func_ret = fi->ret;
+        __current_func_exit_id = flujo_next_label_id();
+        // Crear variables locales para parámetros y mover desde registros de llamada
+        for (int p = 0; p < fi->param_count && p < 8; ++p) {
+            int size = (fi->param_types[p] == DOUBLE || fi->param_types[p] == FLOAT) ? 8 : 8;
+            VarEntry *v = vars_agregar_ext(fi->param_names[p], fi->param_types[p], size, 0, f);
+            if (fi->param_types[p] == DOUBLE || fi->param_types[p] == FLOAT) {
+                char st[64]; snprintf(st, sizeof(st), "    str d%d, [x29, -%d]", p, v->offset); emitln(f, st);
+            } else if (fi->param_types[p] == STRING) {
+                char st[64]; snprintf(st, sizeof(st), "    str x%d, [x29, -%d]", p, v->offset); emitln(f, st);
+            } else {
+                char st[64]; snprintf(st, sizeof(st), "    str w%d, [x29, -%d]", p, v->offset); emitln(f, st);
+            }
+        }
+        // Generar cuerpo
+        gen_node(f, fi->body);
+        // Salida de función
+        emit_label(f, "L_func_exit", __current_func_exit_id);
+        __current_func_exit_id = -1;
+        // Restaurar stack de variables locales
+        vars_epilogo(f);
+        emitln(f, "    ldp x29, x30, [sp], 16");
+        emitln(f, "    ret\n");
+        // Fin de función; continuar con la siguiente
+    }
+
+    // Ahora main
+    vars_reset();
     emitln(f, "main:");
     emitln(f, "    stp x29, x30, [sp, -16]!");
     emitln(f, "    mov x29, sp\n");
@@ -841,10 +1045,16 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     // Simplificamos: guardamos el file pointer y generamos directo, y al final emitimos la parte .data restante.
 
     // Establecer etiqueta de salida para 'return'
+    __is_main_context = 1;
+    __current_func_ret = INT;
     __current_func_exit_id = flujo_next_label_id();
 
-    // Generación del cuerpo
-    gen_node(f, root);
+    // Buscar nodo de entrada (MainFunction) para garantizar que ejecutamos 'main' sin importar el orden
+    AbstractExpresion *entry = find_main(root);
+    if (!entry) entry = root; // fallback: generar desde la raíz si no existe main
+
+    // Generación del cuerpo sólo desde 'main'
+    gen_node(f, entry);
 
     // Etiqueta de salida de función (usada por 'return')
     emit_label(f, "L_func_exit", __current_func_exit_id);
