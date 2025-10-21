@@ -11,6 +11,8 @@
 #include "ast/nodos/expresiones/terminales/identificadores.h"
 #include "codegen/arm64_vars.h"
 #include "codegen/arm64_globals.h"
+// Registrar tipo base de arreglos de parámetros para direccionamiento correcto
+#include "codegen/estructuras/arm64_arreglos.h"
 
 static void emitln(FILE *f, const char *s) { core_emitln(f, s); }
 
@@ -53,6 +55,10 @@ void arm64_funciones_colectar(AbstractExpresion *n) {
                 // Si el parámetro es un arreglo (dimensiones > 0), trátalo como ARRAY (puntero)
                 fi->param_types[i] = (pn->dimensiones > 0) ? ARRAY : pn->tipo;
                 fi->param_names[i] = pn->nombre;
+                // Registrar tipo base de arreglos de parámetros para que accesos y foreach usen el tamaño correcto
+                if (pn->dimensiones > 0) {
+                    arm64_registrar_arreglo(pn->nombre, pn->tipo);
+                }
             }
             fi->body = n->hijos[1];
         }

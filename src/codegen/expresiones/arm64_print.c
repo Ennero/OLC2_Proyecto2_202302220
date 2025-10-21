@@ -664,6 +664,10 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
         while (it && it->node_type && strcmp(it->node_type, "ArrayAccess") == 0) { depth++; it = it->hijos[0]; }
         if (!(it && it->node_type && strcmp(it->node_type, "Identificador") == 0)) return 0;
         IdentificadorExpresion *id = (IdentificadorExpresion *)it;
+        // Sólo procede si el arreglo es de strings; de lo contrario no es una expresión de cadena
+        if (arm64_array_elem_tipo_for_var(id->nombre) != STRING) {
+            return 0;
+        }
         VarEntry *v = buscar_variable(id->nombre);
         if (!v) return 0;
         // Reservar stack para indices y empujarlos en orden i0..iN-1 (izq->der)
