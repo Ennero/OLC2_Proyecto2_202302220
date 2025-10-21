@@ -731,7 +731,9 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
         // Reservar stack para indices y empujarlos en orden i0..iN-1 (izq->der)
         int bytes = ((depth * 4) + 15) & ~15;
         if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
-        AbstractExpresion *idx_nodes[16];
+        // Reservar arreglo dinámico para soportar profundidades altas
+        AbstractExpresion **idx_nodes = NULL;
+        if (depth > 0) idx_nodes = (AbstractExpresion**)malloc(sizeof(AbstractExpresion*) * (size_t)depth);
         int pos = depth - 1; it = node;
         for (int i = 0; i < depth; ++i) { idx_nodes[pos--] = it->hijos[1]; it = it->hijos[0]; }
         for (int k = 0; k < depth; ++k) {
@@ -746,6 +748,7 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
         emitln(ftext, "    bl array_element_addr_ptr");
         emitln(ftext, "    ldr x1, [x0]");
         if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+        if (idx_nodes) free(idx_nodes);
         return 1;
     }
     if (strcmp(t, "StringValueof") == 0) {

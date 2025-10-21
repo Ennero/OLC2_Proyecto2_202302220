@@ -46,7 +46,9 @@ int arm64_emitir_asignacion_arreglo(AbstractExpresion *node, FILE *ftext) {
     int bytes = ((depth * 4) + 15) & ~15;
     if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
     // Emitir índices en orden correcto (i0..iN-1)
-    AbstractExpresion *idx_nodes[16];
+    // Reservar arreglo dinámico para soportar profundidades arbitrarias
+    AbstractExpresion **idx_nodes = NULL;
+    if (depth > 0) idx_nodes = (AbstractExpresion**)malloc(sizeof(AbstractExpresion*) * (size_t)depth);
     int pos = depth - 1; it = acceso;
     for (int i = 0; i < depth; ++i) { idx_nodes[pos--] = it->hijos[1]; it = it->hijos[0]; }
     for (int k = 0; k < depth; ++k) {
@@ -91,6 +93,7 @@ int arm64_emitir_asignacion_arreglo(AbstractExpresion *node, FILE *ftext) {
         emitln(ftext, "    str w1, [x9]");
     }
     if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+    if (idx_nodes) free(idx_nodes);
     return 1;
 }
 

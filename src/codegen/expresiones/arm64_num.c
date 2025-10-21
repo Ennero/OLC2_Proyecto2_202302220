@@ -119,7 +119,9 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
         int bytes = ((depth * 4) + 15) & ~15;
         if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
         // Recopilar nodos de índices en orden correcto (izq->der)
-        AbstractExpresion *idx_nodes[16];
+        // Reservar arreglo dinámico para soportar profundidades arbitrarias
+        AbstractExpresion **idx_nodes = NULL;
+        if (depth > 0) idx_nodes = (AbstractExpresion**)malloc(sizeof(AbstractExpresion*) * (size_t)depth);
         int pos = depth - 1; it = node;
         for (int i = 0; i < depth; ++i) { idx_nodes[pos--] = it->hijos[1]; it = it->hijos[0]; }
         for (int k = 0; k < depth; ++k) {
@@ -142,6 +144,7 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
             if (base_t == CHAR) emitln(ftext, "    ldrb w1, [x0]"); else emitln(ftext, "    ldr w1, [x0]");
         }
     if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+    if (idx_nodes) free(idx_nodes);
     if (base_t == DOUBLE || base_t == FLOAT) return DOUBLE; else return INT;
     } else if (strcmp(t, "Suma") == 0) {
         // Guardar lhs en stack para evitar clobber en evaluaciones anidadas
@@ -358,7 +361,9 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
             int bytes = ((depth * 4) + 15) & ~15;
             if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
             // Recopilar y emitir en orden i0..iN-1
-            AbstractExpresion *idx_nodes2[16];
+            // Reservar arreglo dinámico para soportar profundidades arbitrarias
+            AbstractExpresion **idx_nodes2 = NULL;
+            if (depth > 0) idx_nodes2 = (AbstractExpresion**)malloc(sizeof(AbstractExpresion*) * (size_t)depth);
             int pos2 = depth - 1; it = lvalue;
             for (int i = 0; i < depth; ++i) { idx_nodes2[pos2--] = it->hijos[1]; it = it->hijos[0]; }
             for (int k = 0; k < depth; ++k) {
@@ -387,6 +392,7 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
                 if (op == TOKEN_INCREMENTO) emitln(ftext, "    add w20, w1, #1"); else emitln(ftext, "    sub w20, w1, #1");
                 emitln(ftext, "    strb w20, [x0]");
                 if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+                if (idx_nodes2) free(idx_nodes2);
                 return INT;
             } else if (base_t == DOUBLE || base_t == FLOAT) {
                 // d0 = valor antiguo (retorno)
@@ -396,12 +402,14 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
                 if (op == TOKEN_INCREMENTO) emitln(ftext, "    fadd d2, d0, d1"); else emitln(ftext, "    fsub d2, d0, d1");
                 emitln(ftext, "    str d2, [x0]");
                 if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+                if (idx_nodes2) free(idx_nodes2);
                 return DOUBLE;
             } else {
                 emitln(ftext, "    ldr w1, [x0]");
                 if (op == TOKEN_INCREMENTO) emitln(ftext, "    add w20, w1, #1"); else emitln(ftext, "    sub w20, w1, #1");
                 emitln(ftext, "    str w20, [x0]");
                 if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+                if (idx_nodes2) free(idx_nodes2);
                 return INT;
             }
         } else {
