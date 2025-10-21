@@ -28,6 +28,10 @@ int arm64_emitir_reasignacion(AbstractExpresion *node, FILE *ftext) {
         char adr[128]; snprintf(adr, sizeof(adr), "    ldr x16, =g_%s", rea->nombre); emitln(ftext, adr);
         if (gi->tipo == STRING) {
             if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");
+            // Duplicar para evitar alias con tmpbuf (concatenaciones)
+            emitln(ftext, "    mov x0, x1");
+            emitln(ftext, "    bl strdup");
+            emitln(ftext, "    mov x1, x0");
             emitln(ftext, "    str x1, [x16]");
         } else if (gi->tipo == BOOLEAN) {
             emitir_eval_booleano(rhs, ftext);
@@ -73,6 +77,94 @@ int arm64_emitir_reasignacion(AbstractExpresion *node, FILE *ftext) {
                 char stp[128]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stp);
             }
             return 1;
+        } else if (strcmp(rtype, "ArrayAdd") == 0) {
+            // Implementar numeros = numeros.add(elem);
+            // Cargar puntero al arreglo original en x9
+            AbstractExpresion *base_arr = rhs->hijos[0];
+            if (!(base_arr && base_arr->node_type && strcmp(base_arr->node_type, "Identificador") == 0)) {
+                emitln(ftext, "    // ArrayAdd: base no soportada (solo identificador)\n    // asignar NULL");
+                char stp[128]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stp);
+                return 1;
+            }
+            IdentificadorExpresion *bid = (IdentificadorExpresion *)base_arr;
+            VarEntry *bv = buscar_variable(bid->nombre);
+            if (bv) {
+                char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x9, [x16]", bv->offset); emitln(ftext, ld);
+            } else {
+                char lg[128]; snprintf(lg, sizeof(lg), "    ldr x16, =g_%s\n    ldr x9, [x16]", bid->nombre); emitln(ftext, lg);
+            }
+            // Obtener longitud actual n en w19 y bases de datos x21 (old) y reservar nuevo arreglo con n+1 en x0
+            emitln(ftext, "    // header align y longitud actual");
+            emitln(ftext, "    ldr w12, [x9]");
+            emitln(ftext, "    mov x15, #8");
+            emitln(ftext, "    uxtw x16, w12");
+            emitln(ftext, "    lsl x16, x16, #2");
+            emitln(ftext, "    add x15, x15, x16");
+            emitln(ftext, "    add x17, x15, #7");
+            emitln(ftext, "    and x17, x17, #-8");
+            emitln(ftext, "    add x18, x9, #8");
+            emitln(ftext, "    ldr w19, [x18]");
+            emitln(ftext, "    add x21, x9, x17");
+            // Reservar nuevo arreglo de 1D con tamaño n+1
+            emitln(ftext, "    sub sp, sp, #16");
+            emitln(ftext, "    add w1, w19, #1");
+            emitln(ftext, "    str w1, [sp]");
+            emitln(ftext, "    mov w0, #1");
+            emitln(ftext, "    mov x1, sp");
+            // Elegir helper según tipo base registrado del destino
+            TipoDato base_t = arm64_array_elem_tipo_for_var(rea->nombre);
+            if (base_t == STRING) emitln(ftext, "    bl new_array_flat_ptr");
+            else emitln(ftext, "    bl new_array_flat");
+            // x0 = nuevo arreglo; calcular base de datos nueva en x22
+            emitln(ftext, "    mov x20, x0");
+            emitln(ftext, "    ldr w12, [x20]");
+            emitln(ftext, "    mov x15, #8");
+            emitln(ftext, "    uxtw x16, w12");
+            emitln(ftext, "    lsl x16, x16, #2");
+            emitln(ftext, "    add x15, x15, x16");
+            emitln(ftext, "    add x17, x15, #7");
+            emitln(ftext, "    and x17, x17, #-8");
+            emitln(ftext, "    add x22, x20, x17");
+            // Copiar elementos del arreglo original
+            emitln(ftext, "    mov w10, #0");
+            int lid = flujo_next_label_id();
+            { char l[64]; snprintf(l, sizeof(l), "L_copy_%d:", lid); emitln(ftext, l); }
+            emitln(ftext, "    cmp w10, w19");
+            { char b[64]; snprintf(b, sizeof(b), "    b.ge L_copy_done_%d", lid); emitln(ftext, b); }
+            if (base_t == STRING) {
+                emitln(ftext, "    add x14, x21, x10, lsl #3");
+                emitln(ftext, "    ldr x0, [x14]");
+                emitln(ftext, "    add x15, x22, x10, lsl #3");
+                emitln(ftext, "    str x0, [x15]");
+            } else {
+                emitln(ftext, "    add x14, x21, x10, lsl #2");
+                emitln(ftext, "    ldr w0, [x14]");
+                emitln(ftext, "    add x15, x22, x10, lsl #2");
+                emitln(ftext, "    str w0, [x15]");
+            }
+            emitln(ftext, "    add w10, w10, #1");
+            { char b[64]; snprintf(b, sizeof(b), "    b L_copy_%d", lid); emitln(ftext, b); }
+            { char l[64]; snprintf(l, sizeof(l), "L_copy_done_%d:", lid); emitln(ftext, l); }
+            // Añadir el nuevo elemento al final (posición w19)
+            AbstractExpresion *elem_expr = rhs->hijos[1];
+            if (base_t == STRING) {
+                if (!emitir_eval_string_ptr(elem_expr, ftext)) emitln(ftext, "    mov x1, #0");
+                // Duplicar para estabilidad en heap
+                emitln(ftext, "    mov x0, x1");
+                emitln(ftext, "    bl strdup");
+                emitln(ftext, "    mov x1, x0");
+                emitln(ftext, "    add x15, x22, x19, lsl #3");
+                emitln(ftext, "    str x1, [x15]");
+            } else {
+                TipoDato ety = emitir_eval_numerico(elem_expr, ftext);
+                if (ety == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                emitln(ftext, "    add x15, x22, x19, lsl #2");
+                emitln(ftext, "    str w1, [x15]");
+            }
+            emitln(ftext, "    add sp, sp, #16");
+            // Guardar nuevo puntero en la variable destino
+            { char stp[96]; snprintf(stp, sizeof(stp), "    sub x16, x29, #%d\n    str x20, [x16]", v->offset); emitln(ftext, stp); }
+            return 1;
         } else if (strcmp(rtype, "Primitivo") == 0) {
             PrimitivoExpresion *p = (PrimitivoExpresion *)rhs;
             if (p->tipo == NULO) {
@@ -111,6 +203,10 @@ int arm64_emitir_reasignacion(AbstractExpresion *node, FILE *ftext) {
             }
         } else if (expresion_es_cadena(rhs)) {
             if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");
+            // Duplicar para que la variable no apunte a tmpbuf efímero
+            emitln(ftext, "    mov x0, x1");
+            emitln(ftext, "    bl strdup");
+            emitln(ftext, "    mov x1, x0");
             char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
         }
     } else if (v->tipo == BOOLEAN) {

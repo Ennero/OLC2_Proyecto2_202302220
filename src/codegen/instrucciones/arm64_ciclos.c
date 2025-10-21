@@ -3,10 +3,24 @@
 #include "codegen/arm64_bool.h"
 #include "codegen/arm64_num.h"
 #include "codegen/arm64_vars.h"
+#include "codegen/arm64_globals.h"
+#include "codegen/estructuras/arm64_arreglos.h"
 #include "parser.tab.h"
 #include <string.h>
 
 static void emitln(FILE *f, const char *s) { flujo_emitln(f, s); }
+
+// Acceder a metadatos del nodo ForEach definiendo el struct equivalente
+#include "ast/AbstractExpresion.h"
+#include "context/result.h"
+typedef struct {
+    AbstractExpresion base;
+    TipoDato tipo_var;
+    int dimensiones_var;
+    char *nombre_var;
+    int line;
+    int column;
+} ForEachNodeInfo;
 
 int arm64_emitir_ciclo(AbstractExpresion *node, FILE *ftext, EmitirNodoFn gen_node) {
     if (!node || !node->node_type) return 0;
@@ -69,6 +83,100 @@ int arm64_emitir_ciclo(AbstractExpresion *node, FILE *ftext, EmitirNodoFn gen_no
         flujo_continue_pop();
         flujo_break_pop();
         vars_pop_scope(ftext);
+        return 1;
+    }
+    if (strcmp(nt, "ForEach") == 0) {
+        // Nodo hijos[0] = expresión iterable (debe ser identificador arreglo), hijos[1] = bloque
+        // En parser, ForEachExpresion guarda tipo, dims y nombre en el struct interno, pero aquí no accesible fácilmente.
+        // Implementación: castear a struct local ForEachNodeInfo para obtener nombre y tipo de la variable iteradora.
+        AbstractExpresion *iterable = node->hijos[0];
+        AbstractExpresion *bloque = node->hijos[1];
+        ForEachNodeInfo *meta = (ForEachNodeInfo *)node;
+        // Calcular puntero a arreglo en x9
+        if (iterable && strcmp(iterable->node_type ? iterable->node_type : "", "Identificador") == 0) {
+            IdentificadorExpresion *id = (IdentificadorExpresion *)iterable;
+            VarEntry *v = vars_buscar(id->nombre);
+            if (v) {
+                char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x9, [x16]", v->offset); emitln(ftext, ld);
+            } else {
+                const GlobalInfo *gi = globals_lookup(id->nombre);
+                if (gi) { char lg[128]; snprintf(lg, sizeof(lg), "    ldr x16, =g_%s\n    ldr x9, [x16]", id->nombre); emitln(ftext, lg); }
+                else emitln(ftext, "    mov x9, #0");
+            }
+            // Header: compute data base and length n
+            emitln(ftext, "    // ForEach: obtener base de datos y longitud");
+            emitln(ftext, "    ldr w12, [x9]");
+            emitln(ftext, "    mov x15, #8");
+            emitln(ftext, "    uxtw x16, w12");
+            emitln(ftext, "    lsl x16, x16, #2");
+            emitln(ftext, "    add x15, x15, x16");
+            emitln(ftext, "    add x17, x15, #7");
+            emitln(ftext, "    and x17, x17, #-8");
+            emitln(ftext, "    add x18, x9, #8");
+            emitln(ftext, "    ldr w19, [x18]");
+            emitln(ftext, "    add x21, x9, x17");
+            // Preparar labels y scope
+            int fid = flujo_next_label_id();
+            flujo_break_push(fid);
+            flujo_continue_push(fid);
+            vars_push_scope(ftext);
+            // Declarar variable iteradora en el nuevo scope si no existe
+            const char *iter_name = meta->nombre_var ? meta->nombre_var : "__it";
+            VarEntry *itv = vars_buscar(iter_name);
+            TipoDato iter_tipo = (meta->dimensiones_var > 0) ? ARRAY : meta->tipo_var;
+            if (!itv) {
+                int size_bytes = (iter_tipo == ARRAY || iter_tipo == STRING || iter_tipo == DOUBLE || iter_tipo == FLOAT) ? 8 : 8;
+                itv = vars_agregar_ext(iter_name, iter_tipo, size_bytes, 0, ftext);
+                // Si es arreglo (ej. String[]), registrar tipo base para permitir acceso contacto[0]
+                if (iter_tipo == ARRAY) {
+                    // Base del arreglo iterador es el base del iterable original
+                    TipoDato base_t = arm64_array_elem_tipo_for_var(id->nombre);
+                    arm64_registrar_arreglo(iter_name, base_t);
+                }
+            }
+            // i=0
+            emitln(ftext, "    mov w20, #0");
+            // L_cond
+            flujo_emit_label(ftext, "L_for_cond", fid);
+            emitln(ftext, "    cmp w20, w19");
+            { char be[64]; snprintf(be, sizeof(be), "    b.ge L_break_%d", fid); emitln(ftext, be); }
+            // Cargar elemento según tipo base registrado del iterable
+            TipoDato base_t = arm64_array_elem_tipo_for_var(((IdentificadorExpresion*)iterable)->nombre);
+            if (meta->dimensiones_var > 0) {
+                // Iterador es un arreglo 1D (p. ej., String[]): cargar puntero al subarreglo
+                emitln(ftext, "    add x22, x21, x20, lsl #3");
+                emitln(ftext, "    ldr x0, [x22]");
+                // Guardar en variable iteradora (tipo ARRAY)
+                char st[128]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x0, [x16]", itv->offset); emitln(ftext, st);
+            } else {
+                // Iterador primitivo: cargar valor y guardarlo en slot de variable
+                if (base_t == DOUBLE || base_t == FLOAT) {
+                    emitln(ftext, "    add x22, x21, x20, lsl #3");
+                    emitln(ftext, "    ldr d0, [x22]");
+                    char st[128]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d0, [x16]", itv->offset); emitln(ftext, st);
+                } else if (base_t == CHAR) {
+                    emitln(ftext, "    add x22, x21, x20, lsl #2");
+                    emitln(ftext, "    ldrb w1, [x22]");
+                    char st[128]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w1, [x16]", itv->offset); emitln(ftext, st);
+                } else {
+                    emitln(ftext, "    add x22, x21, x20, lsl #2");
+                    emitln(ftext, "    ldr w1, [x22]");
+                    char st[128]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w1, [x16]", itv->offset); emitln(ftext, st);
+                }
+            }
+            // Ejecutar bloque (no asignamos variable iteradora explícita por falta de metadatos)
+            if (bloque) gen_node(ftext, bloque);
+            // continue label
+            flujo_emit_label(ftext, "L_continue", fid);
+            emitln(ftext, "    add w20, w20, #1");
+            { char bb[64]; snprintf(bb, sizeof(bb), "    b L_for_cond_%d", fid); emitln(ftext, bb); }
+            flujo_emit_label(ftext, "L_break", fid);
+            vars_pop_scope(ftext);
+            flujo_continue_pop();
+            flujo_break_pop();
+            return 1;
+        }
+        // Otro tipo iterable no soportado aún
         return 1;
     }
     return 0;

@@ -1,8 +1,10 @@
 #include "codegen/estructuras/arm64_arreglos.h"
 #include <string.h>
+#include <stdlib.h>
 #include "codegen/arm64_core.h"
 #include "codegen/arm64_vars.h"
 #include "codegen/arm64_num.h"
+#include "codegen/arm64_print.h" // emitir_eval_string_ptr
 #include "ast/nodos/expresiones/terminales/identificadores.h"
 
 static void emitln(FILE *f, const char *s) { core_emitln(f, s); }
@@ -17,7 +19,10 @@ void arm64_registrar_arreglo(const char *name, TipoDato base_tipo) {
     n->name = name; n->base = base_tipo; n->next = g_arrs; g_arrs = n;
 }
 static TipoDato find_arr_base(const char *name) {
-    for (ArrReg *p = g_arrs; p; p = p->next) if (strcmp(p->name, name) == 0) return p->base; return INT;
+    for (ArrReg *p = g_arrs; p; p = p->next) {
+        if (strcmp(p->name, name) == 0) return p->base;
+    }
+    return INT;
 }
 int arm64_array_elem_size_for_var(const char *name) {
     TipoDato t = find_arr_base(name);
@@ -62,6 +67,10 @@ int arm64_emitir_asignacion_arreglo(AbstractExpresion *node, FILE *ftext) {
     TipoDato rty = emitir_eval_numerico(rhs, ftext);
     if (base_t == STRING) {
         if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");
+        // Duplicar para estabilidad en heap (evitar apuntar a tmpbuf)
+        emitln(ftext, "    mov x0, x1");
+        emitln(ftext, "    bl strdup");
+        emitln(ftext, "    mov x1, x0");
         // Restaurar dirección y almacenar
         emitln(ftext, "    ldr x9, [sp]");
         emitln(ftext, "    add sp, sp, #16");

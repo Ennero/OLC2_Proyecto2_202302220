@@ -171,15 +171,16 @@ void emitir_eval_booleano(AbstractExpresion *node, FILE *ftext) {
         return;
     }
     if (strcmp(t, "And") == 0) {
-        emitir_eval_booleano(node->hijos[0], ftext); emitln(ftext, "    mov w19, w1");
-        emitir_eval_booleano(node->hijos[1], ftext); emitln(ftext, "    mov w20, w1");
-        emitln(ftext, "    and w1, w19, w20");
+        // Usar registros temporales dedicados para evitar ser pisados por sub-llamadas
+        emitir_eval_booleano(node->hijos[0], ftext); emitln(ftext, "    mov w9, w1");
+        emitir_eval_booleano(node->hijos[1], ftext); emitln(ftext, "    mov w10, w1");
+        emitln(ftext, "    and w1, w9, w10");
         return;
     }
     if (strcmp(t, "Or") == 0) {
-        emitir_eval_booleano(node->hijos[0], ftext); emitln(ftext, "    mov w19, w1");
-        emitir_eval_booleano(node->hijos[1], ftext); emitln(ftext, "    mov w20, w1");
-        emitln(ftext, "    orr w1, w19, w20");
+        emitir_eval_booleano(node->hijos[0], ftext); emitln(ftext, "    mov w9, w1");
+        emitir_eval_booleano(node->hijos[1], ftext); emitln(ftext, "    mov w10, w1");
+        emitln(ftext, "    orr w1, w9, w10");
         return;
     }
     if (strcmp(t, "Not") == 0) {
