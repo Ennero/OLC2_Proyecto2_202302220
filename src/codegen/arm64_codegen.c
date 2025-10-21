@@ -128,6 +128,11 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
         (void)arm64_emitir_llamada_funcion(node, ftext);
         return;
     }
+    // Expresiones Postfix (x++ / x--) como sentencia: evaluar para que ocurra el efecto secundario
+    if (node->node_type && strcmp(node->node_type, "Postfix") == 0) {
+        (void)emitir_eval_numerico(node, ftext);
+        return;
+    }
     // Delegar condicionales y ciclos a módulos especializados
     if (arm64_emitir_condicional(node, ftext, (EmitirNodoFn)gen_node)) return;
     if (arm64_emitir_ciclo(node, ftext, (EmitirNodoFn)gen_node)) return;

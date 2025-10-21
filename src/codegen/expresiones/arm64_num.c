@@ -12,6 +12,8 @@
 #include "codegen/estructuras/arm64_arreglos.h"
 #include "ast/nodos/expresiones/postfix.h"
 #include "parser.tab.h" // tokens for ++/--
+// Para llamadas a función dentro de expresiones numéricas
+#include "codegen/funciones/arm64_funciones.h"
 
 // Shorthand to match arm64_codegen.c helpers
 static void emitln(FILE *f, const char *s) { core_emitln(f, s); }
@@ -64,6 +66,20 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
             const char *lab = core_add_double_literal(p->valor ? p->valor : "0");
             char ref[128]; snprintf(ref, sizeof(ref), "    ldr x16, =%s\n    ldr d0, [x16]", lab); emitln(ftext, ref);
             return DOUBLE;
+        }
+    } else if (strcmp(t, "FunctionCall") == 0) {
+        // Evaluar llamada a función usada como expresión numérica
+        // Usa el ABI: INT-like en w1 (arm64_emitir_llamada_funcion mueve w0->w1), DOUBLE en d0
+        TipoDato rty = arm64_emitir_llamada_funcion(node, ftext);
+        if (rty == DOUBLE) {
+            return DOUBLE;
+        } else if (rty == ARRAY) {
+            // No numérico: producir 0
+            emitln(ftext, "    mov w1, #0");
+            return INT;
+        } else {
+            // INT/BOOLEAN/CHAR: ya está en w1
+            return INT;
         }
     } else if (strcmp(t, "Identificador") == 0) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
@@ -119,10 +135,11 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
             { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
             emitln(ftext, "    bl array_element_addr");
             if (base_t == CHAR) emitln(ftext, "    ldrb w1, [x0]");
+            else if (base_t == DOUBLE || base_t == FLOAT) emitln(ftext, "    ldr d0, [x0]");
             else emitln(ftext, "    ldr w1, [x0]");
         }
         if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
-        return INT;
+        if (base_t == DOUBLE || base_t == FLOAT) return DOUBLE; else return INT;
     } else if (strcmp(t, "Suma") == 0) {
         // Guardar lhs en stack para evitar clobber en evaluaciones anidadas
         TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
@@ -323,9 +340,67 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
                     return INT;
                 }
             }
+        } else if (lvalue && strcmp(lvalue->node_type ? lvalue->node_type : "", "ArrayAccess") == 0) {
+            // Postfix ++/-- sobre elemento de arreglo (int/char/bool)
+            // Calcular profundidad e indices y obtener dirección del elemento con array_element_addr
+            int depth = 0; AbstractExpresion *it = lvalue;
+            while (it && it->node_type && strcmp(it->node_type, "ArrayAccess") == 0) { depth++; it = it->hijos[0]; }
+            if (!(it && it->node_type && strcmp(it->node_type, "Identificador") == 0)) {
+                emitln(ftext, "    mov w1, #0");
+                return INT;
+            }
+            IdentificadorExpresion *aid = (IdentificadorExpresion *)it;
+            VarEntry *av = buscar_variable(aid->nombre);
+            // Empujar indices en la pila (4 bytes cada uno), con alineación como en accesos numéricos
+            int bytes = ((depth * 4) + 15) & ~15;
+            if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
+            it = lvalue; for (int i = 0; i < depth; ++i) {
+                AbstractExpresion *idx = it->hijos[1];
+                TipoDato ty = emitir_eval_numerico(idx, ftext);
+                if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st);
+                it = it->hijos[0];
+            }
+            // Cargar puntero al arreglo en x0
+            if (av) {
+                char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", av->offset); emitln(ftext, ld);
+            } else {
+                const GlobalInfo *gi = globals_lookup(aid->nombre);
+                if (gi) { char lg[128]; snprintf(lg, sizeof(lg), "    ldr x16, =g_%s\n    ldr x0, [x16]", aid->nombre); emitln(ftext, lg); }
+                else { emitln(ftext, "    mov x0, #0"); }
+            }
+            emitln(ftext, "    mov x1, sp");
+            { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
+            emitln(ftext, "    bl array_element_addr");
+            // x0 -> dirección del elemento
+            // Determinar tipo base para elegir ldr/str de 1, 4 u 8 bytes
+            TipoDato base_t = arm64_array_elem_tipo_for_var(aid->nombre);
+            if (base_t == CHAR) {
+                // Guardar valor antiguo en w1 (retorno)
+                emitln(ftext, "    ldrb w1, [x0]");
+                // Calcular nuevo valor en w20 y escribirlo
+                if (op == TOKEN_INCREMENTO) emitln(ftext, "    add w20, w1, #1"); else emitln(ftext, "    sub w20, w1, #1");
+                emitln(ftext, "    strb w20, [x0]");
+                if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+                return INT;
+            } else if (base_t == DOUBLE || base_t == FLOAT) {
+                // d0 = valor antiguo (retorno)
+                emitln(ftext, "    ldr d0, [x0]");
+                const char *one = core_add_double_literal("1.0");
+                char l1[96]; snprintf(l1, sizeof(l1), "    ldr x16, =%s\n    ldr d1, [x16]", one); emitln(ftext, l1);
+                if (op == TOKEN_INCREMENTO) emitln(ftext, "    fadd d2, d0, d1"); else emitln(ftext, "    fsub d2, d0, d1");
+                emitln(ftext, "    str d2, [x0]");
+                if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+                return DOUBLE;
+            } else {
+                emitln(ftext, "    ldr w1, [x0]");
+                if (op == TOKEN_INCREMENTO) emitln(ftext, "    add w20, w1, #1"); else emitln(ftext, "    sub w20, w1, #1");
+                emitln(ftext, "    str w20, [x0]");
+                if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+                return INT;
+            }
         } else {
-            // TODO: soporte a ArrayAccess
-            emitln(ftext, "    // TODO Postfix sobre arreglos no implementado");
+            // No soportado: devolver 0
             emitln(ftext, "    mov w1, #0");
             return INT;
         }
