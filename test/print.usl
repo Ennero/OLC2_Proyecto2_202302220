@@ -1,4 +1,8 @@
-public static void main(String[] args) {
+int sumar(int a, int b) {
+    return a + b;
+}
+
+public static void main() {
     System.out.println("--- Iniciando Prueba de System.out.println ---");
     System.out.println(""); // Línea en blanco para separar
 

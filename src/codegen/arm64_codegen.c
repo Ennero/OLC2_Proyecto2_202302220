@@ -608,10 +608,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    mov x29, sp\n");
     // Reservar un frame fijo para temporales usados con [x29 - N]
     emitln(f, "    sub sp, sp, #1024");
-    // Debug: imprimir inicio para verificar llegada a main
-    emitln(f, "    ldr x0, =fmt_string");
-    emitln(f, "    ldr x1, =str_dbg_start");
-    emitln(f, "    bl printf");
+    // (debug START banner removed)
     // Reservar frame completo de main tras conocer local_bytes; de inicio 0, se actualizará después de declarar
 
     // Para poder generar secciones .data adicionales (dobles y strings) después,
@@ -649,7 +646,6 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
 
     // Emitir literal de depuración (tras core_emit_collected_literals para no interferir numeración)
     core_emitln(f, ".data");
-    core_emitln(f, "str_dbg_start:    .asciz \"[ARM64] START\\n\"");
 
     fclose(f);
     // liberar estructuras
