@@ -113,7 +113,7 @@ int arm64_emitir_reasignacion(AbstractExpresion *node, FILE *ftext) {
             emitln(ftext, "    mov x1, sp");
             // Elegir helper según tipo base registrado del destino
             TipoDato base_t = arm64_array_elem_tipo_for_var(rea->nombre);
-            if (base_t == STRING) emitln(ftext, "    bl new_array_flat_ptr");
+            if (base_t == STRING || base_t == DOUBLE || base_t == FLOAT) emitln(ftext, "    bl new_array_flat_ptr");
             else emitln(ftext, "    bl new_array_flat");
             // x0 = nuevo arreglo; calcular base de datos nueva en x22
             emitln(ftext, "    mov x20, x0");
@@ -136,6 +136,11 @@ int arm64_emitir_reasignacion(AbstractExpresion *node, FILE *ftext) {
                 emitln(ftext, "    ldr x0, [x14]");
                 emitln(ftext, "    add x15, x22, x10, lsl #3");
                 emitln(ftext, "    str x0, [x15]");
+            } else if (base_t == DOUBLE || base_t == FLOAT) {
+                emitln(ftext, "    add x14, x21, x10, lsl #3");
+                emitln(ftext, "    ldr d0, [x14]");
+                emitln(ftext, "    add x15, x22, x10, lsl #3");
+                emitln(ftext, "    str d0, [x15]");
             } else {
                 emitln(ftext, "    add x14, x21, x10, lsl #2");
                 emitln(ftext, "    ldr w0, [x14]");
@@ -155,6 +160,11 @@ int arm64_emitir_reasignacion(AbstractExpresion *node, FILE *ftext) {
                 emitln(ftext, "    mov x1, x0");
                 emitln(ftext, "    add x15, x22, x19, lsl #3");
                 emitln(ftext, "    str x1, [x15]");
+            } else if (base_t == DOUBLE || base_t == FLOAT) {
+                TipoDato ety = emitir_eval_numerico(elem_expr, ftext);
+                if (ety != DOUBLE) emitln(ftext, "    scvtf d0, w1");
+                emitln(ftext, "    add x15, x22, x19, lsl #3");
+                emitln(ftext, "    str d0, [x15]");
             } else {
                 TipoDato ety = emitir_eval_numerico(elem_expr, ftext);
                 if (ety == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");

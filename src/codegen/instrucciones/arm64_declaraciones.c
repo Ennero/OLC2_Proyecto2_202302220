@@ -174,6 +174,102 @@ int arm64_emitir_declaracion(AbstractExpresion *node, FILE *ftext) {
             // Guardar el puntero resultante en la variable destino
             { char stp[96]; snprintf(stp, sizeof(stp), "    sub x16, x29, #%d\n    str x0, [x16]", v->offset); emitln(ftext, stp); }
             return 1;
+        } else if (node->numHijos > 0 && node->hijos[0] && strcmp(node->hijos[0]->node_type ? node->hijos[0]->node_type : "", "ArrayAdd") == 0) {
+            // Inicialización mediante numeros = numeros.add(elem);
+            AbstractExpresion *rhs = node->hijos[0];
+            AbstractExpresion *base_arr = rhs->hijos[0];
+            if (!(base_arr && base_arr->node_type && strcmp(base_arr->node_type, "Identificador") == 0)) {
+                emitln(ftext, "    // ArrayAdd en declaración: base no soportada (solo identificador)\n    // asignar NULL");
+                char stp[128]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stp);
+                return 1;
+            }
+            IdentificadorExpresion *bid = (IdentificadorExpresion *)base_arr;
+            VarEntry *bv = buscar_variable(bid->nombre);
+            if (bv) {
+                char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x9, [x16]", bv->offset); emitln(ftext, ld);
+            } else {
+                const GlobalInfo *gi = globals_lookup(bid->nombre);
+                if (gi) { char lg[128]; snprintf(lg, sizeof(lg), "    ldr x16, =g_%s\n    ldr x9, [x16]", bid->nombre); emitln(ftext, lg); }
+                else { emitln(ftext, "    mov x9, #0"); }
+            }
+            // x9 = puntero al arreglo original
+            // Calcular base de datos y longitud actual
+            emitln(ftext, "    // header align y longitud actual (ArrayAdd decl)");
+            emitln(ftext, "    ldr w12, [x9]");
+            emitln(ftext, "    mov x15, #8");
+            emitln(ftext, "    uxtw x16, w12");
+            emitln(ftext, "    lsl x16, x16, #2");
+            emitln(ftext, "    add x15, x15, x16");
+            emitln(ftext, "    add x17, x15, #7");
+            emitln(ftext, "    and x17, x17, #-8");
+            emitln(ftext, "    add x18, x9, #8");
+            emitln(ftext, "    ldr w19, [x18]");
+            emitln(ftext, "    add x21, x9, x17");
+            // Reservar nuevo arreglo 1D de tamaño n+1
+            emitln(ftext, "    sub sp, sp, #16");
+            emitln(ftext, "    add w1, w19, #1");
+            emitln(ftext, "    str w1, [sp]");
+            emitln(ftext, "    mov w0, #1");
+            emitln(ftext, "    mov x1, sp");
+            // Elegir helper según tipo base del arreglo declarado
+            TipoDato base_t = arm64_array_elem_tipo_for_var(decl->nombre);
+            if (base_t == STRING || base_t == DOUBLE || base_t == FLOAT) emitln(ftext, "    bl new_array_flat_ptr");
+            else emitln(ftext, "    bl new_array_flat");
+            // x0 = nuevo arreglo; calcular base de datos nueva en x22
+            emitln(ftext, "    mov x20, x0");
+            emitln(ftext, "    ldr w12, [x20]");
+            emitln(ftext, "    mov x15, #8");
+            emitln(ftext, "    uxtw x16, w12");
+            emitln(ftext, "    lsl x16, x16, #2");
+            emitln(ftext, "    add x15, x15, x16");
+            emitln(ftext, "    add x17, x15, #7");
+            emitln(ftext, "    and x17, x17, #-8");
+            emitln(ftext, "    add x22, x20, x17");
+            // Copiar elementos existentes
+            emitln(ftext, "    mov w10, #0");
+            { int lid = flujo_next_label_id();
+              char l[64]; snprintf(l, sizeof(l), "L_copy_decl_%d:", lid); emitln(ftext, l);
+              emitln(ftext, "    cmp w10, w19");
+              char bge[64]; snprintf(bge, sizeof(bge), "    b.ge L_copy_done_decl_%d", lid); emitln(ftext, bge);
+              if (base_t == STRING || base_t == DOUBLE || base_t == FLOAT) {
+                  emitln(ftext, "    add x14, x21, x10, lsl #3");
+                  emitln(ftext, "    ldr x0, [x14]");
+                  emitln(ftext, "    add x15, x22, x10, lsl #3");
+                  emitln(ftext, "    str x0, [x15]");
+              } else {
+                  emitln(ftext, "    add x14, x21, x10, lsl #2");
+                  emitln(ftext, "    ldr w0, [x14]");
+                  emitln(ftext, "    add x15, x22, x10, lsl #2");
+                  emitln(ftext, "    str w0, [x15]");
+              }
+              emitln(ftext, "    add w10, w10, #1");
+              char blp[64]; snprintf(blp, sizeof(blp), "    b L_copy_decl_%d", lid); emitln(ftext, blp);
+              char ldone[64]; snprintf(ldone, sizeof(ldone), "L_copy_done_decl_%d:", lid); emitln(ftext, ldone);
+            }
+            // Añadir nuevo elemento al final
+            AbstractExpresion *elem_expr = rhs->hijos[1];
+            if (base_t == STRING) {
+                if (!emitir_eval_string_ptr(elem_expr, ftext)) emitln(ftext, "    mov x1, #0");
+                emitln(ftext, "    mov x0, x1");
+                emitln(ftext, "    bl strdup");
+                emitln(ftext, "    mov x1, x0");
+                emitln(ftext, "    add x15, x22, x19, lsl #3");
+                emitln(ftext, "    str x1, [x15]");
+            } else if (base_t == DOUBLE || base_t == FLOAT) {
+                TipoDato ety = emitir_eval_numerico(elem_expr, ftext);
+                if (ety != DOUBLE) emitln(ftext, "    scvtf d0, w1");
+                emitln(ftext, "    add x15, x22, x19, lsl #3");
+                emitln(ftext, "    str d0, [x15]");
+            } else {
+                TipoDato ety = emitir_eval_numerico(elem_expr, ftext);
+                if (ety == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                emitln(ftext, "    add x15, x22, x19, lsl #2");
+                emitln(ftext, "    str w1, [x15]");
+            }
+            emitln(ftext, "    add sp, sp, #16");
+            // Guardar nuevo puntero en la variable declarada
+            { char stp[96]; snprintf(stp, sizeof(stp), "    sub x16, x29, #%d\n    str x20, [x16]", v->offset); emitln(ftext, stp); }
+            return 1;
         } else if (node->numHijos > 0 && node->hijos[0] && strcmp(node->hijos[0]->node_type ? node->hijos[0]->node_type : "", "FunctionCall") == 0) {
             // Inicialización de arreglo desde retorno de función: se espera puntero en x0
             TipoDato rty = arm64_emitir_llamada_funcion(node->hijos[0], ftext);
