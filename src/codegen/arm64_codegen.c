@@ -322,6 +322,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "true_str:       .asciz \"true\"");
     emitln(f, "false_str:      .asciz \"false\"\n");
     emitln(f, "null_str:       .asciz \"null\"\n");
+    emitln(f, "empty_str:      .asciz \"\"\n");
     // Buffer temporal para String.valueOf (no reentrante)
     emitln(f, "tmpbuf:         .skip 1024");
     // Buffer para codificación UTF-8 de un solo carácter
@@ -413,20 +414,41 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    stp x19, x20, [sp, #0]");
     emitln(f, "    stp x21, x22, [sp, #16]");
     emitln(f, "    stp x23, x24, [sp, #32]");
-    emitln(f, "    mov x9, x0"); // arr
+    // Preservar argumentos antes de cualquier llamada (usar callee-saved)
+    emitln(f, "    mov x24, x0"); // arr
     emitln(f, "    mov x23, x1"); // preserve delim in callee-saved
+    // Debug marker
+    emitln(f, "    ldr x0, =fmt_string");
+    emitln(f, "    ldr x1, =str_dbg_join_start");
+    emitln(f, "    bl printf");
+    // If arr is NULL, return empty string in tmpbuf
+    emitln(f, "    cbnz x24, 0f");
+    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    mov w2, #0");
+    emitln(f, "    strb w2, [x0]");
+    emitln(f, "    ldp x23, x24, [sp, #32]");
+    emitln(f, "    ldp x21, x22, [sp, #16]");
+    emitln(f, "    ldp x19, x20, [sp, #0]");
+    emitln(f, "    add sp, sp, #48");
+    emitln(f, "    ldp x29, x30, [sp], 16");
+    emitln(f, "    ret");
+    emitln(f, "0:");
+    // If delimiter is NULL use empty_str
+    emitln(f, "    cbnz x23, 9f");
+    emitln(f, "    ldr x23, =empty_str");
+    emitln(f, "9:");
     // header size align
-    emitln(f, "    ldr w12, [x9]");
+    emitln(f, "    ldr w12, [x24]");
     emitln(f, "    mov x15, #8");
     emitln(f, "    uxtw x16, w12");
     emitln(f, "    lsl x16, x16, #2");
     emitln(f, "    add x15, x15, x16");
     emitln(f, "    add x17, x15, #7");
     emitln(f, "    and x17, x17, #-8");
-    emitln(f, "    add x18, x9, #8"); // sizes base
+    emitln(f, "    add x18, x24, #8"); // sizes base
     emitln(f, "    ldr w19, [x18]"); // n
     // compute data base in callee-saved x21 to survive calls
-    emitln(f, "    add x21, x9, x17");
+    emitln(f, "    add x21, x24, x17");
     emitln(f, "    ldr x0, =tmpbuf");
     emitln(f, "    mov w2, #0");
     emitln(f, "    strb w2, [x0]");
@@ -436,7 +458,8 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    b.ge 2f");
     emitln(f, "    // if i>0 append delim");
     emitln(f, "    cbz w20, 3f");
-    emitln(f, "    // x0 already points to tmpbuf");
+    emitln(f, "    // Reload x0 with tmpbuf before strcat (x0 is caller-saved)");
+    emitln(f, "    ldr x0, =tmpbuf");
     emitln(f, "    mov x1, x23");
     emitln(f, "    bl strcat");
     emitln(f, "3:");
@@ -446,6 +469,8 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    cbnz x22, 4f");
     emitln(f, "    ldr x22, =null_str");
     emitln(f, "4:");
+    emitln(f, "    // Append element string (reload x0)");
+    emitln(f, "    ldr x0, =tmpbuf");
     emitln(f, "    mov x1, x22");
     emitln(f, "    bl strcat");
     emitln(f, "    add w20, w20, #1");
@@ -466,19 +491,40 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    stp x19, x20, [sp, #0]");
     emitln(f, "    stp x21, x22, [sp, #16]");
     emitln(f, "    stp x23, x24, [sp, #32]");
-    emitln(f, "    mov x9, x0");
+    // Preservar argumentos antes de cualquier llamada
+    emitln(f, "    mov x24, x0");
     emitln(f, "    mov x23, x1"); // preserve delim
-    emitln(f, "    ldr w12, [x9]");
+    // Debug marker
+    emitln(f, "    ldr x0, =fmt_string");
+    emitln(f, "    ldr x1, =str_dbg_joini_start");
+    emitln(f, "    bl printf");
+    // If arr is NULL, return empty string in tmpbuf
+    emitln(f, "    cbnz x24, 0f");
+    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    mov w2, #0");
+    emitln(f, "    strb w2, [x0]");
+    emitln(f, "    ldp x23, x24, [sp, #32]");
+    emitln(f, "    ldp x21, x22, [sp, #16]");
+    emitln(f, "    ldp x19, x20, [sp, #0]");
+    emitln(f, "    add sp, sp, #112");
+    emitln(f, "    ldp x29, x30, [sp], 16");
+    emitln(f, "    ret");
+    emitln(f, "0:");
+    // If delimiter is NULL use empty_str
+    emitln(f, "    cbnz x23, 9f");
+    emitln(f, "    ldr x23, =empty_str");
+    emitln(f, "9:");
+    emitln(f, "    ldr w12, [x24]");
     emitln(f, "    mov x15, #8");
     emitln(f, "    uxtw x16, w12");
     emitln(f, "    lsl x16, x16, #2");
     emitln(f, "    add x15, x15, x16");
     emitln(f, "    add x17, x15, #7");
     emitln(f, "    and x17, x17, #-8");
-    emitln(f, "    add x18, x9, #8");
+    emitln(f, "    add x18, x24, #8");
     emitln(f, "    ldr w19, [x18]");
     // compute data base in x21
-    emitln(f, "    add x21, x9, x17");
+    emitln(f, "    add x21, x24, x17");
     emitln(f, "    ldr x0, =tmpbuf");
     emitln(f, "    mov w2, #0");
     emitln(f, "    strb w2, [x0]");
@@ -487,6 +533,8 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    cmp w20, w19");
     emitln(f, "    b.ge 2f");
     emitln(f, "    cbz w20, 3f");
+    emitln(f, "    // Reload x0 with tmpbuf before strcat (x0 is caller-saved)");
+    emitln(f, "    ldr x0, =tmpbuf");
     emitln(f, "    mov x1, x23");
     emitln(f, "    bl strcat");
     emitln(f, "3:");
@@ -566,6 +614,10 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    mov x29, sp\n");
     // Reservar un frame fijo para temporales usados con [x29 - N]
     emitln(f, "    sub sp, sp, #1024");
+    // Debug: imprimir inicio para verificar llegada a main
+    emitln(f, "    ldr x0, =fmt_string");
+    emitln(f, "    ldr x1, =str_dbg_start");
+    emitln(f, "    bl printf");
     // Reservar frame completo de main tras conocer local_bytes; de inicio 0, se actualizará después de declarar
 
     // Para poder generar secciones .data adicionales (dobles y strings) después,
@@ -600,6 +652,12 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     core_emit_collected_literals(f);
     // Emitimos variables globales al final de .data
     globals_emit_data(f);
+
+    // Emitir literal de depuración (tras core_emit_collected_literals para no interferir numeración)
+    core_emitln(f, ".data");
+    core_emitln(f, "str_dbg_start:    .asciz \"[ARM64] START\\n\"");
+    core_emitln(f, "str_dbg_join_start:    .asciz \"[ARM64] join(strings)\\n\"");
+    core_emitln(f, "str_dbg_joini_start:   .asciz \"[ARM64] join(ints)\\n\"");
 
     fclose(f);
     // liberar estructuras

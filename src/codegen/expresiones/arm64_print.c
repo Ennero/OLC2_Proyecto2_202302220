@@ -678,6 +678,8 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
                     emitln(ftext, "    mov w2, #0");
                     emitln(ftext, "    strb w2, [x0]");
                 }
+                // Duplicar resultado (tmpbuf u output del helper) para evitar alias
+                emitln(ftext, "    bl strdup");
                 // Helpers retornan x0=tmpbuf; mover a x1 como contrato de esta función
                 emitln(ftext, "    mov x1, x0");
                 return 1;
@@ -776,7 +778,10 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
             }
         }
         emitln(ftext, "    add sp, sp, #128");
-        emitln(ftext, "    ldr x1, =tmpbuf");
+        // Duplicar resultado para evitar alias con tmpbuf
+        emitln(ftext, "    ldr x0, =tmpbuf");
+        emitln(ftext, "    bl strdup");
+        emitln(ftext, "    mov x1, x0");
         return 1;
     }
     if (strcmp(t, "StringValueof") == 0) {
