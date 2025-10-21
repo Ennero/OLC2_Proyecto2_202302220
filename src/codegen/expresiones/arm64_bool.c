@@ -208,5 +208,17 @@ void emitir_eval_booleano(AbstractExpresion *node, FILE *ftext) {
         emitln(ftext, "    eor w1, w1, #1");
         return;
     }
-    emitln(ftext, "    mov w1, #0");
+    // Fallback genérico: evaluar como numérico y comparar != 0
+    // Esto cubre casos como ArrayAccess, invocaciones numéricas, etc.
+    {
+        TipoDato ty = emitir_eval_numerico(node, ftext);
+        if (ty == DOUBLE) {
+            emitln(ftext, "    fcmp d0, #0.0");
+            emitln(ftext, "    cset w1, ne");
+        } else {
+            emitln(ftext, "    cmp w1, #0");
+            emitln(ftext, "    cset w1, ne");
+        }
+        return;
+    }
 }

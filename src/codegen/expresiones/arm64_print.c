@@ -66,6 +66,24 @@ static void append_expr_to_tmpbuf(AbstractExpresion *arg, FILE *ftext) {
         emitln(ftext, "    bl strcat");
         return;
     }
+    // Boolean desde acceso a arreglo: mapear a true/false
+    if (strcmp(t, "ArrayAccess") == 0) {
+        int depthb = 0; AbstractExpresion *itb = arg;
+        while (itb && itb->node_type && strcmp(itb->node_type, "ArrayAccess") == 0) { depthb++; itb = itb->hijos[0]; }
+        if (itb && itb->node_type && strcmp(itb->node_type, "Identificador") == 0) {
+            IdentificadorExpresion *idb = (IdentificadorExpresion *)itb;
+            if (arm64_array_elem_tipo_for_var(idb->nombre) == BOOLEAN) {
+                (void)emitir_eval_numerico(arg, ftext);
+                emitln(ftext, "    cmp w1, #0");
+                emitln(ftext, "    ldr x1, =false_str");
+                emitln(ftext, "    ldr x16, =true_str");
+                emitln(ftext, "    csel x1, x16, x1, ne");
+                emitln(ftext, "    ldr x0, =tmpbuf");
+                emitln(ftext, "    bl strcat");
+                return;
+            }
+        }
+    }
     // Numeric/char
     TipoDato ty = emitir_eval_numerico(arg, ftext);
     int is_char_local = 0;
@@ -842,7 +860,7 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
                         if (p->tipo == BOOLEAN) {
                             int is_true = (p->valor && strcmp(p->valor, "true") == 0);
                             emitln(ftext, is_true ? "    ldr x1, =true_str" : "    ldr x1, =false_str");
-                            emitln(ftext, "    ldr x0, =tmpbuf");
+                            emitln(ftext, "    ldr x0, =joinbuf");
                             emitln(ftext, "    bl strcat");
                             continue;
                         }

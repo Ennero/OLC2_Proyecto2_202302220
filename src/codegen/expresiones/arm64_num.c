@@ -441,6 +441,15 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
             emitln(ftext, "    add x18, x0, #8");
             emitln(ftext, "    ldr w1, [x18]");
             return INT;
+        } else if (arr && strcmp(arr->node_type ? arr->node_type : "", "FunctionCall") == 0) {
+            // Support .length on function call returning ARRAY
+            TipoDato rty = arm64_emitir_llamada_funcion(arr, ftext);
+            if (rty == ARRAY) {
+                emitln(ftext, "    // load sizes[0] from header: [x0+8]");
+                emitln(ftext, "    add x18, x0, #8");
+                emitln(ftext, "    ldr w1, [x18]");
+                return INT;
+            }
         }
         // Fallback: not an identifier; return 0
         emitln(ftext, "    mov w1, #0");
