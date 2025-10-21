@@ -37,6 +37,21 @@ static void append_expr_to_tmpbuf(AbstractExpresion *arg, FILE *ftext) {
         emitln(ftext, "    bl strcat");
         return;
     }
+    // If it's an array identifier used in a concatenation, append "null" when pointer is NULL
+    if (strcmp(t, "Identificador") == 0) {
+        IdentificadorExpresion *id = (IdentificadorExpresion *)arg;
+        VarEntry *v = buscar_variable(id->nombre);
+        if (v && v->tipo == ARRAY) {
+            // load array pointer and check null
+            char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
+            emitln(ftext, "    cmp x1, #0");
+            emitln(ftext, "    ldr x16, =null_str");
+            emitln(ftext, "    csel x1, x16, x1, eq");
+            emitln(ftext, "    ldr x0, =tmpbuf");
+            emitln(ftext, "    bl strcat");
+            return;
+        }
+    }
     if (nodo_es_resultado_booleano(arg)) {
         emitir_eval_booleano(arg, ftext);
         emitln(ftext, "    cmp w1, #0");
@@ -462,6 +477,15 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
             emitln(ftext, "    csel x1, x16, x1, eq");
             emitln(ftext, "    ldr x0, =fmt_string");
             emitln(ftext, "    bl printf");
+        } else if (v && v->tipo == ARRAY) {
+            // Print array identifiers: if NULL print "null"; otherwise print pointer as string? For now match requested: show null when not initialized
+            const char *null_lab = add_string_literal("null");
+            char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
+            emitln(ftext, "    cmp x1, #0");
+            char lnull2[64]; snprintf(lnull2, sizeof(lnull2), "    ldr x16, =%s", null_lab); emitln(ftext, lnull2);
+            emitln(ftext, "    csel x1, x16, x1, eq");
+            emitln(ftext, "    ldr x0, =fmt_string");
+            emitln(ftext, "    bl printf");
         } else if (v) {
             if (v->tipo == DOUBLE || v->tipo == FLOAT) {
                 char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr d0, [x16]", v->offset); emitln(ftext, l1);
@@ -509,6 +533,14 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
                     const char *null_lab = add_string_literal("null");
                     char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", id->nombre); emitln(ftext, l1);
                     // Sustituir NULL por "null"
+                    emitln(ftext, "    cmp x1, #0");
+                    char lnull[64]; snprintf(lnull, sizeof(lnull), "    ldr x16, =%s", null_lab); emitln(ftext, lnull);
+                    emitln(ftext, "    csel x1, x16, x1, eq");
+                    emitln(ftext, "    ldr x0, =fmt_string");
+                    emitln(ftext, "    bl printf");
+                } else if (gi->tipo == ARRAY) {
+                    const char *null_lab = add_string_literal("null");
+                    char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", id->nombre); emitln(ftext, l1);
                     emitln(ftext, "    cmp x1, #0");
                     char lnull[64]; snprintf(lnull, sizeof(lnull), "    ldr x16, =%s", null_lab); emitln(ftext, lnull);
                     emitln(ftext, "    csel x1, x16, x1, eq");
