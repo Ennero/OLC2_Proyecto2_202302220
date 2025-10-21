@@ -118,28 +118,31 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
         TipoDato base_t = arm64_array_elem_tipo_for_var(id->nombre);
         int bytes = ((depth * 4) + 15) & ~15;
         if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
-        it = node; for (int i = 0; i < depth; ++i) {
-            AbstractExpresion *idx = it->hijos[1];
-            TipoDato ty = emitir_eval_numerico(idx, ftext);
+        // Recopilar nodos de índices en orden correcto (izq->der)
+        AbstractExpresion *idx_nodes[16];
+        int pos = depth - 1; it = node;
+        for (int i = 0; i < depth; ++i) { idx_nodes[pos--] = it->hijos[1]; it = it->hijos[0]; }
+        for (int k = 0; k < depth; ++k) {
+            TipoDato ty = emitir_eval_numerico(idx_nodes[k], ftext);
             if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-            char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st);
-            it = it->hijos[0];
+            char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", k * 4); emitln(ftext, st);
         }
-        if (base_t == STRING) {
-            // No es numérico; retornar 0 evitando usar helper de punteros aquí
+        // Cargar puntero al arreglo y resolver dirección del elemento según tamaño
+        { char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", v->offset); emitln(ftext, ld); }
+        emitln(ftext, "    mov x1, sp");
+        { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
+        if (base_t == DOUBLE || base_t == FLOAT) {
+            emitln(ftext, "    bl array_element_addr_ptr");
+            emitln(ftext, "    ldr d0, [x0]");
+        } else if (base_t == STRING) {
+            // No es numérico; retornar 0 (las rutas de strings usan emitir_eval_string_ptr)
             emitln(ftext, "    mov w1, #0");
         } else {
-            // x0 = arr, x1 = indices, w2 = depth
-            { char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", v->offset); emitln(ftext, ld); }
-            emitln(ftext, "    mov x1, sp");
-            { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
             emitln(ftext, "    bl array_element_addr");
-            if (base_t == CHAR) emitln(ftext, "    ldrb w1, [x0]");
-            else if (base_t == DOUBLE || base_t == FLOAT) emitln(ftext, "    ldr d0, [x0]");
-            else emitln(ftext, "    ldr w1, [x0]");
+            if (base_t == CHAR) emitln(ftext, "    ldrb w1, [x0]"); else emitln(ftext, "    ldr w1, [x0]");
         }
-        if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
-        if (base_t == DOUBLE || base_t == FLOAT) return DOUBLE; else return INT;
+    if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+    if (base_t == DOUBLE || base_t == FLOAT) return DOUBLE; else return INT;
     } else if (strcmp(t, "Suma") == 0) {
         // Guardar lhs en stack para evitar clobber en evaluaciones anidadas
         TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
@@ -354,12 +357,14 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
             // Empujar indices en la pila (4 bytes cada uno), con alineación como en accesos numéricos
             int bytes = ((depth * 4) + 15) & ~15;
             if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
-            it = lvalue; for (int i = 0; i < depth; ++i) {
-                AbstractExpresion *idx = it->hijos[1];
-                TipoDato ty = emitir_eval_numerico(idx, ftext);
+            // Recopilar y emitir en orden i0..iN-1
+            AbstractExpresion *idx_nodes2[16];
+            int pos2 = depth - 1; it = lvalue;
+            for (int i = 0; i < depth; ++i) { idx_nodes2[pos2--] = it->hijos[1]; it = it->hijos[0]; }
+            for (int k = 0; k < depth; ++k) {
+                TipoDato ty = emitir_eval_numerico(idx_nodes2[k], ftext);
                 if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-                char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st);
-                it = it->hijos[0];
+                char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", k * 4); emitln(ftext, st);
             }
             // Cargar puntero al arreglo en x0
             if (av) {

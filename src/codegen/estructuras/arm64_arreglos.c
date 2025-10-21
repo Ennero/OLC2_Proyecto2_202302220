@@ -45,12 +45,14 @@ int arm64_emitir_asignacion_arreglo(AbstractExpresion *node, FILE *ftext) {
     if (!v) return 1;
     int bytes = ((depth * 4) + 15) & ~15;
     if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
-    it = acceso; for (int i = 0; i < depth; ++i) {
-        AbstractExpresion *idx = it->hijos[1];
-        TipoDato ty = emitir_eval_numerico(idx, ftext);
+    // Emitir índices en orden correcto (i0..iN-1)
+    AbstractExpresion *idx_nodes[16];
+    int pos = depth - 1; it = acceso;
+    for (int i = 0; i < depth; ++i) { idx_nodes[pos--] = it->hijos[1]; it = it->hijos[0]; }
+    for (int k = 0; k < depth; ++k) {
+        TipoDato ty = emitir_eval_numerico(idx_nodes[k], ftext);
         if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-        char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st);
-        it = it->hijos[0];
+        char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", k * 4); emitln(ftext, st);
     }
     {
         char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", v->offset); emitln(ftext, ld);
@@ -59,7 +61,7 @@ int arm64_emitir_asignacion_arreglo(AbstractExpresion *node, FILE *ftext) {
     { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
     // Elegir helper según tipo base del arreglo
     TipoDato base_t = arm64_array_elem_tipo_for_var(id->nombre);
-    if (base_t == STRING) emitln(ftext, "    bl array_element_addr_ptr");
+    if (base_t == STRING || base_t == DOUBLE || base_t == FLOAT) emitln(ftext, "    bl array_element_addr_ptr");
     else emitln(ftext, "    bl array_element_addr");
     // Guardar la dirección destino (x0) en la pila para no perderla durante la evaluación del RHS
     emitln(ftext, "    sub sp, sp, #16");
@@ -75,9 +77,15 @@ int arm64_emitir_asignacion_arreglo(AbstractExpresion *node, FILE *ftext) {
         emitln(ftext, "    ldr x9, [sp]");
         emitln(ftext, "    add sp, sp, #16");
         emitln(ftext, "    str x1, [x9]");
+    } else if (base_t == DOUBLE || base_t == FLOAT) {
+        // Asegurar valor en d0
+        if (rty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
+        emitln(ftext, "    ldr x9, [sp]");
+        emitln(ftext, "    add sp, sp, #16");
+        emitln(ftext, "    str d0, [x9]");
     } else {
         if (rty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-        // Restaurar dirección y almacenar
+        // Restaurar dirección y almacenar (4 bytes)
         emitln(ftext, "    ldr x9, [sp]");
         emitln(ftext, "    add sp, sp, #16");
         emitln(ftext, "    str w1, [x9]");
@@ -244,6 +252,9 @@ void arm64_emit_runtime_arreglo_helpers(FILE *ftext) {
     emitln(ftext, "    mov x10, x1");
     emitln(ftext, "    mov w11, w2");
     emitln(ftext, "    ldr w12, [x9]");
+    // Si dims == num_indices: usar camino lineal (flat)
+    emitln(ftext, "    cmp w12, w11");
+    emitln(ftext, "    b.ne L_pp_traverse_i");
     emitln(ftext, "    mov x15, #8");
     emitln(ftext, "    uxtw x16, w12");
     emitln(ftext, "    lsl x16, x16, #2");
@@ -285,6 +296,57 @@ void arm64_emit_runtime_arreglo_helpers(FILE *ftext) {
     emitln(ftext, "    add sp, sp, #80");
     emitln(ftext, "    ldp x29, x30, [sp], 16");
     emitln(ftext, "    ret\n");
+    // Camino para arreglos de punteros (pointer-of-pointer) con elementos finales de 4 bytes
+    emitln(ftext, "L_pp_traverse_i:");
+    // Recorre niveles 0..(w11-2): elementos de 8 bytes (punteros)
+    emitln(ftext, "    mov w20, #0");
+    emitln(ftext, "L_pp_loop_i:");
+    emitln(ftext, "    add w24, w11, #-1");
+    emitln(ftext, "    cmp w20, w24");
+    emitln(ftext, "    b.ge L_pp_final_i");
+    // Calcular base de datos del arreglo actual en x21
+    emitln(ftext, "    // header align for current dims w12");
+    emitln(ftext, "    mov x15, #8");
+    emitln(ftext, "    uxtw x16, w12");
+    emitln(ftext, "    lsl x16, x16, #2");
+    emitln(ftext, "    add x15, x15, x16");
+    emitln(ftext, "    add x17, x15, #7");
+    emitln(ftext, "    and x17, x17, #-8");
+    emitln(ftext, "    add x21, x9, x17");
+    // Cargar índice actual
+    emitln(ftext, "    add x25, x10, x20, uxtw #2");
+    emitln(ftext, "    ldr w22, [x25]");
+    emitln(ftext, "    uxtw x22, w22");
+    // Dirección del puntero hijo (8 bytes)
+    emitln(ftext, "    add x14, x21, x22, lsl #3");
+    emitln(ftext, "    ldr x9, [x14]");
+    // Cargar dims del siguiente arreglo en w12
+    emitln(ftext, "    ldr w12, [x9]");
+    emitln(ftext, "    add w20, w20, #1");
+    emitln(ftext, "    b L_pp_loop_i");
+    // Paso final: calcular dirección del elemento de 4 bytes en el último arreglo apuntado por x9
+    emitln(ftext, "L_pp_final_i:");
+    emitln(ftext, "    // header align for last array");
+    emitln(ftext, "    mov x15, #8");
+    emitln(ftext, "    uxtw x16, w12");
+    emitln(ftext, "    lsl x16, x16, #2");
+    emitln(ftext, "    add x15, x15, x16");
+    emitln(ftext, "    add x17, x15, #7");
+    emitln(ftext, "    and x17, x17, #-8");
+    emitln(ftext, "    add x21, x9, x17");
+    // índice final en w22
+    emitln(ftext, "    add x25, x10, x20, uxtw #2");
+    emitln(ftext, "    ldr w22, [x25]");
+    emitln(ftext, "    uxtw x22, w22");
+    emitln(ftext, "    add x0, x21, x22, lsl #2");
+    emitln(ftext, "    ldp x19, x20, [sp, #0]");
+    emitln(ftext, "    ldp x21, x22, [sp, #16]");
+    emitln(ftext, "    ldp x23, x24, [sp, #32]");
+    emitln(ftext, "    ldp x25, x26, [sp, #48]");
+    emitln(ftext, "    ldp x27, x28, [sp, #64]");
+    emitln(ftext, "    add sp, sp, #80");
+    emitln(ftext, "    ldp x29, x30, [sp], 16");
+    emitln(ftext, "    ret\n");
 
     // Variante para elementos de 8 bytes (punteros/long/double): devuelve la dirección del elemento
     emitln(ftext, "// x0 = arr_ptr, x1 = indices ptr, w2 = num_indices -> x0 = puntero a elemento de 8 bytes");
@@ -301,6 +363,8 @@ void arm64_emit_runtime_arreglo_helpers(FILE *ftext) {
     emitln(ftext, "    mov x10, x1");
     emitln(ftext, "    mov w11, w2");
     emitln(ftext, "    ldr w12, [x9]");
+    emitln(ftext, "    cmp w12, w11");
+    emitln(ftext, "    b.ne L_pp_traverse_p");
     emitln(ftext, "    mov x15, #8");
     emitln(ftext, "    uxtw x16, w12");
     emitln(ftext, "    lsl x16, x16, #2");
@@ -334,6 +398,48 @@ void arm64_emit_runtime_arreglo_helpers(FILE *ftext) {
     emitln(ftext, "L_lin_done_p:");
     emitln(ftext, "    add x0, x9, x17");
     emitln(ftext, "    add x0, x0, x19, lsl #3");
+    emitln(ftext, "    ldp x19, x20, [sp, #0]");
+    emitln(ftext, "    ldp x21, x22, [sp, #16]");
+    emitln(ftext, "    ldp x23, x24, [sp, #32]");
+    emitln(ftext, "    ldp x25, x26, [sp, #48]");
+    emitln(ftext, "    ldp x27, x28, [sp, #64]");
+    emitln(ftext, "    add sp, sp, #80");
+    emitln(ftext, "    ldp x29, x30, [sp], 16");
+    emitln(ftext, "    ret\n");
+    // Camino para pointer-of-pointer con elemento final de 8 bytes
+    emitln(ftext, "L_pp_traverse_p:");
+    emitln(ftext, "    mov w20, #0");
+    emitln(ftext, "L_pp_loop_p:");
+    emitln(ftext, "    add w24, w11, #-1");
+    emitln(ftext, "    cmp w20, w24");
+    emitln(ftext, "    b.ge L_pp_final_p");
+    emitln(ftext, "    mov x15, #8");
+    emitln(ftext, "    uxtw x16, w12");
+    emitln(ftext, "    lsl x16, x16, #2");
+    emitln(ftext, "    add x15, x15, x16");
+    emitln(ftext, "    add x17, x15, #7");
+    emitln(ftext, "    and x17, x17, #-8");
+    emitln(ftext, "    add x21, x9, x17");
+    emitln(ftext, "    add x25, x10, x20, uxtw #2");
+    emitln(ftext, "    ldr w22, [x25]");
+    emitln(ftext, "    uxtw x22, w22");
+    emitln(ftext, "    add x14, x21, x22, lsl #3");
+    emitln(ftext, "    ldr x9, [x14]");
+    emitln(ftext, "    ldr w12, [x9]");
+    emitln(ftext, "    add w20, w20, #1");
+    emitln(ftext, "    b L_pp_loop_p");
+    emitln(ftext, "L_pp_final_p:");
+    emitln(ftext, "    mov x15, #8");
+    emitln(ftext, "    uxtw x16, w12");
+    emitln(ftext, "    lsl x16, x16, #2");
+    emitln(ftext, "    add x15, x15, x16");
+    emitln(ftext, "    add x17, x15, #7");
+    emitln(ftext, "    and x17, x17, #-8");
+    emitln(ftext, "    add x21, x9, x17");
+    emitln(ftext, "    add x25, x10, x20, uxtw #2");
+    emitln(ftext, "    ldr w22, [x25]");
+    emitln(ftext, "    uxtw x22, w22");
+    emitln(ftext, "    add x0, x21, x22, lsl #3");
     emitln(ftext, "    ldp x19, x20, [sp, #0]");
     emitln(ftext, "    ldp x21, x22, [sp, #16]");
     emitln(ftext, "    ldp x23, x24, [sp, #32]");

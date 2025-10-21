@@ -15,6 +15,130 @@ typedef VarEntry VarEntry;
 static VarEntry *buscar_variable(const char *name) { return vars_buscar(name); }
 static const char *add_string_literal(const char *text) { return core_add_string_literal(text); }
 
+// Emite código para construir un arreglo desde un ArrayInitializer de forma recursiva.
+// Deja en x0 el puntero al arreglo construido.
+static void emitir_array_init_rec(AbstractExpresion *init_node, TipoDato base_tipo, int depth, FILE *ftext) {
+    if (!init_node || strcmp(init_node->node_type ? init_node->node_type : "", "ArrayInitializer") != 0) {
+        // Caso degenerado: crear arreglo 1D de tamaño 1 con el valor evaluado
+        emitln(ftext, "    sub sp, sp, #16");
+        emitln(ftext, "    mov w1, #1");
+        emitln(ftext, "    str w1, [sp]");
+        emitln(ftext, "    mov w0, #1");
+        emitln(ftext, "    mov x1, sp");
+        if (base_tipo == STRING || base_tipo == DOUBLE || base_tipo == FLOAT) emitln(ftext, "    bl new_array_flat_ptr");
+        else emitln(ftext, "    bl new_array_flat");
+        emitln(ftext, "    add sp, sp, #16");
+        // base de datos en x22
+        emitln(ftext, "    mov x22, x0");
+        emitln(ftext, "    ldr w12, [x22]");
+        emitln(ftext, "    mov x15, #8");
+        emitln(ftext, "    uxtw x16, w12");
+        emitln(ftext, "    lsl x16, x16, #2");
+        emitln(ftext, "    add x15, x15, x16");
+        emitln(ftext, "    add x17, x15, #7");
+        emitln(ftext, "    and x17, x17, #-8");
+        emitln(ftext, "    add x22, x22, x17");
+        // almacenar único elemento en índice 0
+        emitln(ftext, "    mov x23, #0");
+        if (base_tipo == STRING) {
+            if (!emitir_eval_string_ptr(init_node, ftext)) emitln(ftext, "    mov x1, #0");
+            emitln(ftext, "    str x1, [x22, x23, lsl #3]");
+        } else if (base_tipo == DOUBLE || base_tipo == FLOAT) {
+            TipoDato ety = emitir_eval_numerico(init_node, ftext);
+            if (ety != DOUBLE) emitln(ftext, "    scvtf d0, w1");
+            emitln(ftext, "    str d0, [x22, x23, lsl #3]");
+        } else if (base_tipo == CHAR) {
+            TipoDato ety = emitir_eval_numerico(init_node, ftext);
+            if (ety == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+            emitln(ftext, "    strb w1, [x22, x23, lsl #0]");
+        } else {
+            TipoDato ety = emitir_eval_numerico(init_node, ftext);
+            if (ety == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+            emitln(ftext, "    str w1, [x22, x23, lsl #2]");
+        }
+        return;
+    }
+
+    AbstractExpresion *lista = (init_node->numHijos > 0) ? init_node->hijos[0] : NULL;
+    int m = (int)(lista ? lista->numHijos : 0);
+    if (depth <= 1) {
+        // Construir arreglo 1D de elementos base
+        emitln(ftext, "    sub sp, sp, #16");
+        { char mvm[64]; snprintf(mvm, sizeof(mvm), "    mov w1, #%d", m); emitln(ftext, mvm); }
+        emitln(ftext, "    str w1, [sp]");
+        emitln(ftext, "    mov w0, #1");
+        emitln(ftext, "    mov x1, sp");
+        if (base_tipo == STRING || base_tipo == DOUBLE || base_tipo == FLOAT) emitln(ftext, "    bl new_array_flat_ptr");
+        else emitln(ftext, "    bl new_array_flat");
+        // x0 = puntero al arreglo; calcular base de datos en x22
+        emitln(ftext, "    mov x22, x0");
+        emitln(ftext, "    ldr w12, [x22]");
+        emitln(ftext, "    mov x15, #8");
+        emitln(ftext, "    uxtw x16, w12");
+        emitln(ftext, "    lsl x16, x16, #2");
+        emitln(ftext, "    add x15, x15, x16");
+        emitln(ftext, "    add x17, x15, #7");
+        emitln(ftext, "    and x17, x17, #-8");
+        emitln(ftext, "    add x22, x22, x17");
+        for (int j = 0; j < m; ++j) {
+            { char movj[64]; snprintf(movj, sizeof(movj), "    mov x23, #%d", j); emitln(ftext, movj); }
+            if (base_tipo == STRING) {
+                if (!emitir_eval_string_ptr(lista->hijos[j], ftext)) emitln(ftext, "    mov x1, #0");
+                emitln(ftext, "    str x1, [x22, x23, lsl #3]");
+            } else if (base_tipo == DOUBLE || base_tipo == FLOAT) {
+                TipoDato ety = emitir_eval_numerico(lista->hijos[j], ftext);
+                if (ety != DOUBLE) emitln(ftext, "    scvtf d0, w1");
+                emitln(ftext, "    str d0, [x22, x23, lsl #3]");
+            } else if (base_tipo == CHAR) {
+                TipoDato ety = emitir_eval_numerico(lista->hijos[j], ftext);
+                if (ety == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                emitln(ftext, "    strb w1, [x22, x23, lsl #0]");
+            } else {
+                TipoDato ety = emitir_eval_numerico(lista->hijos[j], ftext);
+                if (ety == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                emitln(ftext, "    str w1, [x22, x23, lsl #2]");
+            }
+        }
+        emitln(ftext, "    add sp, sp, #16");
+        return;
+    }
+
+    // depth > 1: construir arreglo de punteros (8 bytes) y rellenar con subarreglos
+    emitln(ftext, "    sub sp, sp, #16");
+    { char mvm[64]; snprintf(mvm, sizeof(mvm), "    mov w1, #%d", m); emitln(ftext, mvm); }
+    emitln(ftext, "    str w1, [sp]");
+    emitln(ftext, "    mov w0, #1");
+    emitln(ftext, "    mov x1, sp");
+    emitln(ftext, "    bl new_array_flat_ptr");
+    // x0 = puntero al arreglo exterior (de punteros); preservar en x20
+    emitln(ftext, "    mov x20, x0");
+    // calcular base de datos en x21
+    emitln(ftext, "    mov x21, x0");
+    emitln(ftext, "    ldr w12, [x21]");
+    emitln(ftext, "    mov x15, #8");
+    emitln(ftext, "    uxtw x16, w12");
+    emitln(ftext, "    lsl x16, x16, #2");
+    emitln(ftext, "    add x15, x15, x16");
+    emitln(ftext, "    add x17, x15, #7");
+    emitln(ftext, "    and x17, x17, #-8");
+    emitln(ftext, "    add x21, x21, x17");
+    for (int j = 0; j < m; ++j) {
+        // Construir subarreglo y almacenar su puntero
+        // Guardar puntero del arreglo exterior (x20) y la base de datos (x21) en la pila, ya que la recursión puede clobberlos
+        emitln(ftext, "    sub sp, sp, #32");
+        emitln(ftext, "    stp x20, x21, [sp]");
+        emitir_array_init_rec(lista->hijos[j], base_tipo, depth - 1, ftext);
+        // Restaurar puntero del arreglo exterior (x20) y la base de datos (x21)
+        emitln(ftext, "    ldp x20, x21, [sp]");
+        emitln(ftext, "    add sp, sp, #32");
+        { char movj[64]; snprintf(movj, sizeof(movj), "    mov x23, #%d", j); emitln(ftext, movj); }
+        emitln(ftext, "    str x0, [x21, x23, lsl #3]");
+    }
+    // Devolver el puntero al arreglo exterior en x0
+    emitln(ftext, "    mov x0, x20");
+    emitln(ftext, "    add sp, sp, #16");
+}
+
 int arm64_emitir_declaracion(AbstractExpresion *node, FILE *ftext) {
     if (!(node && node->node_type && strcmp(node->node_type, "Declaracion") == 0)) return 0;
     DeclaracionVariable *decl = (DeclaracionVariable *)node;
@@ -36,8 +160,8 @@ int arm64_emitir_declaracion(AbstractExpresion *node, FILE *ftext) {
                 }
                 char mv0[64]; snprintf(mv0, sizeof(mv0), "    mov w0, #%d", dims); emitln(ftext, mv0);
                 emitln(ftext, "    mov x1, sp");
-                // Para ahora, usamos elementos de 4 bytes para INT/CHAR y 8 bytes para STRING
-                if (decl->tipo == STRING) emitln(ftext, "    bl new_array_flat_ptr");
+                // Elementos de 8 bytes para STRING/DOUBLE/FLOAT, de 4 bytes para INT/CHAR/BOOLEAN
+                if (decl->tipo == STRING || decl->tipo == DOUBLE || decl->tipo == FLOAT) emitln(ftext, "    bl new_array_flat_ptr");
                 else emitln(ftext, "    bl new_array_flat");
                 char stp[96]; snprintf(stp, sizeof(stp), "    sub x16, x29, #%d\n    str x0, [x16]", v->offset); emitln(ftext, stp);
                 char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb);
@@ -45,93 +169,11 @@ int arm64_emitir_declaracion(AbstractExpresion *node, FILE *ftext) {
                 char stp[128]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stp);
             }
     } else if (node->numHijos > 0 && node->hijos[0] && strcmp(node->hijos[0]->node_type ? node->hijos[0]->node_type : "", "ArrayInitializer") == 0) {
-            // Soportar inicializador 1D y 2D (p. ej. String[][]): { {..}, {..} }
-            AbstractExpresion *arr_init = node->hijos[0];
-            AbstractExpresion *lista = (arr_init->numHijos > 0) ? arr_init->hijos[0] : NULL;
-            int n = (int)(lista ? lista->numHijos : 0);
-            // Crear el arreglo exterior de tamaño n
-            emitln(ftext, "    sub sp, sp, #16");
-            { char mvn[64]; snprintf(mvn, sizeof(mvn), "    mov w1, #%d", n); emitln(ftext, mvn); }
-            emitln(ftext, "    str w1, [sp]");
-            emitln(ftext, "    mov w0, #1");
-            emitln(ftext, "    mov x1, sp");
-            // Elementos del arreglo exterior: si es arreglo de punteros (STRING[][], DOUBLE[][]) usar new_array_flat_ptr
-            if (decl->tipo == STRING || decl->dimensiones > 1) emitln(ftext, "    bl new_array_flat_ptr");
-            else emitln(ftext, "    bl new_array_flat");
-            // Guardar el puntero del arreglo exterior en la variable
+            // Construcción recursiva de inicializadores multidimensionales
+            emitir_array_init_rec(node->hijos[0], decl->tipo, decl->dimensiones, ftext);
+            // Guardar el puntero resultante en la variable destino
             { char stp[96]; snprintf(stp, sizeof(stp), "    sub x16, x29, #%d\n    str x0, [x16]", v->offset); emitln(ftext, stp); }
-            emitln(ftext, "    add sp, sp, #16");
-            // Calcular base de datos (después de header alineado) en x19 cuando se necesite
-            for (int i = 0; i < n; ++i) {
-                // Cargar puntero a arreglo exterior en x19
-                { char ldrp[96]; snprintf(ldrp, sizeof(ldrp), "    sub x16, x29, #%d\n    ldr x19, [x16]", v->offset); emitln(ftext, ldrp); }
-                // base de datos: x19 += align_up(8 + dims*4, 8) con dims = [x19]
-                emitln(ftext, "    ldr w12, [x19]");
-                emitln(ftext, "    mov x15, #8");
-                emitln(ftext, "    uxtw x16, w12");
-                emitln(ftext, "    lsl x16, x16, #2");
-                emitln(ftext, "    add x15, x15, x16");
-                emitln(ftext, "    add x17, x15, #7");
-                emitln(ftext, "    and x17, x17, #-8");
-                emitln(ftext, "    add x19, x19, x17");
-                // Dirección del elemento i del arreglo exterior en x20
-                { char movi[64]; snprintf(movi, sizeof(movi), "    mov x21, #%d", i); emitln(ftext, movi); }
-                // Arreglos (tipo base STRING o dimensiones>1) almacenan punteros (8 bytes)
-                emitln(ftext, "    add x20, x19, x21, lsl #3");
-
-                AbstractExpresion *elem_i = lista ? lista->hijos[i] : NULL;
-                // Si el elemento es otro inicializador, construir un arreglo interno 1D y asignarlo
-                if (elem_i && strcmp(elem_i->node_type ? elem_i->node_type : "", "ArrayInitializer") == 0) {
-                    AbstractExpresion *inner_list = (elem_i->numHijos > 0) ? elem_i->hijos[0] : NULL;
-                    int m = (int)(inner_list ? inner_list->numHijos : 0);
-                    // Crear arreglo interno 1D de tamaño m (punteros si base STRING)
-                    emitln(ftext, "    sub sp, sp, #16");
-                    { char mvm[64]; snprintf(mvm, sizeof(mvm), "    mov w1, #%d", m); emitln(ftext, mvm); }
-                    emitln(ftext, "    str w1, [sp]");
-                    emitln(ftext, "    mov w0, #1");
-                    emitln(ftext, "    mov x1, sp");
-                    // En este caso, el arreglo interno es de elementos base 'decl->tipo'
-                    if (decl->tipo == STRING) emitln(ftext, "    bl new_array_flat_ptr");
-                    else emitln(ftext, "    bl new_array_flat");
-                    // Guardar puntero del arreglo interno en el slot del arreglo exterior
-                    emitln(ftext, "    str x0, [x20]");
-                    // Base de datos del arreglo interno en x22
-                    emitln(ftext, "    mov x22, x0");
-                    emitln(ftext, "    ldr w12, [x22]");
-                    emitln(ftext, "    mov x15, #8");
-                    emitln(ftext, "    uxtw x16, w12");
-                    emitln(ftext, "    lsl x16, x16, #2");
-                    emitln(ftext, "    add x15, x15, x16");
-                    emitln(ftext, "    add x17, x15, #7");
-                    emitln(ftext, "    and x17, x17, #-8");
-                    emitln(ftext, "    add x22, x22, x17");
-                    // Rellenar elementos del arreglo interno
-                    for (int j = 0; j < m; ++j) {
-                        { char movj[64]; snprintf(movj, sizeof(movj), "    mov x23, #%d", j); emitln(ftext, movj); }
-                        if (decl->tipo == STRING) {
-                            // Evaluar string y almacenar en arreglo interno
-                            if (!emitir_eval_string_ptr(inner_list->hijos[j], ftext)) emitln(ftext, "    mov x1, #0");
-                            emitln(ftext, "    str x1, [x22, x23, lsl #3]");
-                        } else {
-                            TipoDato ety = emitir_eval_numerico(inner_list->hijos[j], ftext);
-                            if (ety == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-                            emitln(ftext, "    str w1, [x22, x23, lsl #2]");
-                        }
-                    }
-                    emitln(ftext, "    add sp, sp, #16");
-                } else {
-                    // Caso 1D original: evaluar y almacenar directamente
-                    if (decl->tipo == STRING) {
-                        if (!emitir_eval_string_ptr(elem_i, ftext)) emitln(ftext, "    mov x1, #0");
-                        emitln(ftext, "    str x1, [x20]");
-                    } else {
-                        TipoDato ety = emitir_eval_numerico(elem_i, ftext);
-                        if (ety == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-                        emitln(ftext, "    // elemento 1D en arreglo base de 4 bytes");
-                        emitln(ftext, "    str w1, [x19, x21, lsl #2]");
-                    }
-                }
-            }
+            return 1;
         } else if (node->numHijos > 0 && node->hijos[0] && strcmp(node->hijos[0]->node_type ? node->hijos[0]->node_type : "", "FunctionCall") == 0) {
             // Inicialización de arreglo desde retorno de función: se espera puntero en x0
             TipoDato rty = arm64_emitir_llamada_funcion(node->hijos[0], ftext);

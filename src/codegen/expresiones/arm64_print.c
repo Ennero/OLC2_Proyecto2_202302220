@@ -100,13 +100,18 @@ static void append_expr_to_tmpbuf(AbstractExpresion *arg, FILE *ftext) {
         emitln(ftext, "    bl strcat");
     } else {
         if (ty == DOUBLE) {
+            // Reserve scratch space on stack to safely use it as a temporary buffer
+            emitln(ftext, "    sub sp, sp, #128");
             emitln(ftext, "    mov x0, sp");
             emitln(ftext, "    mov x1, #128");
             emitln(ftext, "    bl java_format_double");
             emitln(ftext, "    mov x1, sp");
             emitln(ftext, "    ldr x0, =tmpbuf");
             emitln(ftext, "    bl strcat");
+            emitln(ftext, "    add sp, sp, #128");
         } else {
+            // Reserve scratch space on stack for sprintf into [sp]
+            emitln(ftext, "    sub sp, sp, #128");
             emitln(ftext, "    mov x0, sp");
             emitln(ftext, "    mov w2, w1");
             emitln(ftext, "    ldr x1, =fmt_int");
@@ -114,6 +119,7 @@ static void append_expr_to_tmpbuf(AbstractExpresion *arg, FILE *ftext) {
             emitln(ftext, "    mov x1, sp");
             emitln(ftext, "    ldr x0, =tmpbuf");
             emitln(ftext, "    bl strcat");
+            emitln(ftext, "    add sp, sp, #128");
         }
     }
 }
@@ -347,12 +353,34 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
                 emitln(ftext, "    ldr x0, =fmt_string");
                 emitln(ftext, "    bl printf");
                 return;
+            } else if (base_t == DOUBLE || base_t == FLOAT) {
+                // Evaluar como double y formatear antes de imprimir
+                (void)emitir_eval_numerico(node, ftext);
+                // Formatear double a tmpbuf y luego imprimir como string
+                emitln(ftext, "    ldr x19, =tmpbuf");
+                emitln(ftext, "    mov x0, x19");
+                emitln(ftext, "    mov x1, #1024");
+                emitln(ftext, "    bl java_format_double");
+                emitln(ftext, "    ldr x0, =fmt_string");
+                emitln(ftext, "    mov x1, x19");
+                emitln(ftext, "    bl printf");
+                return;
             }
         }
-        // Fallback: imprimir como int
-        (void)emitir_eval_numerico(node, ftext);
-        emitln(ftext, "    ldr x0, =fmt_int");
-        emitln(ftext, "    bl printf");
+        // Fallback: evaluar y decidir por tipo en tiempo de ejecución (numérico)
+        TipoDato ty = emitir_eval_numerico(node, ftext);
+        if (ty == DOUBLE) {
+            emitln(ftext, "    ldr x19, =tmpbuf");
+            emitln(ftext, "    mov x0, x19");
+            emitln(ftext, "    mov x1, #1024");
+            emitln(ftext, "    bl java_format_double");
+            emitln(ftext, "    ldr x0, =fmt_string");
+            emitln(ftext, "    mov x1, x19");
+            emitln(ftext, "    bl printf");
+        } else {
+            emitln(ftext, "    ldr x0, =fmt_int");
+            emitln(ftext, "    bl printf");
+        }
         return;
     }
     if (strcmp(t, "Suma") == 0) {
@@ -372,8 +400,16 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
             emitln(ftext, "    bl printf");
             return;
         }
-        emitir_imprimir_cadena(node->hijos[0], ftext);
-        emitir_imprimir_cadena(node->hijos[1], ftext);
+        // Concatenación de strings: construir en tmpbuf para respetar formateos numéricos
+        emitln(ftext, "    // String concatenation to tmpbuf (print)");
+        emitln(ftext, "    ldr x0, =tmpbuf");
+        emitln(ftext, "    mov w2, #0");
+        emitln(ftext, "    strb w2, [x0]");
+        append_expr_to_tmpbuf(node->hijos[0], ftext);
+        append_expr_to_tmpbuf(node->hijos[1], ftext);
+        emitln(ftext, "    ldr x0, =fmt_string");
+        emitln(ftext, "    ldr x1, =tmpbuf");
+        emitln(ftext, "    bl printf");
         return;
     }
     if (strcmp(t, "StringValueof") == 0) {
@@ -612,15 +648,13 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
         }
     }
     if (strcmp(t, "Suma") == 0 && (expresion_es_cadena(node->hijos[0]) || expresion_es_cadena(node->hijos[1]))) {
-        // Build concatenation into tmpbuf: allocate scratch and clear buffer once
-        emitln(ftext, "    // String concatenation to tmpbuf");
-        emitln(ftext, "    sub sp, sp, #128");
-        emitln(ftext, "    ldr x0, =tmpbuf");
+    // Build concatenation into tmpbuf: clear buffer once
+    emitln(ftext, "    // String concatenation to tmpbuf");
+    emitln(ftext, "    ldr x0, =tmpbuf");
         emitln(ftext, "    mov w2, #0");
         emitln(ftext, "    strb w2, [x0]");
         append_expr_to_tmpbuf(node->hijos[0], ftext);
         append_expr_to_tmpbuf(node->hijos[1], ftext);
-        emitln(ftext, "    add sp, sp, #128");
         emitln(ftext, "    ldr x1, =tmpbuf");
         return 1;
     }
@@ -632,15 +666,16 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)it;
         VarEntry *v = buscar_variable(id->nombre);
         if (!v) return 0;
-        // Reservar stack para indices
+        // Reservar stack para indices y empujarlos en orden i0..iN-1 (izq->der)
         int bytes = ((depth * 4) + 15) & ~15;
         if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
-        it = node; for (int i = 0; i < depth; ++i) {
-            AbstractExpresion *idx = it->hijos[1];
-            TipoDato ty = emitir_eval_numerico(idx, ftext);
+        AbstractExpresion *idx_nodes[16];
+        int pos = depth - 1; it = node;
+        for (int i = 0; i < depth; ++i) { idx_nodes[pos--] = it->hijos[1]; it = it->hijos[0]; }
+        for (int k = 0; k < depth; ++k) {
+            TipoDato ty = emitir_eval_numerico(idx_nodes[k], ftext);
             if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-            char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st);
-            it = it->hijos[0];
+            char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", k * 4); emitln(ftext, st);
         }
         // Cargar puntero base del arreglo
         { char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", v->offset); emitln(ftext, ld); }
