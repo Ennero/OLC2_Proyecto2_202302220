@@ -50,7 +50,8 @@ static void emitir_array_init_rec(AbstractExpresion *init_node, TipoDato base_ti
         } else if (base_tipo == CHAR) {
             TipoDato ety = emitir_eval_numerico(init_node, ftext);
             if (ety == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-            emitln(ftext, "    strb w1, [x22, x23, lsl #0]");
+            // Los elementos se disponen en celdas de 4 bytes para tipos int-like, incluidos CHAR
+            emitln(ftext, "    str w1, [x22, x23, lsl #2]");
         } else {
             TipoDato ety = emitir_eval_numerico(init_node, ftext);
             if (ety == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
@@ -92,7 +93,8 @@ static void emitir_array_init_rec(AbstractExpresion *init_node, TipoDato base_ti
             } else if (base_tipo == CHAR) {
                 TipoDato ety = emitir_eval_numerico(lista->hijos[j], ftext);
                 if (ety == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-                emitln(ftext, "    strb w1, [x22, x23, lsl #0]");
+                // Los elementos se disponen en celdas de 4 bytes para tipos int-like, incluidos CHAR
+                emitln(ftext, "    str w1, [x22, x23, lsl #2]");
             } else {
                 TipoDato ety = emitir_eval_numerico(lista->hijos[j], ftext);
                 if (ety == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");

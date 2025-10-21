@@ -91,6 +91,16 @@ static void append_expr_to_tmpbuf(AbstractExpresion *arg, FILE *ftext) {
                 return;
             }
         }
+    } else if (strcmp(t, "ArrayAccess") == 0) {
+        // Si es acceso a arreglo de CHAR, tratarlo como caracter (UTF-8)
+        int depth = 0; AbstractExpresion *it = arg;
+        while (it && it->node_type && strcmp(it->node_type, "ArrayAccess") == 0) { depth++; it = it->hijos[0]; }
+        if (it && it->node_type && strcmp(it->node_type, "Identificador") == 0) {
+            IdentificadorExpresion *id = (IdentificadorExpresion *)it;
+            if (arm64_array_elem_tipo_for_var(id->nombre) == CHAR) {
+                is_char_local = 1;
+            }
+        }
     }
     if (is_char_local) {
         if (ty == DOUBLE) emitln(ftext, "    fcvtzs w0, d0"); else emitln(ftext, "    mov w0, w1");
@@ -254,6 +264,38 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
         return;
     }
 
+    // 2.2) ArrayAccess booleano -> true/false
+    if (strcmp(t, "ArrayAccess") == 0) {
+        // Detectar tipo base del arreglo
+        int depth2 = 0; AbstractExpresion *it2 = arg;
+        while (it2 && it2->node_type && strcmp(it2->node_type, "ArrayAccess") == 0) { depth2++; it2 = it2->hijos[0]; }
+        if (it2 && it2->node_type && strcmp(it2->node_type, "Identificador") == 0) {
+            IdentificadorExpresion *id2 = (IdentificadorExpresion *)it2;
+            TipoDato base_t2 = arm64_array_elem_tipo_for_var(id2->nombre);
+            if (base_t2 == BOOLEAN) {
+                (void)emitir_eval_numerico(arg, ftext); // deja w1
+                emitln(ftext, "    cmp w1, #0");
+                emitln(ftext, "    ldr x1, =false_str");
+                emitln(ftext, "    ldr x16, =true_str");
+                emitln(ftext, "    csel x1, x16, x1, ne");
+                // strdup
+                emitln(ftext, "    mov x0, x1");
+                emitln(ftext, "    bl strdup");
+                emitln(ftext, "    mov x1, x0");
+                return;
+            } else if (base_t2 == CHAR) {
+                // ArrayAccess de char -> convertir a UTF-8 y duplicar
+                TipoDato tyc = emitir_eval_numerico(arg, ftext);
+                if (tyc == DOUBLE) emitln(ftext, "    fcvtzs w0, d0"); else emitln(ftext, "    mov w0, w1");
+                emitln(ftext, "    bl char_to_utf8");
+                emitln(ftext, "    mov x0, x0");
+                emitln(ftext, "    bl strdup");
+                emitln(ftext, "    mov x1, x0");
+                return;
+            }
+        }
+    }
+
     // 3) Si ya es cadena (literal, id string, concatenación), evalúalo como puntero a string
     if (expresion_es_cadena(arg)) {
         const char *null_lab = add_string_literal("null");
@@ -278,6 +320,14 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)arg;
         VarEntry *v = buscar_variable(id->nombre);
         is_char = (v && v->tipo == CHAR);
+    } else if (strcmp(t, "ArrayAccess") == 0) {
+        // Tratar acceso a arreglo de CHAR como char
+        int depth3 = 0; AbstractExpresion *it3 = arg;
+        while (it3 && it3->node_type && strcmp(it3->node_type, "ArrayAccess") == 0) { depth3++; it3 = it3->hijos[0]; }
+        if (it3 && it3->node_type && strcmp(it3->node_type, "Identificador") == 0) {
+            IdentificadorExpresion *id3 = (IdentificadorExpresion *)it3;
+            if (arm64_array_elem_tipo_for_var(id3->nombre) == CHAR) is_char = 1;
+        }
     }
 
     TipoDato ty = emitir_eval_numerico(arg, ftext);
