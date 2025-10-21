@@ -134,7 +134,11 @@ int expresion_es_cadena(AbstractExpresion *node) {
     if (strcmp(t, "Identificador") == 0) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
         VarEntry *v = buscar_variable(id->nombre);
-        return v && v->tipo == STRING;
+        if (v && v->tipo == STRING) return 1;
+        // También aceptar globales string
+        const GlobalInfo *gi = globals_lookup(id->nombre);
+        if (gi && gi->tipo == STRING) return 1;
+        return 0;
     }
     if (strcmp(t, "ArrayAccess") == 0) {
         // Si es acceso a arreglo de strings, considerarlo cadena

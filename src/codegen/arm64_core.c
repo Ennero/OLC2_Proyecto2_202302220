@@ -93,12 +93,23 @@ static char *escape_for_asciz(const char *s) {
 }
 
 const char *core_add_string_literal(const char *text) {
+    // Decodificar secuencias de escape antes de almacenarlo; luego se re-escapa para .asciz al emitir
+    char *processed = process_string_escapes_codegen(text ? text : "");
+    // Internar: si ya existe un literal de cadena con el mismo contenido, reutilizar su etiqueta
+    for (StrLit *it = str_head; it; it = it->next) {
+        // Solo comparar contra literales de cadena (etiquetas str_lit_*)
+        if (it->label && strncmp(it->label, "str_lit_", 8) == 0) {
+            if (it->text && strcmp(it->text, processed) == 0) {
+                free(processed);
+                return it->label;
+            }
+        }
+    }
+    // No existe aún: crear una nueva entrada
     StrLit *n = (StrLit *)calloc(1, sizeof(StrLit));
     char label[64];
     snprintf(label, sizeof(label), "str_lit_%d", ++str_counter);
     n->label = strdup(label);
-    // Decodificar secuencias de escape antes de almacenarlo; luego se re-escapa para .asciz al emitir
-    char *processed = process_string_escapes_codegen(text ? text : "");
     n->text = processed;
     if (!str_head) str_head = n; else str_tail->next = n; str_tail = n;
     return n->label;

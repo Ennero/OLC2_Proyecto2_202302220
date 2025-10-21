@@ -137,13 +137,38 @@ void emitir_eval_booleano(AbstractExpresion *node, FILE *ftext) {
             emitln(ftext, comparing_eq ? "    cset w1, eq" : "    cset w1, ne");
             return;
         }
-        // Rechazar comparaciones entre strings por contenido: deberían ser con .equals()
-        if ((strcmp(lt, "Primitivo") == 0 && ((PrimitivoExpresion*)node->hijos[0])->tipo == STRING) ||
-            (strcmp(rt, "Primitivo") == 0 && ((PrimitivoExpresion*)node->hijos[1])->tipo == STRING) ||
-            (strcmp(lt, "Identificador") == 0 && vars_buscar(((IdentificadorExpresion*)node->hijos[0])->nombre) && vars_buscar(((IdentificadorExpresion*)node->hijos[0])->nombre)->tipo == STRING) ||
-            (strcmp(rt, "Identificador") == 0 && vars_buscar(((IdentificadorExpresion*)node->hijos[1])->nombre) && vars_buscar(((IdentificadorExpresion*)node->hijos[1])->nombre)->tipo == STRING)) {
-            // Forzar false y dejar que el intérprete reporte semántico; en codegen no tenemos error_reporter.
-            emitln(ftext, "    mov w1, #0");
+        // Comparación entre strings: usar igualdad por contenido con strcmp (null-safe)
+        // Si ambos lados pueden evaluarse como punteros a cadena, comparar su contenido con strcmp.
+        // Si alguno es NULL, comparar por puntero (NULL==NULL true, NULL!=no-NULL true).
+        int lhs_is_str = 0;
+        int rhs_is_str = 0;
+        // Intentar evaluar LHS como string ptr sin efectos secundarios externos
+        if (emitir_eval_string_ptr(node->hijos[0], ftext)) { emitln(ftext, "    mov x19, x1"); lhs_is_str = 1; }
+        // Si LHS no fue string, deshacer efectos con un mov neutro (no requerido) y continuar
+        if (lhs_is_str) {
+            // Evaluar RHS a continuación como string ptr
+            if (emitir_eval_string_ptr(node->hijos[1], ftext)) { emitln(ftext, "    mov x20, x1"); rhs_is_str = 1; }
+        }
+        if (lhs_is_str && rhs_is_str) {
+            // Si cualquiera es NULL, comparar por puntero directamente
+            emitln(ftext, "    cmp x19, #0");
+            emitln(ftext, "    beq 1f");
+            emitln(ftext, "    cmp x20, #0");
+            emitln(ftext, "    beq 1f");
+            // Ambos no NULL: strcmp
+            emitln(ftext, "    mov x0, x19");
+            emitln(ftext, "    mov x1, x20");
+            emitln(ftext, "    bl strcmp");
+            emitln(ftext, "    cmp w0, #0");
+            if (strcmp(t, "IgualIgual") == 0) emitln(ftext, "    cset w1, eq");
+            else emitln(ftext, "    cset w1, ne");
+            emitln(ftext, "    b 2f");
+            // Etiqueta: comparar por puntero (maneja NULLs)
+            emitln(ftext, "1:");
+            emitln(ftext, "    cmp x19, x20");
+            if (strcmp(t, "IgualIgual") == 0) emitln(ftext, "    cset w1, eq");
+            else emitln(ftext, "    cset w1, ne");
+            emitln(ftext, "2:");
             return;
         }
         TipoDato tl = emitir_eval_numerico(node->hijos[0], ftext);
