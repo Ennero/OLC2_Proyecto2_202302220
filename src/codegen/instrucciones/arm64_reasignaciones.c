@@ -213,7 +213,7 @@ int arm64_emitir_reasignacion(AbstractExpresion *node, FILE *ftext) {
             }
         } else if (expresion_es_cadena(rhs)) {
             if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");
-            // Duplicar para que la variable no apunte a tmpbuf efímero
+            // Duplicar siempre para no apuntar a tmpbuf efímero (concatenaciones/valueOf)
             emitln(ftext, "    mov x0, x1");
             emitln(ftext, "    bl strdup");
             emitln(ftext, "    mov x1, x0");

@@ -104,17 +104,7 @@ int arm64_emitir_ciclo(AbstractExpresion *node, FILE *ftext, EmitirNodoFn gen_no
                 else emitln(ftext, "    mov x9, #0");
             }
             // Header: compute data base and length n
-            emitln(ftext, "    // ForEach: obtener base de datos y longitud");
-            emitln(ftext, "    ldr w12, [x9]");
-            emitln(ftext, "    mov x15, #8");
-            emitln(ftext, "    uxtw x16, w12");
-            emitln(ftext, "    lsl x16, x16, #2");
-            emitln(ftext, "    add x15, x15, x16");
-            emitln(ftext, "    add x17, x15, #7");
-            emitln(ftext, "    and x17, x17, #-8");
-            emitln(ftext, "    add x18, x9, #8");
-            emitln(ftext, "    ldr w19, [x18]");
-            emitln(ftext, "    add x21, x9, x17");
+            // Nota: x21 (base de datos) y w19 (longitud) se recomputarán en cada iteración.
             // Preparar labels y scope
             int fid = flujo_next_label_id();
             flujo_break_push(fid);
@@ -134,10 +124,42 @@ int arm64_emitir_ciclo(AbstractExpresion *node, FILE *ftext, EmitirNodoFn gen_no
                     arm64_registrar_arreglo(iter_name, base_t);
                 }
             }
+            // Crear/obtener slot local para el índice del foreach (persistente entre iteraciones)
+            char idxname[32]; snprintf(idxname, sizeof(idxname), "__it_idx_%d", fid);
+            VarEntry *idxv = vars_buscar(idxname);
+            if (!idxv) {
+                idxv = vars_agregar_ext(idxname, INT, 8, 0, ftext);
+            }
             // i=0
             emitln(ftext, "    mov w20, #0");
+            // Guardar índice inicial en su slot anclado al frame pointer
+            { char stx[128]; snprintf(stx, sizeof(stx), "    sub x16, x29, #%d\n    str w20, [x16]", idxv->offset); emitln(ftext, stx); }
             // L_cond
             flujo_emit_label(ftext, "L_for_cond", fid);
+            // Recompute base y longitud del iterable en cada iteración para evitar clobbers del cuerpo
+            emitln(ftext, "    // ForEach: recomputar base de datos y longitud");
+            // Recargar puntero al iterable en x9
+            {
+                if (v) {
+                    char ldx[96]; snprintf(ldx, sizeof(ldx), "    sub x16, x29, #%d\n    ldr x9, [x16]", v->offset); emitln(ftext, ldx);
+                } else {
+                    const GlobalInfo *gi = globals_lookup(id->nombre);
+                    if (gi) { char lg2[128]; snprintf(lg2, sizeof(lg2), "    ldr x16, =g_%s\n    ldr x9, [x16]", id->nombre); emitln(ftext, lg2); }
+                    else emitln(ftext, "    mov x9, #0");
+                }
+            }
+            emitln(ftext, "    ldr w12, [x9]");
+            emitln(ftext, "    mov x15, #8");
+            emitln(ftext, "    uxtw x16, w12");
+            emitln(ftext, "    lsl x16, x16, #2");
+            emitln(ftext, "    add x15, x15, x16");
+            emitln(ftext, "    add x17, x15, #7");
+            emitln(ftext, "    and x17, x17, #-8");
+            emitln(ftext, "    add x18, x9, #8");
+            emitln(ftext, "    ldr w19, [x18]");
+            emitln(ftext, "    add x21, x9, x17");
+            // Cargar índice actual desde el slot persistente
+            { char ldx[128]; snprintf(ldx, sizeof(ldx), "    sub x16, x29, #%d\n    ldr w20, [x16]", idxv->offset); emitln(ftext, ldx); }
             emitln(ftext, "    cmp w20, w19");
             { char be[64]; snprintf(be, sizeof(be), "    b.ge L_break_%d", fid); emitln(ftext, be); }
             // Cargar elemento según tipo base registrado del iterable
@@ -170,10 +192,15 @@ int arm64_emitir_ciclo(AbstractExpresion *node, FILE *ftext, EmitirNodoFn gen_no
                 }
             }
             // Ejecutar bloque (no asignamos variable iteradora explícita por falta de metadatos)
+            // Persistir índice actual para sobrevivir al cuerpo del bucle
+            { char stx2[128]; snprintf(stx2, sizeof(stx2), "    sub x16, x29, #%d\n    str w20, [x16]", idxv->offset); emitln(ftext, stx2); }
             if (bloque) gen_node(ftext, bloque);
             // continue label
             flujo_emit_label(ftext, "L_continue", fid);
+            // Recargar índice, incrementarlo y guardarlo de vuelta
+            { char ldx2[128]; snprintf(ldx2, sizeof(ldx2), "    sub x16, x29, #%d\n    ldr w20, [x16]", idxv->offset); emitln(ftext, ldx2); }
             emitln(ftext, "    add w20, w20, #1");
+            { char stx3[128]; snprintf(stx3, sizeof(stx3), "    sub x16, x29, #%d\n    str w20, [x16]", idxv->offset); emitln(ftext, stx3); }
             { char bb[64]; snprintf(bb, sizeof(bb), "    b L_for_cond_%d", fid); emitln(ftext, bb); }
             flujo_emit_label(ftext, "L_break", fid);
             vars_pop_scope(ftext);
