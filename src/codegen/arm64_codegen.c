@@ -417,10 +417,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     // Preservar argumentos antes de cualquier llamada (usar callee-saved)
     emitln(f, "    mov x24, x0"); // arr
     emitln(f, "    mov x23, x1"); // preserve delim in callee-saved
-    // Debug marker
-    emitln(f, "    ldr x0, =fmt_string");
-    emitln(f, "    ldr x1, =str_dbg_join_start");
-    emitln(f, "    bl printf");
+    // (debug marker removed)
     // If arr is NULL, return empty string in tmpbuf
     emitln(f, "    cbnz x24, 0f");
     emitln(f, "    ldr x0, =tmpbuf");
@@ -494,10 +491,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     // Preservar argumentos antes de cualquier llamada
     emitln(f, "    mov x24, x0");
     emitln(f, "    mov x23, x1"); // preserve delim
-    // Debug marker
-    emitln(f, "    ldr x0, =fmt_string");
-    emitln(f, "    ldr x1, =str_dbg_joini_start");
-    emitln(f, "    bl printf");
+    // (debug marker removed)
     // If arr is NULL, return empty string in tmpbuf
     emitln(f, "    cbnz x24, 0f");
     emitln(f, "    ldr x0, =tmpbuf");
@@ -656,8 +650,6 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     // Emitir literal de depuración (tras core_emit_collected_literals para no interferir numeración)
     core_emitln(f, ".data");
     core_emitln(f, "str_dbg_start:    .asciz \"[ARM64] START\\n\"");
-    core_emitln(f, "str_dbg_join_start:    .asciz \"[ARM64] join(strings)\\n\"");
-    core_emitln(f, "str_dbg_joini_start:   .asciz \"[ARM64] join(ints)\\n\"");
 
     fclose(f);
     // liberar estructuras

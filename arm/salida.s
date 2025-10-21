@@ -348,9 +348,6 @@ join_array_strings:
     stp x23, x24, [sp, #32]
     mov x24, x0
     mov x23, x1
-    ldr x0, =fmt_string
-    ldr x1, =str_dbg_join_start
-    bl printf
     cbnz x24, 0f
     ldr x0, =tmpbuf
     mov w2, #0
@@ -419,9 +416,6 @@ join_array_ints:
     stp x23, x24, [sp, #32]
     mov x24, x0
     mov x23, x1
-    ldr x0, =fmt_string
-    ldr x1, =str_dbg_joini_start
-    bl printf
     cbnz x24, 0f
     ldr x0, =tmpbuf
     mov w2, #0
@@ -1260,7 +1254,7 @@ main:
     ldr x0, =fmt_string
     ldr x1, =str_lit_73
     bl printf
-L_func_exit_3:
+L_func_exit_1:
     add sp, sp, #1024
     mov sp, x29
 
@@ -1362,5 +1356,3 @@ g_resultado_vacio:    .quad 0
 g_con_comas:    .quad 0
 .data
 str_dbg_start:    .asciz "[ARM64] START\n"
-str_dbg_join_start:    .asciz "[ARM64] join(strings)\n"
-str_dbg_joini_start:   .asciz "[ARM64] join(ints)\n"
