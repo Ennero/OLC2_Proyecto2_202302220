@@ -86,8 +86,37 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
         AbstractExpresion *arg = args_list->hijos[i];
         TipoDato esperado = fi->param_types[i];
         if (esperado == STRING) {
-            if (!emitir_eval_string_ptr(arg, ftext)) emitln(ftext, "    mov x1, #0");
-            char mv[64]; snprintf(mv, sizeof(mv), "    mov x%d, x1", i); emitln(ftext, mv);
+            // Pasar por referencia: enviar la dirección de la ranura del caller que contiene el puntero a string
+            if (arg && arg->node_type && strcmp(arg->node_type, "Identificador") == 0) {
+                IdentificadorExpresion *aid = (IdentificadorExpresion *)arg;
+                VarEntry *av = vars_buscar(aid->nombre);
+                if (av) {
+                    // Dirección de la ranura local [x29 - offset]
+                    char ld[96]; snprintf(ld, sizeof(ld), "    sub x%d, x29, #%d", i, av->offset); emitln(ftext, ld);
+                } else {
+                    const GlobalInfo *gi = globals_lookup(aid->nombre);
+                    if (gi && gi->tipo == STRING) {
+                        // Para globales, no tenemos una ranura local; crear un proxy en el stack del caller
+                        // Reservar 16 bytes (alineado) y almacenar el puntero global allí, pasar su dirección
+                        emitln(ftext, "    sub sp, sp, #16");
+                        char lg[192]; snprintf(lg, sizeof(lg), "    ldr x16, =g_%s\n    ldr x1, [x16]", aid->nombre); emitln(ftext, lg);
+                        emitln(ftext, "    str x1, [sp]");
+                        char mvsp[64]; snprintf(mvsp, sizeof(mvsp), "    mov x%d, sp", i); emitln(ftext, mvsp);
+                    } else {
+                        // No identificado: construir puntero y colocar en tmp en stack
+                        if (!emitir_eval_string_ptr(arg, ftext)) emitln(ftext, "    mov x1, #0");
+                        emitln(ftext, "    sub sp, sp, #16");
+                        emitln(ftext, "    str x1, [sp]");
+                        char mvsp2[64]; snprintf(mvsp2, sizeof(mvsp2), "    mov x%d, sp", i); emitln(ftext, mvsp2);
+                    }
+                }
+            } else {
+                // Expresión: evaluar puntero en x1, derramar a stack y pasar su dirección
+                if (!emitir_eval_string_ptr(arg, ftext)) emitln(ftext, "    mov x1, #0");
+                emitln(ftext, "    sub sp, sp, #16");
+                emitln(ftext, "    str x1, [sp]");
+                char mv[64]; snprintf(mv, sizeof(mv), "    mov x%d, sp", i); emitln(ftext, mv);
+            }
         } else if (esperado == ARRAY) {
             // Pasar arreglos por referencia (puntero al header)
             if (arg && arg->node_type && strcmp(arg->node_type, "Identificador") == 0) {

@@ -192,23 +192,48 @@ int arm64_emitir_reasignacion(AbstractExpresion *node, FILE *ftext) {
             if (p->tipo == STRING) {
                 const char *lab = add_string_literal(p->valor ? p->valor : "");
                 char l1[64]; snprintf(l1, sizeof(l1), "    ldr x1, =%s", lab); emitln(ftext, l1);
-                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                if (v->is_ref) {
+                    // Cargar dirección del slot referenciado y escribir el puntero ahí
+                    char st[160]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    ldr x16, [x16]\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                } else {
+                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                }
             } else if (p->tipo == NULO) {
-                char st[128]; snprintf(st, sizeof(st), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                if (v->is_ref) {
+                    char st[160]; snprintf(st, sizeof(st), "    mov x1, #0\n    sub x16, x29, #%d\n    ldr x16, [x16]\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                } else {
+                    char st[128]; snprintf(st, sizeof(st), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                }
             }
         } else if (rhs->node_type && strcmp(rhs->node_type, "Identificador") == 0) {
             IdentificadorExpresion *rid = (IdentificadorExpresion *)rhs;
             VarEntry *rv = buscar_variable(rid->nombre);
             if (rv) {
-                char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", rv->offset); emitln(ftext, l1);
-                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                if (rv->is_ref) {
+                    char l1[160]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]\n    ldr x1, [x1]", rv->offset); emitln(ftext, l1);
+                } else {
+                    char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", rv->offset); emitln(ftext, l1);
+                }
+                if (v->is_ref) {
+                    char st[160]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    ldr x16, [x16]\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                } else {
+                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                }
             } else {
                 const GlobalInfo *gi = globals_lookup(rid->nombre);
                 if (gi && gi->tipo == STRING) {
                     char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", rid->nombre); emitln(ftext, l1);
-                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                    if (v->is_ref) {
+                        char st[160]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    ldr x16, [x16]\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                    } else {
+                        char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                    }
                 } else {
-                    char st[128]; snprintf(st, sizeof(st), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                    if (v->is_ref) {
+                        char st[160]; snprintf(st, sizeof(st), "    mov x1, #0\n    sub x16, x29, #%d\n    ldr x16, [x16]\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                    } else {
+                        char st[128]; snprintf(st, sizeof(st), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+                    }
                 }
             }
         } else if (expresion_es_cadena(rhs)) {
@@ -217,7 +242,11 @@ int arm64_emitir_reasignacion(AbstractExpresion *node, FILE *ftext) {
             emitln(ftext, "    mov x0, x1");
             emitln(ftext, "    bl strdup");
             emitln(ftext, "    mov x1, x0");
-            char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+            if (v->is_ref) {
+                char st[160]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    ldr x16, [x16]\n    str x1, [x16]", v->offset); emitln(ftext, st);
+            } else {
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
+            }
         }
     } else if (v->tipo == BOOLEAN) {
         emitir_eval_booleano(rhs, ftext);

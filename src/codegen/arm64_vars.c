@@ -44,6 +44,7 @@ VarEntry *vars_agregar(const char *name, TipoDato tipo, int size_bytes, FILE *ft
     v->tipo = tipo;
     v->offset = local_bytes;
     v->is_const = 0;
+    v->is_ref = 0;
     v->next = vars_head;
     vars_head = v;
     return v;

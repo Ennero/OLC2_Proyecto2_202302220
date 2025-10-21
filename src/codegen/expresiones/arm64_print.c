@@ -43,7 +43,11 @@ static void append_expr_to_tmpbuf(AbstractExpresion *arg, FILE *ftext) {
         VarEntry *v = buscar_variable(id->nombre);
         if (v && v->tipo == ARRAY) {
             // load array pointer and check null
-            char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
+            if (v->is_ref) {
+                char l1a[128]; snprintf(l1a, sizeof(l1a), "    sub x16, x29, #%d\n    ldr x1, [x16]\n    ldr x1, [x1]", v->offset); emitln(ftext, l1a);
+            } else {
+                char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
+            }
             emitln(ftext, "    cmp x1, #0");
             emitln(ftext, "    ldr x16, =null_str");
             emitln(ftext, "    csel x1, x16, x1, eq");
@@ -559,7 +563,11 @@ void emitir_imprimir_cadena(AbstractExpresion *node, FILE *ftext) {
         VarEntry *v = buscar_variable(id->nombre);
             if (v && v->tipo == STRING) {
             const char *null_lab = add_string_literal("null");
-            char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
+            if (v->is_ref) {
+                char l1a[128]; snprintf(l1a, sizeof(l1a), "    sub x16, x29, #%d\n    ldr x1, [x16]\n    ldr x1, [x1]", v->offset); emitln(ftext, l1a);
+            } else {
+                char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
+            }
             // Sustituir NULL por "null"
             emitln(ftext, "    cmp x1, #0");
             char lnull[64]; snprintf(lnull, sizeof(lnull), "    ldr x16, =%s", null_lab); emitln(ftext, lnull);
@@ -778,15 +786,15 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
                 return 1;
             }
         }
-        // Caso B: varargs: concatenar cada elemento convertido a string en tmpbuf
-        // Inicializar tmpbuf como cadena vacía y reservar scratch en stack para formateo
-        emitln(ftext, "    ldr x0, =tmpbuf");
+        // Caso B: varargs: concatenar cada elemento convertido a string en joinbuf
+        // Inicializar joinbuf como cadena vacía y reservar scratch en stack para formateo
+        emitln(ftext, "    ldr x0, =joinbuf");
         emitln(ftext, "    mov w2, #0");
         emitln(ftext, "    strb w2, [x0]");
         emitln(ftext, "    sub sp, sp, #128");
         for (size_t i = 0; i < lista->numHijos; ++i) {
             if (i > 0) {
-                emitln(ftext, "    ldr x0, =tmpbuf");
+                emitln(ftext, "    ldr x0, =joinbuf");
                 emitln(ftext, "    mov x1, x23");
                 emitln(ftext, "    bl strcat");
             }
@@ -799,7 +807,7 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
                     emitln(ftext, "    ldr x16, =null_str");
                     emitln(ftext, "    csel x1, x16, x1, eq");
                 }
-                emitln(ftext, "    ldr x0, =tmpbuf");
+                emitln(ftext, "    ldr x0, =joinbuf");
                 emitln(ftext, "    bl strcat");
             } else if (nodo_es_resultado_booleano(arg)) {
                 emitir_eval_booleano(arg, ftext);
@@ -807,7 +815,7 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
                 emitln(ftext, "    ldr x1, =false_str");
                 emitln(ftext, "    ldr x16, =true_str");
                 emitln(ftext, "    csel x1, x16, x1, ne");
-                emitln(ftext, "    ldr x0, =tmpbuf");
+                emitln(ftext, "    ldr x0, =joinbuf");
                 emitln(ftext, "    bl strcat");
             } else {
                 // Evaluar numérico/char y formatear en [sp]
@@ -817,7 +825,7 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
                     emitln(ftext, "    mov x1, #128");
                     emitln(ftext, "    bl java_format_double");
                     emitln(ftext, "    mov x1, sp");
-                    emitln(ftext, "    ldr x0, =tmpbuf");
+                    emitln(ftext, "    ldr x0, =joinbuf");
                     emitln(ftext, "    bl strcat");
                 } else {
                     // INT/CHAR: si CHAR convertir a UTF-8 en charbuf
@@ -846,7 +854,7 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
                             emitln(ftext, "    ldr x1, =false_str");
                             emitln(ftext, "    ldr x16, =true_str");
                             emitln(ftext, "    csel x1, x16, x1, ne");
-                            emitln(ftext, "    ldr x0, =tmpbuf");
+                            emitln(ftext, "    ldr x0, =joinbuf");
                             emitln(ftext, "    bl strcat");
                             continue;
                         }
@@ -855,7 +863,7 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
                         emitln(ftext, "    mov w0, w1");
                         emitln(ftext, "    bl char_to_utf8");
                         emitln(ftext, "    mov x1, x0");
-                        emitln(ftext, "    ldr x0, =tmpbuf");
+                        emitln(ftext, "    ldr x0, =joinbuf");
                         emitln(ftext, "    bl strcat");
                     } else {
                         emitln(ftext, "    mov x0, sp");
@@ -864,15 +872,15 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
                         emitln(ftext, "    ldr x1, =fmt_int");
                         emitln(ftext, "    bl sprintf");
                         emitln(ftext, "    mov x1, sp");
-                        emitln(ftext, "    ldr x0, =tmpbuf");
+                        emitln(ftext, "    ldr x0, =joinbuf");
                         emitln(ftext, "    bl strcat");
                     }
                 }
             }
         }
         emitln(ftext, "    add sp, sp, #128");
-        // Duplicar resultado para evitar alias con tmpbuf
-        emitln(ftext, "    ldr x0, =tmpbuf");
+        // Duplicar resultado para evitar alias con joinbuf
+        emitln(ftext, "    ldr x0, =joinbuf");
         emitln(ftext, "    bl strdup");
         emitln(ftext, "    mov x1, x0");
         return 1;
@@ -885,7 +893,12 @@ int emitir_eval_string_ptr(AbstractExpresion *node, FILE *ftext) {
         IdentificadorExpresion *id = (IdentificadorExpresion *)node;
         VarEntry *v = buscar_variable(id->nombre);
         if (v && v->tipo == STRING) {
-            char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
+            // Si es referencia (parámetro por referencia), primero cargar la dirección y luego desreferenciar para obtener el puntero real
+            if (v->is_ref) {
+                char l1a[128]; snprintf(l1a, sizeof(l1a), "    sub x16, x29, #%d\n    ldr x1, [x16]\n    ldr x1, [x1]", v->offset); emitln(ftext, l1a);
+            } else {
+                char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", v->offset); emitln(ftext, l1);
+            }
             return 1;
         }
         // Fallback: intentar global string conocido

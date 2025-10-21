@@ -325,6 +325,8 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "empty_str:      .asciz \"\"\n");
     // Buffer temporal para String.valueOf (no reentrante)
     emitln(f, "tmpbuf:         .skip 1024");
+    // Buffer dedicado para String.join (evita colisiones con concatenaciones externas)
+    emitln(f, "joinbuf:        .skip 1024");
     // Buffer para codificación UTF-8 de un solo carácter
     emitln(f, "charbuf:        .skip 8\n");
 
@@ -406,7 +408,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    ret\n");
 
     // --- Helpers: String.join sobre arreglos 1D ---
-    emitln(f, "// join_array_strings(x0=arr_ptr, x1=delim) -> x0=tmpbuf");
+    emitln(f, "// join_array_strings(x0=arr_ptr, x1=delim) -> x0=joinbuf");
     emitln(f, "join_array_strings:");
     emitln(f, "    stp x29, x30, [sp, -16]!");
     emitln(f, "    mov x29, sp");
@@ -418,9 +420,9 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    mov x24, x0"); // arr
     emitln(f, "    mov x23, x1"); // preserve delim in callee-saved
     // (debug marker removed)
-    // If arr is NULL, return empty string in tmpbuf
+    // If arr is NULL, return empty string in joinbuf
     emitln(f, "    cbnz x24, 0f");
-    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    ldr x0, =joinbuf");
     emitln(f, "    mov w2, #0");
     emitln(f, "    strb w2, [x0]");
     emitln(f, "    ldp x23, x24, [sp, #32]");
@@ -446,7 +448,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    ldr w19, [x18]"); // n
     // compute data base in callee-saved x21 to survive calls
     emitln(f, "    add x21, x24, x17");
-    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    ldr x0, =joinbuf");
     emitln(f, "    mov w2, #0");
     emitln(f, "    strb w2, [x0]");
     emitln(f, "    mov w20, #0"); // i
@@ -455,8 +457,8 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    b.ge 2f");
     emitln(f, "    // if i>0 append delim");
     emitln(f, "    cbz w20, 3f");
-    emitln(f, "    // Reload x0 with tmpbuf before strcat (x0 is caller-saved)");
-    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    // Reload x0 with joinbuf before strcat (x0 is caller-saved)");
+    emitln(f, "    ldr x0, =joinbuf");
     emitln(f, "    mov x1, x23");
     emitln(f, "    bl strcat");
     emitln(f, "3:");
@@ -467,7 +469,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    ldr x22, =null_str");
     emitln(f, "4:");
     emitln(f, "    // Append element string (reload x0)");
-    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    ldr x0, =joinbuf");
     emitln(f, "    mov x1, x22");
     emitln(f, "    bl strcat");
     emitln(f, "    add w20, w20, #1");
@@ -480,7 +482,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    ldp x29, x30, [sp], 16");
     emitln(f, "    ret\n");
 
-    emitln(f, "// join_array_ints(x0=arr_ptr, x1=delim) -> x0=tmpbuf");
+    emitln(f, "// join_array_ints(x0=arr_ptr, x1=delim) -> x0=joinbuf");
     emitln(f, "join_array_ints:");
     emitln(f, "    stp x29, x30, [sp, -16]!");
     emitln(f, "    mov x29, sp");
@@ -492,9 +494,9 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    mov x24, x0");
     emitln(f, "    mov x23, x1"); // preserve delim
     // (debug marker removed)
-    // If arr is NULL, return empty string in tmpbuf
+    // If arr is NULL, return empty string in joinbuf
     emitln(f, "    cbnz x24, 0f");
-    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    ldr x0, =joinbuf");
     emitln(f, "    mov w2, #0");
     emitln(f, "    strb w2, [x0]");
     emitln(f, "    ldp x23, x24, [sp, #32]");
@@ -519,7 +521,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    ldr w19, [x18]");
     // compute data base in x21
     emitln(f, "    add x21, x24, x17");
-    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    ldr x0, =joinbuf");
     emitln(f, "    mov w2, #0");
     emitln(f, "    strb w2, [x0]");
     emitln(f, "    mov w20, #0");
@@ -527,8 +529,8 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    cmp w20, w19");
     emitln(f, "    b.ge 2f");
     emitln(f, "    cbz w20, 3f");
-    emitln(f, "    // Reload x0 with tmpbuf before strcat (x0 is caller-saved)");
-    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    // Reload x0 with joinbuf before strcat (x0 is caller-saved)");
+    emitln(f, "    ldr x0, =joinbuf");
     emitln(f, "    mov x1, x23");
     emitln(f, "    bl strcat");
     emitln(f, "3:");
@@ -539,9 +541,9 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    mov w2, w22");
     emitln(f, "    bl sprintf");
     emitln(f, "    add x1, sp, #48");
-    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    ldr x0, =joinbuf");
     emitln(f, "    bl strcat");
-    emitln(f, "    ldr x0, =tmpbuf");
+    emitln(f, "    ldr x0, =joinbuf");
     emitln(f, "    add w20, w20, #1");
     emitln(f, "    b 1b");
     emitln(f, "2:");
@@ -579,6 +581,8 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
         for (int p = 0; p < fi->param_count && p < 8; ++p) {
             int size = (fi->param_types[p] == DOUBLE || fi->param_types[p] == FLOAT) ? 8 : 8;
             VarEntry *v = vars_agregar_ext(fi->param_names[p], fi->param_types[p], size, 0, f);
+            // Marcar strings como pasados por referencia: almacenaremos la dirección de una ranura que contiene el puntero real
+            if (fi->param_types[p] == STRING) v->is_ref = 1;
             if (fi->param_types[p] == DOUBLE || fi->param_types[p] == FLOAT) {
                 char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d%d, [x16]", v->offset, p); emitln(f, st);
             } else if (fi->param_types[p] == STRING || fi->param_types[p] == ARRAY) {

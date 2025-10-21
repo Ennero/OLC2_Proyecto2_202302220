@@ -8,6 +8,9 @@ typedef struct VarEntry {
     TipoDato tipo;
     int offset;
     int is_const;
+    // Marca si esta variable local almacena una referencia (puntero a puntero) al valor real.
+    // Usado para parámetros pasados por referencia (p.ej., String por referencia).
+    int is_ref;
     struct VarEntry *next;
 } VarEntry;
 
