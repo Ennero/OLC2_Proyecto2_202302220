@@ -443,24 +443,74 @@ main:
     mov x29, sp
 
     sub sp, sp, #1024
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_1
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
     sub sp, sp, #16
-    mov x1, #0
+    mov w1, #123
     sub x16, x29, #16
+    str w1, [x16]
+    sub sp, sp, #16
+    // String concatenation to tmpbuf
+    sub sp, sp, #128
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    sub x16, x29, #16
+    ldr w1, [x16]
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_1
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    add sp, sp, #128
+    ldr x1, =tmpbuf
+    sub x16, x29, #32
     str x1, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
+    // print expr node_type: Identificador
+    sub x16, x29, #32
+    ldr x1, [x16]
+    cmp x1, #0
+    ldr x16, =str_lit_2
+    csel x1, x16, x1, eq
+    ldr x0, =fmt_string
+    bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_3
     bl printf
-    sub x16, x29, #16
+    sub sp, sp, #16
+    mov w1, #1
+    sub x16, x29, #48
+    str w1, [x16]
+    sub sp, sp, #16
+    sub x16, x29, #48
+    ldr w1, [x16]
+    cmp w1, #0
+    ldr x1, =false_str
+    ldr x16, =true_str
+    csel x1, x16, x1, ne
+    mov x0, x1
+    bl strdup
+    mov x1, x0
+    sub x16, x29, #64
+    str x1, [x16]
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Identificador
+    sub x16, x29, #64
     ldr x1, [x16]
     cmp x1, #0
     ldr x16, =str_lit_4
@@ -470,193 +520,72 @@ main:
     ldr x0, =fmt_string
     ldr x1, =str_lit_5
     bl printf
-    ldr x1, =str_lit_6
-    sub x16, x29, #16
-    str x1, [x16]
+    sub sp, sp, #16
+    ldr x16, =dbl_lit_6
+    ldr d0, [x16]
+    sub x16, x29, #80
+    str d0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
+    // print expr node_type: StringValueof
+    sub x16, x29, #80
+    ldr d0, [x16]
+    sub sp, sp, #128
+    mov x0, sp
+    mov x1, #128
+    bl java_format_double
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    ldr x0, =fmt_string
+    bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_7
     bl printf
-    sub x16, x29, #16
+    sub sp, sp, #16
+    // String concatenation to tmpbuf
+    sub sp, sp, #128
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    mov w1, #123
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_8
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    add sp, sp, #128
+    ldr x1, =tmpbuf
+    sub x16, x29, #96
+    str x1, [x16]
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Identificador
+    sub x16, x29, #96
     ldr x1, [x16]
     cmp x1, #0
-    ldr x16, =str_lit_8
+    ldr x16, =str_lit_9
     csel x1, x16, x1, eq
     ldr x0, =fmt_string
     bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_9
-    bl printf
-    sub sp, sp, #16
-    mov x1, #0
-    sub x16, x29, #32
-    str x1, [x16]
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
     ldr x0, =fmt_string
     ldr x1, =str_lit_10
     bl printf
-    sub x16, x29, #32
-    ldr x1, [x16]
-    cmp x1, #0
-    ldr x16, =str_lit_11
-    csel x1, x16, x1, eq
-    ldr x0, =fmt_string
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_12
-    bl printf
-    sub sp, sp, #16
-    mov w1, #3
-    str w1, [sp, #0]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat
-    sub x16, x29, #32
-    str x0, [x16]
-    add sp, sp, #16
-    sub sp, sp, #16
-    mov w1, #0
-    str w1, [sp, #0]
-    sub x16, x29, #32
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    mov w1, #10
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    mov w1, #1
-    str w1, [sp, #0]
-    sub x16, x29, #32
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    mov w1, #20
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    mov w1, #2
-    str w1, [sp, #0]
-    sub x16, x29, #32
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    mov w1, #30
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_13
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_14
-    bl printf
-    sub sp, sp, #16
-    mov w1, #0
-    sub x16, x29, #48
-    str w1, [x16]
-L_for_cond_2:
-    sub x16, x29, #48
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    sub x16, x29, #32
-    ldr x0, [x16]
-    // load sizes[0] from header: [x0+8]
-    add x18, x0, #8
-    ldr w1, [x18]
-    ldr w19, [sp]
-    add sp, sp, #16
-    cmp w19, w1
-    cset w1, lt
-    cmp w1, #0
-    beq L_break_2
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_15
-    bl printf
-    sub x16, x29, #48
-    ldr w1, [x16]
-    ldr x0, =fmt_int
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_16
-    bl printf
-    sub sp, sp, #16
-    sub x16, x29, #48
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #32
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr
-    ldr w1, [x0]
-    add sp, sp, #16
-    ldr x0, =fmt_int
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_17
-    bl printf
-L_continue_2:
-    sub x16, x29, #48
-    ldr w1, [x16]
-    add w20, w1, #1
-    sub x16, x29, #48
-    str w20, [x16]
-    b L_for_cond_2
-L_break_2:
-    sub x16, x29, #16
-    ldr x1, [x16]
-    cmp x1, #0
-    cset w1, ne
-    cmp w1, #0
-    beq L_end_3
-L_then_3:
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_18
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_19
-    bl printf
-L_end_3:
-    sub x16, x29, #32
-    ldr x1, [x16]
-    cmp x1, #0
-    cset w1, ne
-    cmp w1, #0
-    beq L_end_4
-L_then_4:
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_20
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_21
-    bl printf
-L_end_4:
 L_func_exit_1:
     add sp, sp, #1024
     mov sp, x29
@@ -667,28 +596,21 @@ L_func_exit_1:
 
 // --- Literales recolectados ---
 .data
-str_lit_1:    .asciz "=== Pruebas con null ==="
-str_lit_2:    .asciz "\n"
-str_lit_3:    .asciz "Texto inicial: "
+str_lit_1:    .asciz " mundo"
+str_lit_2:    .asciz "null"
+str_lit_3:    .asciz "\n"
 str_lit_4:    .asciz "null"
 str_lit_5:    .asciz "\n"
-str_lit_6:    .asciz "Hola mundo"
-str_lit_7:    .asciz "Texto reasignado: "
-str_lit_8:    .asciz "null"
-str_lit_9:    .asciz "\n"
-str_lit_10:    .asciz "Array numeros: "
-str_lit_11:    .asciz "null"
-str_lit_12:    .asciz "\n"
-str_lit_13:    .asciz "Array numeros inicializado:"
-str_lit_14:    .asciz "\n"
-str_lit_15:    .asciz "Elemento "
-str_lit_16:    .asciz ": "
-str_lit_17:    .asciz "\n"
-str_lit_18:    .asciz "Texto no es null"
-str_lit_19:    .asciz "\n"
-str_lit_20:    .asciz "Array numeros no es null"
-str_lit_21:    .asciz "\n"
+dbl_lit_6:    .double 3.14
+str_lit_7:    .asciz "\n"
+str_lit_8:    .asciz " mundo"
+str_lit_9:    .asciz "null"
+str_lit_10:    .asciz "\n"
 
 // --- Variables globales ---
-g_texto:    .quad 0
-g_i:    .quad 0
+g_numero:    .quad 123
+g_cadena:    .quad 0
+g_verdadero:    .quad 1
+g_cadenaBoolean:    .quad 0
+g_decimal:    .quad 0
+g_cadena1:    .quad 0

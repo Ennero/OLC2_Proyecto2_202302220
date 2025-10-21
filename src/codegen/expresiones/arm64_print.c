@@ -279,37 +279,36 @@ void emitir_string_valueof(AbstractExpresion *arg, FILE *ftext) {
         } else {
             emitln(ftext, "    mov w21, w1");
         }
-        emitln(ftext, "    ldr x19, =tmpbuf");
-        emitln(ftext, "    mov x0, x19");
-        // Convertir code point a UTF-8 y devolver puntero en x1
+        // Convertir code point a UTF-8 y duplicar resultado
         emitln(ftext, "    mov w0, w21");
         emitln(ftext, "    bl char_to_utf8");
-        // Duplicate the one-char buffer so caller gets stable pointer
         emitln(ftext, "    mov x0, x0");
         emitln(ftext, "    bl strdup");
         emitln(ftext, "    mov x1, x0");
     } else {
         if (ty == DOUBLE) {
-            // Usar formateo Java-like para doubles: java_format_double(d0, tmpbuf, 1024)
-            emitln(ftext, "    ldr x19, =tmpbuf");
-            emitln(ftext, "    mov x0, x19");
-            emitln(ftext, "    mov x1, #1024");
+            // Formatear a buffer temporal en stack para evitar colisión con tmpbuf de concatenación
+            emitln(ftext, "    sub sp, sp, #128");
+            emitln(ftext, "    mov x0, sp");
+            emitln(ftext, "    mov x1, #128");
             emitln(ftext, "    bl java_format_double");
-            // strdup(tmpbuf)
-            emitln(ftext, "    ldr x0, =tmpbuf");
+            // strdup(sp)
+            emitln(ftext, "    mov x0, sp");
             emitln(ftext, "    bl strdup");
+            emitln(ftext, "    add sp, sp, #128");
             emitln(ftext, "    mov x1, x0");
         } else {
-            // Enteros: sprintf a tmpbuf con %d
+            // Enteros: sprintf a buffer temporal en stack con %d para evitar usar tmpbuf
+            emitln(ftext, "    sub sp, sp, #128");
             emitln(ftext, "    mov w21, w1");
-            emitln(ftext, "    ldr x19, =tmpbuf");
-            emitln(ftext, "    mov x0, x19");
+            emitln(ftext, "    mov x0, sp");
             emitln(ftext, "    ldr x1, =fmt_int");
             emitln(ftext, "    mov w2, w21");
             emitln(ftext, "    bl sprintf");
-            // strdup(tmpbuf)
-            emitln(ftext, "    mov x0, x19");
+            // strdup(sp)
+            emitln(ftext, "    mov x0, sp");
             emitln(ftext, "    bl strdup");
+            emitln(ftext, "    add sp, sp, #128");
             emitln(ftext, "    mov x1, x0");
         }
     }
