@@ -52,6 +52,27 @@ int arm64_emitir_reasignacion(AbstractExpresion *node, FILE *ftext) {
     // Soporte para reasignación de arreglos
     if (v->tipo == ARRAY) {
         const char *rtype = rhs->node_type ? rhs->node_type : "";
+        if (strcmp(rtype, "Identificador") == 0) {
+            // arr = otroArreglo; -> copiar puntero (por valor en el parámetro local)
+            IdentificadorExpresion *rid = (IdentificadorExpresion *)rhs;
+            VarEntry *rv = buscar_variable(rid->nombre);
+            if (rv && rv->tipo == ARRAY) {
+                // Cargar puntero del arreglo origen y almacenarlo en el destino
+                char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", rv->offset); emitln(ftext, l1);
+                char stp[96]; snprintf(stp, sizeof(stp), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stp);
+                return 1;
+            } else {
+                const GlobalInfo *gi = globals_lookup(rid->nombre);
+                if (gi && gi->tipo == ARRAY) {
+                    char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", rid->nombre); emitln(ftext, l1);
+                    char stp[96]; snprintf(stp, sizeof(stp), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stp);
+                    return 1;
+                }
+            }
+            // Si no se encuentra fuente válida, asignar NULL
+            char stpn[128]; snprintf(stpn, sizeof(stpn), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stpn);
+            return 1;
+        }
         if (strcmp(rtype, "ArrayCreation") == 0) {
             // rhs->hijos[1] es la lista de dimensiones
             AbstractExpresion *lista = rhs->hijos[1];
@@ -182,8 +203,8 @@ int arm64_emitir_reasignacion(AbstractExpresion *node, FILE *ftext) {
                 return 1;
             }
         }
-        // Otros tipos de asignación a arreglo no soportados aquí
-        emitln(ftext, "    // reasignación a arreglo: tipo RHS no soportado, ignorado");
+        // Otros tipos de asignación a arreglo no soportados aquí (ArrayInitializer/FunctionCall pueden ampliarse)
+        emitln(ftext, "    // reasignación a arreglo: tipo RHS no soportado, se omite");
         return 1;
     }
     if (v->tipo == STRING) {

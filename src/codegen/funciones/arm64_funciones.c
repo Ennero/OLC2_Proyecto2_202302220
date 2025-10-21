@@ -91,8 +91,14 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
                 IdentificadorExpresion *aid = (IdentificadorExpresion *)arg;
                 VarEntry *av = vars_buscar(aid->nombre);
                 if (av) {
-                    // Dirección de la ranura local [x29 - offset]
-                    char ld[96]; snprintf(ld, sizeof(ld), "    sub x%d, x29, #%d", i, av->offset); emitln(ftext, ld);
+                    // Si el identificador es un parámetro por referencia (is_ref), la ranura local contiene
+                    // la DIRECCIÓN del slot real en el llamador; debemos pasar ese puntero (no la dirección de nuestra ranura)
+                    if (av->is_ref) {
+                        char ld[128]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x%d, [x16]", av->offset, i); emitln(ftext, ld);
+                    } else {
+                        // Dirección de la ranura local [x29 - offset]
+                        char ld[96]; snprintf(ld, sizeof(ld), "    sub x%d, x29, #%d", i, av->offset); emitln(ftext, ld);
+                    }
                 } else {
                     const GlobalInfo *gi = globals_lookup(aid->nombre);
                     if (gi && gi->tipo == STRING) {
@@ -100,11 +106,19 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
                         // Reservar 16 bytes (alineado) y almacenar el puntero global allí, pasar su dirección
                         emitln(ftext, "    sub sp, sp, #16");
                         char lg[192]; snprintf(lg, sizeof(lg), "    ldr x16, =g_%s\n    ldr x1, [x16]", aid->nombre); emitln(ftext, lg);
+                        // Proxy by-ref a un valor estable (no alias a tmpbuf)
+                        emitln(ftext, "    mov x0, x1");
+                        emitln(ftext, "    bl strdup");
+                        emitln(ftext, "    mov x1, x0");
                         emitln(ftext, "    str x1, [sp]");
                         char mvsp[64]; snprintf(mvsp, sizeof(mvsp), "    mov x%d, sp", i); emitln(ftext, mvsp);
                     } else {
                         // No identificado: construir puntero y colocar en tmp en stack
                         if (!emitir_eval_string_ptr(arg, ftext)) emitln(ftext, "    mov x1, #0");
+                        // Duplicar para garantizar semántica por valor (no alias)
+                        emitln(ftext, "    mov x0, x1");
+                        emitln(ftext, "    bl strdup");
+                        emitln(ftext, "    mov x1, x0");
                         emitln(ftext, "    sub sp, sp, #16");
                         emitln(ftext, "    str x1, [sp]");
                         char mvsp2[64]; snprintf(mvsp2, sizeof(mvsp2), "    mov x%d, sp", i); emitln(ftext, mvsp2);
@@ -113,6 +127,10 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
             } else {
                 // Expresión: evaluar puntero en x1, derramar a stack y pasar su dirección
                 if (!emitir_eval_string_ptr(arg, ftext)) emitln(ftext, "    mov x1, #0");
+                // Duplicar para evitar alias a tmpbuf (paso por valor)
+                emitln(ftext, "    mov x0, x1");
+                emitln(ftext, "    bl strdup");
+                emitln(ftext, "    mov x1, x0");
                 emitln(ftext, "    sub sp, sp, #16");
                 emitln(ftext, "    str x1, [sp]");
                 char mv[64]; snprintf(mv, sizeof(mv), "    mov x%d, sp", i); emitln(ftext, mv);
@@ -154,6 +172,10 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
     }
     if (fi->ret == DOUBLE || fi->ret == FLOAT) {
         return DOUBLE;
+    } else if (fi->ret == STRING) {
+        // Propagar puntero de retorno en x0 también a x1 para consumo uniforme aguas arriba
+        emitln(ftext, "    mov x1, x0");
+        return STRING;
     } else if (fi->ret == ARRAY) {
         // Mantener puntero en x0; opcionalmente reflejar en x1 para consumidores puntuales
         emitln(ftext, "    mov x1, x0");

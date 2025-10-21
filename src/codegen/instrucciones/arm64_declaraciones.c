@@ -176,6 +176,78 @@ int arm64_emitir_declaracion(AbstractExpresion *node, FILE *ftext) {
             // Guardar el puntero resultante en la variable destino
             { char stp[96]; snprintf(stp, sizeof(stp), "    sub x16, x29, #%d\n    str x0, [x16]", v->offset); emitln(ftext, stp); }
             return 1;
+        } else if (node->numHijos > 0 && node->hijos[0] && strcmp(node->hijos[0]->node_type ? node->hijos[0]->node_type : "", "ArrayAccess") == 0) {
+            // Inicialización de arreglo desde acceso a otro arreglo (ej. int[] a = b[i];)
+            // Evaluar la dirección del elemento (puntero almacenado) y cargar el puntero para almacenarlo en la variable
+            AbstractExpresion *acc = node->hijos[0];
+            // Calcular profundidad de índices
+            int depth = 0; AbstractExpresion *it = acc;
+            while (it && it->node_type && strcmp(it->node_type, "ArrayAccess") == 0) { depth++; it = it->hijos[0]; }
+            if (!(it && it->node_type && strcmp(it->node_type, "Identificador") == 0)) {
+                // No soportado: asignar NULL
+                char stp[128]; snprintf(stp, sizeof(stp), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stp);
+                return 1;
+            }
+            IdentificadorExpresion *root_id = (IdentificadorExpresion *)it;
+            VarEntry *rv = buscar_variable(root_id->nombre);
+            if (!rv) {
+                // Intentar global
+                const GlobalInfo *gi = globals_lookup(root_id->nombre);
+                if (gi) {
+                    // Reservar stack para índices y empujarlos en orden
+                    int bytes = ((depth * 4) + 15) & ~15;
+                    if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
+                    // Construir arreglo temporal de nodos de índices en orden izquierda->derecha
+                    AbstractExpresion **idx_nodes = NULL;
+                    if (depth > 0) idx_nodes = (AbstractExpresion**)malloc(sizeof(AbstractExpresion*) * (size_t)depth);
+                    int pos = depth - 1; it = acc;
+                    for (int i = 0; i < depth; ++i) { idx_nodes[pos--] = it->hijos[1]; it = it->hijos[0]; }
+                    for (int k = 0; k < depth; ++k) {
+                        TipoDato ty = emitir_eval_numerico(idx_nodes[k], ftext);
+                        if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                        char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", k * 4); emitln(ftext, st);
+                    }
+                    // Cargar puntero base del arreglo global
+                    { char lg[128]; snprintf(lg, sizeof(lg), "    ldr x16, =g_%s\n    ldr x0, [x16]", root_id->nombre); emitln(ftext, lg); }
+                    emitln(ftext, "    mov x1, sp");
+                    { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
+                    emitln(ftext, "    bl array_element_addr_ptr");
+                    emitln(ftext, "    ldr x0, [x0]");
+                    if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+                    if (idx_nodes) free(idx_nodes);
+                    // Guardar puntero en variable
+                    { char stp2[96]; snprintf(stp2, sizeof(stp2), "    sub x16, x29, #%d\n    str x0, [x16]", v->offset); emitln(ftext, stp2); }
+                    return 1;
+                }
+                // No local ni global
+                char stpn[128]; snprintf(stpn, sizeof(stpn), "    mov x1, #0\n    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, stpn);
+                return 1;
+            }
+            // Local: reservar espacio para índices y evaluar en orden
+            {
+                int bytes = ((depth * 4) + 15) & ~15;
+                if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
+                AbstractExpresion **idx_nodes = NULL;
+                if (depth > 0) idx_nodes = (AbstractExpresion**)malloc(sizeof(AbstractExpresion*) * (size_t)depth);
+                int pos = depth - 1; it = acc;
+                for (int i = 0; i < depth; ++i) { idx_nodes[pos--] = it->hijos[1]; it = it->hijos[0]; }
+                for (int k = 0; k < depth; ++k) {
+                    TipoDato ty = emitir_eval_numerico(idx_nodes[k], ftext);
+                    if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                    char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", k * 4); emitln(ftext, st);
+                }
+                // Cargar puntero base del arreglo local y obtener dirección del elemento (puntero almacenado)
+                { char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", rv->offset); emitln(ftext, ld); }
+                emitln(ftext, "    mov x1, sp");
+                { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
+                emitln(ftext, "    bl array_element_addr_ptr");
+                emitln(ftext, "    ldr x0, [x0]");
+                if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+                if (idx_nodes) free(idx_nodes);
+                // Guardar el puntero de subarreglo en la variable declarada
+                { char stp2[96]; snprintf(stp2, sizeof(stp2), "    sub x16, x29, #%d\n    str x0, [x16]", v->offset); emitln(ftext, stp2); }
+                return 1;
+            }
         } else if (node->numHijos > 0 && node->hijos[0] && strcmp(node->hijos[0]->node_type ? node->hijos[0]->node_type : "", "ArrayAdd") == 0) {
             // Inicialización mediante numeros = numeros.add(elem);
             AbstractExpresion *rhs = node->hijos[0];
@@ -297,15 +369,14 @@ int arm64_emitir_declaracion(AbstractExpresion *node, FILE *ftext) {
                 if (call_ret != DOUBLE) emitln(ftext, "    scvtf d0, w1");
                 char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d0, [x16]", v->offset); emitln(ftext, st);
             } else if (decl->tipo == STRING) {
-                // Para STRING, el contrato de arm64_emitir_llamada_funcion no garantiza x1, así que evaluamos explícitamente si es STRING
-                if (call_ret == DOUBLE) {
-                    // No aplicable; forzar NULL
-                    emitln(ftext, "    mov x1, #0");
+                // Si la función retornó STRING, arm64_emitir_llamada_funcion refleja x0->x1
+                if (call_ret == STRING) {
+                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
                 } else {
-                    // Si la función devolvió int-like en w1, usar valueOf o NULL; como inicialización directa de string desde fn no estándar, usar 0
+                    // Otros tipos no son asignables directamente a STRING aquí: inicializar a null
                     emitln(ftext, "    mov x1, #0");
+                    char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
                 }
-                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", v->offset); emitln(ftext, st);
             } else if (decl->tipo == ARRAY) {
                 // Se espera que funciones que retornan arreglos pongan puntero en x0; guardarlo
                 char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x0, [x16]", v->offset); emitln(ftext, st);

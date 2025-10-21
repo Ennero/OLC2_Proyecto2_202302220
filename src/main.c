@@ -614,13 +614,32 @@ static void on_assemble_clicked(GtkToolButton *button, gpointer user_data)
         append_to_output("===== Salida de ensamblado/enlace/ejecución =====\n");
         if (out && *out)
         {
-            append_to_output(out);
+            // Asegurar que el texto es UTF-8 válido antes de insertarlo en el TextBuffer
+            if (!g_utf8_validate(out, -1, NULL))
+            {
+                gchar *safe = g_utf8_make_valid(out, -1);
+                append_to_output(safe ? safe : "");
+                if (safe) g_free(safe);
+            }
+            else
+            {
+                append_to_output(out);
+            }
             if (out[strlen(out) - 1] != '\n') append_to_output("\n");
         }
         if (err && *err)
         {
             append_to_output("\n===== Errores/Advertencias =====\n");
-            append_to_output(err);
+            if (!g_utf8_validate(err, -1, NULL))
+            {
+                gchar *safe_err = g_utf8_make_valid(err, -1);
+                append_to_output(safe_err ? safe_err : "");
+                if (safe_err) g_free(safe_err);
+            }
+            else
+            {
+                append_to_output(err);
+            }
             if (err[strlen(err) - 1] != '\n') append_to_output("\n");
         }
 
@@ -634,7 +653,18 @@ static void on_assemble_clicked(GtkToolButton *button, gpointer user_data)
     if (err) g_free(err);
 
     // Enviar a la vista de salida
-    gtk_text_buffer_set_text(widgets->output_buffer, get_output_buffer(), -1);
+    // get_output_buffer() debe contener UTF-8; por si acaso, validar y corregir
+    const char *obuf = get_output_buffer();
+    if (!g_utf8_validate(obuf, -1, NULL))
+    {
+        gchar *safe_all = g_utf8_make_valid(obuf, -1);
+        gtk_text_buffer_set_text(widgets->output_buffer, safe_all ? safe_all : "", -1);
+        if (safe_all) g_free(safe_all);
+    }
+    else
+    {
+        gtk_text_buffer_set_text(widgets->output_buffer, obuf, -1);
+    }
 }
 
 //=====================================================================
