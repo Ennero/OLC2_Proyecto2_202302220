@@ -150,7 +150,12 @@ int arm64_emitir_ciclo(AbstractExpresion *node, FILE *ftext, EmitirNodoFn gen_no
                 char st[128]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x0, [x16]", itv->offset); emitln(ftext, st);
             } else {
                 // Iterador primitivo: cargar valor y guardarlo en slot de variable
-                if (base_t == DOUBLE || base_t == FLOAT) {
+                if (base_t == STRING) {
+                    // Elementos son punteros (8 bytes)
+                    emitln(ftext, "    add x22, x21, x20, lsl #3");
+                    emitln(ftext, "    ldr x1, [x22]");
+                    char st[128]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x1, [x16]", itv->offset); emitln(ftext, st);
+                } else if (base_t == DOUBLE || base_t == FLOAT) {
                     emitln(ftext, "    add x22, x21, x20, lsl #3");
                     emitln(ftext, "    ldr d0, [x22]");
                     char st[128]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d0, [x16]", itv->offset); emitln(ftext, st);
