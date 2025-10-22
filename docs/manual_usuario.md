@@ -20,6 +20,7 @@
     - [Flujo de las nuevas funcionalidades](#flujo-de-las-nuevas-funcionalidades)
       - [Ejecutar código aarch64 desde la interfaz de usuario](#ejecutar-código-aarch64-desde-la-interfaz-de-usuario)
       - [Ejecutar código aarch64 desde la consola](#ejecutar-código-aarch64-desde-la-consola)
+  - [Apéndice técnico (FAQ)](#apéndice-técnico-faq)
 
 ## Objetivos
 
@@ -128,7 +129,32 @@ Finalmente, está la opción de **Ejecutar**, que ejecuta el código de entrada 
 
 ![Ejecutar Código](./imgs/16.png)
 
-## Funcionalidades Añadidas para esta fase
+## Apéndice técnico (FAQ)
+
+1) ¿Dónde se guarda el archivo ensamblador generado?
+
+- El archivo se genera como `arm/salida.s` dentro de la carpeta del proyecto. Si vienes de versiones anteriores o de capturas antiguas, quizá veas referencias a una carpeta `aarch64`; en esta versión usamos la carpeta `arm/`.
+- Si quieres entender cómo se produce ese `.s` y qué convenciones seguimos, mira el informe técnico: [Generación de código AArch64 (cómo lo hacemos)](./informe_tecnico.md#generación-de-código-aarch64-cómo-lo-hacemos).
+
+2) ¿Qué necesito instalar para ensamblar y ejecutar AArch64 en mi PC?
+
+- Necesitas el toolchain de AArch64 (ensamblador/enlazador y emulador QEMU). Las instrucciones completas están en el [README](../README.md) en la raíz del proyecto.
+- En ese documento se listan los paquetes recomendados (por ejemplo, `gcc-aarch64-linux-gnu`, `binutils-aarch64-linux-gnu`, `qemu-user`) y cómo verificar su instalación.
+
+3) ¿Cómo se representan los arreglos irregulares (jagged) en memoria?
+
+- El arreglo exterior es 1D de punteros (8 bytes por entrada). Cada entrada apunta a un subarreglo que tiene su propia cabecera (`dims` + `sizes[]`) y su zona de datos alineada.
+- Hay un diagrama y detalles en el informe técnico: [Modelo de arreglos y helpers](./informe_tecnico.md#modelo-de-arreglos-y-helpers).
+
+4) ¿Qué es el “stride” y por qué importa?
+
+- El stride es cuántos bytes avanzas para saltar de un elemento al siguiente. En `int[]` el stride es de 4B; en `String[]`, `double[]` o `int[][]` (punteros), es de 8B.
+- Usamos stride 4B u 8B en copias, direccionamiento y `Arrays.add`. Un ejemplo con ambos casos lo encuentras en: [Mini‑ejemplo: Arrays.add (4B vs 8B)](./informe_tecnico.md#mini%E2%80%91ejemplo-arraysadd-4b-vs-8b).
+
+5) ¿Qué hace exactamente el botón “Ensamblar y Ejecutar”?
+
+- Si quieres ver cada paso y modificar parámetros, abre el script y el [README](../README.md) para conocer las dependencias y alternativas.
+
 
 En esta fase, debio a los requrimientos, se le añadieron funcionalidades al programa, las cuales son:
 
@@ -147,6 +173,8 @@ Se puede observar el archivo creado en la carpeta ``aarch64`` dentro de la carpe
 
 ![Ejecutar Código](./imgs/23.png)
 
+> Nota técnica: actualmente la herramienta genera el archivo en la carpeta de salida `arm/` (por ejemplo, `arm/salida.s`). Para entender cómo se emite el código y qué convenciones se siguen, revisa “Generación de código AArch64 (cómo lo hacemos)” en el informe técnico.
+
 Previo a la compilación siempre se continua realizando el proceso de análisis léxico, sintáctico y semántico heredado de la funcionalidad de **Ejecutar**.
 
 Ahora este programa se puede ejecutar de nos maneras:
@@ -157,10 +185,14 @@ La opción más simple para ejecutar el código ``aarch64`` generado después de
 
 ![Ejecutar Código](./imgs/22.png)
 
+> Nota técnica: esta acción invoca el script de ensamblado/enlace para AArch64 y luego ejecuta el binario bajo QEMU. Si quieres ver los detalles del proceso (herramientas usadas, flags y orden de pasos), consulta el archivo `ensamblar.sh` y la sección de AArch64 en el informe técnico.
+
 #### Ejecutar código aarch64 desde la consola
 
 Otra opción para ejecutar este código es mediante la **consola**. Dentro de la raiz del proyecto se encuentra un script llamado ``ensamblar.sh``, que al ejecutarse, **ensambla**, **enlace** y **ejecuta el código** en ``aarch64`` en la cosola.
 
 ![Ejecutar Código](./imgs/26.png)
+
+> Nota técnica: para usar el script desde consola, asegúrate de tener instalado el toolchain de AArch64 (ensamblador, enlazador y QEMU). Los detalles de instalación están en el `README.md`. Si te interesa cómo representamos los arreglos en memoria o cómo se calculan direcciones y strides, revisa el informe técnico, sección “Modelo de arreglos y helpers”.
 
 

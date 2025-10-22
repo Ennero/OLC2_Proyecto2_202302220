@@ -11,11 +11,13 @@ Bienvenido a la versión técnica del proyecto. Aquí te contamos, de forma dire
     - [Cómo leer esta gramática](#cómo-leer-esta-gramática)
   - [Arquitectura y módulos del proyecto](#arquitectura-y-módulos-del-proyecto)
   - [Generación de código AArch64 (cómo lo hacemos)](#generación-de-código-aarch64-cómo-lo-hacemos)
+    - [Punto de entrada y contrato](#punto-de-entrada-y-contrato)
     - [Convención de llamada y registros](#convención-de-llamada-y-registros)
     - [Marco de pila y locales](#marco-de-pila-y-locales)
     - [Literales y utilidades de impresión](#literales-y-utilidades-de-impresión)
     - [Modelo de arreglos y helpers](#modelo-de-arreglos-y-helpers)
     - [Expresiones y sentencias relevantes](#expresiones-y-sentencias-relevantes)
+      - [Mini‑ejemplo: Arrays.add (4B vs 8B)](#miniejemplo-arraysadd-4b-vs-8b)
   - [Decisiones de diseño (por qué así)](#decisiones-de-diseño-por-qué-así)
   - [Desafíos y cómo se resolvieron](#desafíos-y-cómo-se-resolvieron)
   - [Pruebas y cómo correrlas](#pruebas-y-cómo-correrlas)
@@ -408,6 +410,74 @@ array_element_addr_ptr:
 - **Arrays.add (a.add(elem))**
     - Reserva nuevo arreglo de tamaño `n+1` con el helper correcto (4B u 8B).
     - Copia con strides acordes y escribe el último elemento; si es string, se **duplica** (`strdup`).
+  
+  #### Mini‑ejemplo: Arrays.add (4B vs 8B)
+  
+  Caso elementos de 4 bytes (por ejemplo, `int[]`):
+  
+  ```asm
+  // w3 = len, x9 = ptr arreglo viejo (4B), x0 = nuevo arreglo en x0 tras new_array_flat
+  // Preparar sizes[0] = len+1 y reservar
+  add w3, w3, #1              // len+1
+  sub sp, sp, #16
+  str w3, [sp]                // sizes[0]
+  mov w0, #1                  // dims=1
+  mov x1, sp                  // &sizes
+  bl new_array_flat           // x0 = arr(n+1)
+  add sp, sp, #16
+  // Copiar n elementos de 4B
+  mov w12, w3                 // w12 = len+1
+  sub w12, w12, #1            // w12 = n
+  mov w10, #0                 // i=0
+  // base_old = header_align(old) + header
+  // base_new = header_align(new) + header
+  // (cálculo de base omitido por brevedad)
+  L_copy4:
+      cmp w10, w12
+      b.ge L_copy4_done
+      // x21 = base_old + i*4
+      // x22 = base_new + i*4
+      ldr w14, [x21]
+      str w14, [x22]
+      add w10, w10, #1
+      b L_copy4
+  L_copy4_done:
+  // Append en la última posición (4B)
+  // x23 = base_new + n*4
+  str w15, [x23]              // w15: valor a insertar
+  ```
+  
+  Caso elementos de 8 bytes (por ejemplo, `int[][]`, `double[]`, `String[]`):
+  
+  ```asm
+  // w3 = len, x9 = ptr arreglo viejo (8B), x0 = nuevo arreglo en x0 tras new_array_flat_ptr
+  // Preparar sizes[0] = len+1 y reservar
+  add w3, w3, #1
+  sub sp, sp, #16
+  str w3, [sp]
+  mov w0, #1                  // dims=1
+  mov x1, sp
+  bl new_array_flat_ptr       // x0 = arr(n+1)
+  add sp, sp, #16
+  // Copiar n elementos de 8B
+  mov w12, w3
+  sub w12, w12, #1            // n
+  mov w10, #0
+  // (cálculo de base_old/base_new omitido)
+  L_copy8:
+      cmp w10, w12
+      b.ge L_copy8_done
+      // x21 = base_old + i*8
+      // x22 = base_new + i*8
+      ldr x14, [x21]
+      str x14, [x22]
+      add w10, w10, #1
+      b L_copy8
+  L_copy8_done:
+  // Append en la última posición (8B)
+  // x23 = base_new + n*8
+  str x15, [x23]              // x15: puntero/double a insertar
+  ```
 - **Arrays.indexOf**
     - Para elementos de 8B compara punteros; para strings usa `strcmp`; para 4B, comparación numérica.
 - **foreach / for**
@@ -472,6 +542,7 @@ emitln(ftext, "    str x1, [x9]");  // guardar puntero duplicado
 ## Pruebas y cómo correrlas
 
 - Entorno: ensamblamos **ARM64** y ejecutamos bajo **QEMU aarch64** con glibc del sistema.
+- Para instalar todas las herramientas necesarias (toolchain AArch64 y QEMU), consulta el [README](../README.md) en la raíz del proyecto; ahí están los paquetes sugeridos y cómo verificarlos.
 - Pruebas destacadas:
     - `test/proyecto1/examen_final.usl`: mezcla arreglos 2D/jagged, `foreach`, recursión, `switch/while`, `String.join/valueOf`, `parseInt`, `Arrays.add/indexOf`.
     - `test/proyecto1/prueba_arreglos2.usl`, `prueba_foreach*.usl`, `prueba_funciones.usl`, `prueba_doubles.usl`: cubren rutas específicas de tamaño de elemento y control de flujo.
