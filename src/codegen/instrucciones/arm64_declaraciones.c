@@ -1,11 +1,15 @@
 #include "codegen/instrucciones/arm64_declaraciones.h"
 #include <string.h>
+#include <stdlib.h>
 #include "codegen/arm64_core.h"
 #include "codegen/arm64_vars.h"
 #include "codegen/arm64_num.h"
 #include "codegen/arm64_print.h"
 #include "codegen/arm64_bool.h"
 #include "codegen/arm64_globals.h"
+#include "codegen/estructuras/arm64_arreglos.h"
+#include "codegen/instrucciones/arm64_flujo.h"
+#include "codegen/funciones/arm64_funciones.h"
 #include "ast/nodos/instrucciones/instruccion/declaracion.h"
 #include "ast/nodos/expresiones/terminales/primitivos.h"
 #include "ast/nodos/expresiones/terminales/identificadores.h"

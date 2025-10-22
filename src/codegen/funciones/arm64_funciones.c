@@ -87,6 +87,12 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
     int fpr = 0; // d0-d7
     int gpr_w1_assigned = 0; // track if arg placed in x1/w1
     int fpr_d0_assigned = 0; // track if arg placed in d0
+    int stack_bytes = 0; // espacio temporal reservado en el caller para args by-ref
+    // Registro de spills de argumentos no-STRING para restaurarlos justo antes del llamado
+    // -1 indica sin spill (STRINGs se re-asignan desde proxies), 0=int/char/bool, 1=double/float, 2=array/ptr
+    int spill_kind[8];
+    int spill_reg_index[8];
+    for (int si = 0; si < 8; ++si) { spill_kind[si] = -1; spill_reg_index[si] = -1; }
     for (int i = 0; i < nargs; ++i) {
         AbstractExpresion *arg = args_list->hijos[i];
         TipoDato esperado = fi->param_types[i];
@@ -120,6 +126,7 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
                         emitln(ftext, "    mov x1, x0");
                         emitln(ftext, "    str x1, [sp]");
                         char mvsp[64]; snprintf(mvsp, sizeof(mvsp), "    mov x%d, sp", gpr); emitln(ftext, mvsp);
+                        stack_bytes += 16;
                     } else {
                         // No identificado: construir puntero y colocar en tmp en stack
                         if (!emitir_eval_string_ptr(arg, ftext)) emitln(ftext, "    mov x1, #0");
@@ -130,6 +137,7 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
                         emitln(ftext, "    sub sp, sp, #16");
                         emitln(ftext, "    str x1, [sp]");
                         char mvsp2[64]; snprintf(mvsp2, sizeof(mvsp2), "    mov x%d, sp", gpr); emitln(ftext, mvsp2);
+                        stack_bytes += 16;
                     }
                 }
             } else {
@@ -142,10 +150,12 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
                 emitln(ftext, "    sub sp, sp, #16");
                 emitln(ftext, "    str x1, [sp]");
                 char mv[64]; snprintf(mv, sizeof(mv), "    mov x%d, sp", gpr); emitln(ftext, mv);
+                stack_bytes += 16;
             }
             if (gpr == 1) gpr_w1_assigned = 1;
             gpr++;
             if (need_save_x1) emitln(ftext, "    ldr x1, [sp]\n    add sp, sp, #16");
+            // No hacer spill para STRING aquí; se re-asignarán desde proxies antes del call
         } else if (esperado == ARRAY) {
             int need_save_x1 = gpr_w1_assigned;
             if (need_save_x1) emitln(ftext, "    sub sp, sp, #16\n    str x1, [sp]");
@@ -201,6 +211,13 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
             if (gpr == 1) gpr_w1_assigned = 1;
             gpr++;
             if (need_save_x1) emitln(ftext, "    ldr x1, [sp]\n    add sp, sp, #16");
+            // Spill del valor de x{gpr-1} para preservarlo hasta el llamado
+            emitln(ftext, "    sub sp, sp, #16");
+            {
+                char stx[64]; snprintf(stx, sizeof(stx), "    str x%d, [sp]", gpr - 1); emitln(ftext, stx);
+            }
+            spill_kind[i] = 2; // array/pointer
+            spill_reg_index[i] = gpr - 1;
         } else if (esperado == DOUBLE || esperado == FLOAT) {
             int need_save_d0 = fpr_d0_assigned; // subsequent FP args will clobber d0 during eval
             if (need_save_d0) emitln(ftext, "    sub sp, sp, #16\n    str d0, [sp]");
@@ -210,6 +227,13 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
             if (fpr == 0) fpr_d0_assigned = 1;
             if (need_save_d0) emitln(ftext, "    ldr d0, [sp]\n    add sp, sp, #16");
             fpr++;
+            // Spill del valor de d{fpr-1}
+            emitln(ftext, "    sub sp, sp, #16");
+            {
+                char std[64]; snprintf(std, sizeof(std), "    str d%d, [sp]", fpr - 1); emitln(ftext, std);
+            }
+            spill_kind[i] = 1; // double
+            spill_reg_index[i] = fpr - 1;
         } else {
             int need_save_x1 = gpr_w1_assigned;
             if (need_save_x1) emitln(ftext, "    sub sp, sp, #16\n    str x1, [sp]");
@@ -219,10 +243,84 @@ TipoDato arm64_emitir_llamada_funcion(AbstractExpresion *call_node, FILE *ftext)
             if (gpr == 1) gpr_w1_assigned = 1;
             gpr++;
             if (need_save_x1) emitln(ftext, "    ldr x1, [sp]\n    add sp, sp, #16");
+            // Spill del valor de w{gpr-1}
+            emitln(ftext, "    sub sp, sp, #16");
+            {
+                char stw[64]; snprintf(stw, sizeof(stw), "    str w%d, [sp]", gpr - 1); emitln(ftext, stw);
+            }
+            spill_kind[i] = 0; // int-like
+            spill_reg_index[i] = gpr - 1;
+        }
+    }
+    // Restaurar spills en orden inverso, de modo que los registros x0.. y d0.. queden listos justo antes del llamado
+    for (int i = nargs - 1; i >= 0; --i) {
+        if (spill_kind[i] == -1) continue; // STRINGs o sin spill
+        if (spill_kind[i] == 1) {
+            // double
+            int r = spill_reg_index[i];
+            char ldd[64]; snprintf(ldd, sizeof(ldd), "    ldr d%d, [sp]", r); emitln(ftext, ldd);
+            emitln(ftext, "    add sp, sp, #16");
+        } else if (spill_kind[i] == 2) {
+            // array/pointer in x{r}
+            int r = spill_reg_index[i];
+            char ldx[64]; snprintf(ldx, sizeof(ldx), "    ldr x%d, [sp]", r); emitln(ftext, ldx);
+            emitln(ftext, "    add sp, sp, #16");
+        } else {
+            // int-like in w{r}
+            int r = spill_reg_index[i];
+            char ldw[64]; snprintf(ldw, sizeof(ldw), "    ldr w%d, [sp]", r); emitln(ftext, ldw);
+            emitln(ftext, "    add sp, sp, #16");
+        }
+    }
+    // Reasignar registros x0..x7 para parámetros STRING que usaron proxies en el stack,
+    // ya que llamadas a helpers (strdup/format) pudieron clobber registros previamente cargados.
+    if (stack_bytes > 0) {
+        int total_proxies = stack_bytes / 16; // cada proxy ocupa 16B
+        if (total_proxies > 0) {
+            int proxy_k = 0; // índice de proxy en orden de creación
+            int gpr2 = 0;    // posición de registro GPR para cada argumento
+            for (int i = 0; i < nargs; ++i) {
+                TipoDato esperado_i = fi->param_types[i];
+                if (esperado_i == DOUBLE || esperado_i == FLOAT) {
+                    // argumentos FP usan d0..d7, no afectan gpr2
+                    continue;
+                }
+                // Sólo interesa STRING: recomputar si usó proxy
+                if (esperado_i == STRING) {
+                    AbstractExpresion *argi = args_list->hijos[i];
+                    int used_proxy = 0;
+                    if (argi && argi->node_type && strcmp(argi->node_type, "Identificador") == 0) {
+                        IdentificadorExpresion *aid2 = (IdentificadorExpresion *)argi;
+                        VarEntry *av2 = vars_buscar(aid2->nombre);
+                        if (av2) {
+                            used_proxy = 0; // locales pasadas por dirección/no requieren proxy
+                        } else {
+                            const GlobalInfo *gi2 = globals_lookup(aid2->nombre);
+                            if (gi2 && gi2->tipo == STRING) used_proxy = 1;
+                        }
+                    } else {
+                        // literales y expresiones generan proxy
+                        used_proxy = 1;
+                    }
+                    if (used_proxy) {
+                        int offset = (total_proxies - 1 - proxy_k) * 16;
+                        char addx[96]; snprintf(addx, sizeof(addx), "    add x%d, sp, #%d", gpr2, offset); emitln(ftext, addx);
+                        proxy_k++;
+                    }
+                }
+                // avanzar contador GPR para todos los argumentos que consumen x0..x7
+                if (esperado_i != DOUBLE && esperado_i != FLOAT) {
+                    gpr2++;
+                }
+            }
         }
     }
     {
         char line[128]; snprintf(line, sizeof(line), "    bl fn_%s", fi->name); emitln(ftext, line);
+    }
+    // Liberar espacio temporal reservado para pasar argumentos por referencia
+    if (stack_bytes > 0) {
+        char addsp[64]; snprintf(addsp, sizeof(addsp), "    add sp, sp, #%d", stack_bytes); emitln(ftext, addsp);
     }
     if (fi->ret == DOUBLE || fi->ret == FLOAT) {
         return DOUBLE;

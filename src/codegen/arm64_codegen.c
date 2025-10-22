@@ -164,9 +164,27 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                     (void)emitir_eval_booleano(rhs, ftext);
                     emitln(ftext, "    mov w0, w1");
                 } else if (__current_func_ret == STRING) {
-                    // Evaluar puntero a string en x1 -> mover a x0
+                    // Evaluar puntero a string en x1 y devolver SIEMPRE una copia independiente
+                    // para evitar aliasing con tmpbuf/joinbuf u otros buffers temporales.
                     if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");
+                    int lnull = flujo_next_label_id();
+                    int lend = flujo_next_label_id();
+                    // Si x1 == NULL -> retornar NULL (x0=0); de lo contrario, strdup(x1)
+                    {
+                        char lab[96]; snprintf(lab, sizeof(lab), "    cbz x1, L_strret_null_%d", lnull); emitln(ftext, lab);
+                    }
                     emitln(ftext, "    mov x0, x1");
+                    emitln(ftext, "    bl strdup");
+                    {
+                        char br[96]; snprintf(br, sizeof(br), "    b L_strret_end_%d", lend); emitln(ftext, br);
+                    }
+                    {
+                        char l1[96]; snprintf(l1, sizeof(l1), "L_strret_null_%d:", lnull); emitln(ftext, l1);
+                    }
+                    emitln(ftext, "    mov x0, #0");
+                    {
+                        char l2[96]; snprintf(l2, sizeof(l2), "L_strret_end_%d:", lend); emitln(ftext, l2);
+                    }
                 } else if (__current_func_ret == ARRAY) {
                     // Retorno de arreglo: evaluar a puntero del arreglo en x1 y mover a x0
                     // Soportamos identificador directo o creación de arreglo; para otros casos, fallback 0
@@ -332,10 +350,11 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "false_str:      .asciz \"false\"\n");
     emitln(f, "null_str:       .asciz \"null\"\n");
     emitln(f, "empty_str:      .asciz \"\"\n");
-    // Buffer temporal para String.valueOf (no reentrante)
-    emitln(f, "tmpbuf:         .skip 1024");
+    // Buffer temporal para String.valueOf y concatenaciones (no reentrante)
+    // Aumentado para evitar desbordamientos en salidas grandes del test avanzado
+    emitln(f, "tmpbuf:         .skip 16384");
     // Buffer dedicado para String.join (evita colisiones con concatenaciones externas)
-    emitln(f, "joinbuf:        .skip 1024");
+    emitln(f, "joinbuf:        .skip 16384");
     // Buffer para codificación UTF-8 de un solo carácter
     emitln(f, "charbuf:        .skip 8\n");
 

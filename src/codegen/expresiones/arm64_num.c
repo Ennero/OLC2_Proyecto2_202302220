@@ -2,6 +2,7 @@
 #include "codegen/arm64_core.h"
 #include "codegen/arm64_vars.h"
 #include "codegen/arm64_globals.h"
+#include "codegen/instrucciones/arm64_flujo.h"
 #include "ast/nodos/expresiones/terminales/primitivos.h"
 #include "ast/nodos/expresiones/terminales/identificadores.h"
 #include "ast/nodos/expresiones/aritmeticas/aritmeticas.h"
@@ -19,6 +20,21 @@
 static void emitln(FILE *f, const char *s) { core_emitln(f, s); }
 typedef VarEntry VarEntry;
 static VarEntry *buscar_variable(const char *name) { return vars_buscar(name); }
+
+// Emite una carga inmediata robusta en w1 para cualquier constante de 32 bits.
+// Usa movz/movk para evitar las restricciones del inmediato de 'mov' en AArch64.
+static void emit_mov_imm_w1(FILE *f, long v) {
+    unsigned int u = (unsigned int)v; // truncar/normalizar a 32 bits
+    unsigned int lo = u & 0xFFFFu;
+    unsigned int hi = (u >> 16) & 0xFFFFu;
+    char buf[64];
+    snprintf(buf, sizeof(buf), "    movz w1, #%u", lo);
+    emitln(f, buf);
+    if (hi) {
+        snprintf(buf, sizeof(buf), "    movk w1, #%u, lsl #16", hi);
+        emitln(f, buf);
+    }
+}
 
 TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
     const char *t = node->node_type ? node->node_type : "";
@@ -60,7 +76,8 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
                     v = cp;
                 }
             }
-            char line[64]; snprintf(line, sizeof(line), "    mov w1, #%ld", v); emitln(ftext, line);
+            // Cargar la constante en w1 evitando errores de ensamblado por inmediatos grandes
+            emit_mov_imm_w1(ftext, v);
             return INT;
         } else if (p->tipo == DOUBLE || p->tipo == FLOAT) {
             const char *lab = core_add_double_literal(p->valor ? p->valor : "0");
