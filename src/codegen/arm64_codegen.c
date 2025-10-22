@@ -267,6 +267,10 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
     // Declaraciones: emítelas directamente (incluyen su inicializador) y no recorras hijos antes
     if (arm64_emitir_declaracion(node, ftext)) return;
 
+    // IMPORTANTE: No recorrer hijos de Print antes de emitirlo, para no evaluar
+    // expresiones con efectos secundarios (p.ej., Postfix) dos veces.
+    if (arm64_emitir_print_stmt(node, ftext)) return;
+
     // Recorremos primero hijos (pre-orden simple para statements) excepto Bloque/IfStatement (ya manejados)
     for (size_t i = 0; i < node->numHijos; i++) {
         if (!node->hijos[i]) continue;
@@ -289,7 +293,6 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
     }
     // Declaraciones ya manejadas antes
     if (arm64_emitir_asignacion_arreglo(node, ftext)) return;
-    if (arm64_emitir_print_stmt(node, ftext)) return;
     // Reasignación simple: id = expr
     if (arm64_emitir_reasignacion(node, ftext)) return;
     // Asignación compuesta: id op= expr
