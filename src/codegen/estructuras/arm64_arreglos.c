@@ -5,6 +5,8 @@
 #include "codegen/arm64_vars.h"
 #include "codegen/arm64_num.h"
 #include "codegen/arm64_print.h" // emitir_eval_string_ptr
+#include "codegen/arm64_globals.h"
+#include "codegen/funciones/arm64_funciones.h"
 #include "ast/nodos/expresiones/terminales/identificadores.h"
 
 static void emitln(FILE *f, const char *s) { core_emitln(f, s); }
@@ -61,13 +63,74 @@ int arm64_emitir_asignacion_arreglo(AbstractExpresion *node, FILE *ftext) {
     }
     emitln(ftext, "    mov x1, sp");
     { char mv[64]; snprintf(mv, sizeof(mv), "    mov w2, #%d", depth); emitln(ftext, mv); }
-    // Elegir helper según tipo base del arreglo
+    // Elegir helper: para elemento final de STRING/DOUBLE/FLOAT usamos ptr;
+    // adicionalmente, si RHS es un subarreglo (p.ej., arr[i] = new int[2]), el elemento es un puntero y también usamos ptr
     TipoDato base_t = arm64_array_elem_tipo_for_var(id->nombre);
-    if (base_t == STRING || base_t == DOUBLE || base_t == FLOAT) emitln(ftext, "    bl array_element_addr_ptr");
+    int rhs_is_ptr = 0;
+    const char *rtype = rhs && rhs->node_type ? rhs->node_type : "";
+    if (strcmp(rtype, "ArrayCreation") == 0) rhs_is_ptr = 1;
+    else if (strcmp(rtype, "FunctionCall") == 0) rhs_is_ptr = 1;
+    else if (strcmp(rtype, "Identificador") == 0) {
+        IdentificadorExpresion *rid = (IdentificadorExpresion *)rhs;
+        VarEntry *rv2 = buscar_variable(rid->nombre);
+        if (rv2 && rv2->tipo == ARRAY) rhs_is_ptr = 1; else {
+            const GlobalInfo *gi2 = globals_lookup(rid->nombre);
+            if (gi2 && gi2->tipo == ARRAY) rhs_is_ptr = 1;
+        }
+    }
+    if (base_t == STRING || base_t == DOUBLE || base_t == FLOAT || rhs_is_ptr) emitln(ftext, "    bl array_element_addr_ptr");
     else emitln(ftext, "    bl array_element_addr");
     // Guardar la dirección destino (x0) en la pila para no perderla durante la evaluación del RHS
     emitln(ftext, "    sub sp, sp, #16");
     emitln(ftext, "    str x0, [sp]");
+    // Caso 1: almacenar puntero de subarreglo (o STRING)
+    if (rhs_is_ptr && !(base_t == DOUBLE || base_t == FLOAT)) {
+        // Evaluar RHS para obtener un puntero en x0
+        if (strcmp(rtype, "ArrayCreation") == 0) {
+            // rhs->hijos[1] es la lista de dimensiones del subarreglo
+            AbstractExpresion *lista2 = rhs->hijos[1];
+            int dims2 = (int)(lista2 ? lista2->numHijos : 0);
+            int bytes2 = ((dims2 * 4) + 15) & ~15;
+            if (bytes2 > 0) {
+                char sub2[64]; snprintf(sub2, sizeof(sub2), "    sub sp, sp, #%d", bytes2); emitln(ftext, sub2);
+                for (int i = 0; i < dims2; ++i) {
+                    TipoDato ty2 = emitir_eval_numerico(lista2->hijos[i], ftext);
+                    if (ty2 == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                    char st2[64]; snprintf(st2, sizeof(st2), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st2);
+                }
+                char mv02[64]; snprintf(mv02, sizeof(mv02), "    mov w0, #%d", dims2); emitln(ftext, mv02);
+                emitln(ftext, "    mov x1, sp");
+                if (base_t == STRING || base_t == DOUBLE || base_t == FLOAT) emitln(ftext, "    bl new_array_flat_ptr");
+                else emitln(ftext, "    bl new_array_flat");
+                char addb2[64]; snprintf(addb2, sizeof(addb2), "    add sp, sp, #%d", bytes2); emitln(ftext, addb2);
+            } else {
+                // Sin dimensiones: puntero NULL
+                emitln(ftext, "    mov x0, #0");
+            }
+        } else if (strcmp(rtype, "Identificador") == 0) {
+            IdentificadorExpresion *rid = (IdentificadorExpresion *)rhs;
+            VarEntry *rv2 = buscar_variable(rid->nombre);
+            if (rv2 && rv2->tipo == ARRAY) {
+                char ld2[96]; snprintf(ld2, sizeof(ld2), "    sub x16, x29, #%d\n    ldr x0, [x16]", rv2->offset); emitln(ftext, ld2);
+            } else {
+                const GlobalInfo *gi2 = globals_lookup(rid->nombre);
+                if (gi2 && gi2->tipo == ARRAY) { char lg2[128]; snprintf(lg2, sizeof(lg2), "    ldr x16, =g_%s\n    ldr x0, [x16]", rid->nombre); emitln(ftext, lg2); }
+                else emitln(ftext, "    mov x0, #0");
+            }
+        } else if (strcmp(rtype, "FunctionCall") == 0) {
+            // Se espera puntero en x0
+            (void)arm64_emitir_llamada_funcion(rhs, ftext);
+        }
+        // Restaurar dirección del slot y guardar puntero x0
+        emitln(ftext, "    ldr x9, [sp]");
+        emitln(ftext, "    add sp, sp, #16");
+        emitln(ftext, "    str x0, [x9]");
+        if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+        if (idx_nodes) free(idx_nodes);
+        return 1;
+    }
+
+    // Caso 2: STRING (puntero) o numéricos
     TipoDato rty = emitir_eval_numerico(rhs, ftext);
     if (base_t == STRING) {
         if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");

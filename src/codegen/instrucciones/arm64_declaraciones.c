@@ -156,6 +156,24 @@ int arm64_emitir_declaracion(AbstractExpresion *node, FILE *ftext) {
             AbstractExpresion *arr_create = node->hijos[0];
             AbstractExpresion *lista = arr_create->hijos[1];
             int dims = (int)(lista ? lista->numHijos : 0);
+            // Soporte para arreglos irregulares: si el número de dimensiones declaradas es mayor que
+            // la cantidad de tamaños proporcionados (p.ej., int[][] a = new int[3][];),
+            // entonces debemos crear únicamente el arreglo exterior de punteros (1D) con longitud sizes[0].
+            if (decl->dimensiones > dims && dims >= 1) {
+                // Evaluar el primer tamaño y crear un arreglo 1D de punteros (8 bytes por elemento)
+                emitln(ftext, "    sub sp, sp, #16");
+                // Evaluar sizes[0]
+                TipoDato et = emitir_eval_numerico(lista->hijos[0], ftext);
+                if (et == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                emitln(ftext, "    str w1, [sp]");
+                emitln(ftext, "    mov w0, #1");
+                emitln(ftext, "    mov x1, sp");
+                emitln(ftext, "    bl new_array_flat_ptr");
+                // Guardar el puntero del arreglo exterior en la variable
+                { char stp[96]; snprintf(stp, sizeof(stp), "    sub x16, x29, #%d\n    str x0, [x16]", v->offset); emitln(ftext, stp); }
+                emitln(ftext, "    add sp, sp, #16");
+                return 1;
+            }
             int bytes = ((dims * 4) + 15) & ~15;
             if (bytes > 0) {
                 char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub);
