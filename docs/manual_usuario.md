@@ -16,6 +16,10 @@
     - [Tabla de Símbolos](#tabla-de-símbolos)
     - [Generar AST](#generar-ast)
     - [Ejecutar](#ejecutar)
+  - [Funcionalidades Añadidas para esta fase](#funcionalidades-añadidas-para-esta-fase)
+    - [Flujo de las nuevas funcionalidades](#flujo-de-las-nuevas-funcionalidades)
+      - [Ejecutar código aarch64 desde la interfaz de usuario](#ejecutar-código-aarch64-desde-la-interfaz-de-usuario)
+      - [Ejecutar código aarch64 desde la consola](#ejecutar-código-aarch64-desde-la-consola)
 
 ## Objetivos
 
@@ -123,3 +127,40 @@ Además, esta opción presenta la posibilidad de **Exportar como**, que muestra 
 Finalmente, está la opción de **Ejecutar**, que ejecuta el código de entrada y muestra su salida en el Campo de Salida. Esto es útil para probar y depurar su código.
 
 ![Ejecutar Código](./imgs/16.png)
+
+## Funcionalidades Añadidas para esta fase
+
+En esta fase, debio a los requrimientos, se le añadieron funcionalidades al programa, las cuales son:
+
+1. Compilar
+2. Ensamblar y Ejecutar
+
+Todas las demas funcionalidades del programa no se vieron afectada. Ahora bien, ¿Qué hacen estos nuevos botones adicionados?
+
+### Flujo de las nuevas funcionalidades
+
+A la hora de colocar código dentro del **campo de entrada** se puede dar click a **ejecutar**, eso ya se sabe, pero, si en vez de eso, se hace click en el botón de **compilar**, se creará un archivo llamado ``salida.s``, el cual contendrá el código de la entrada en ``aarch64`` listo para ser ejecutado y realizar lo que el programa de entrada realizaría. Esto se llama **compilación**.
+
+![Ejecutar Código](./imgs/21.png)
+
+Se puede observar el archivo creado en la carpeta ``aarch64`` dentro de la carpeta raiz del programa:
+
+![Ejecutar Código](./imgs/23.png)
+
+Previo a la compilación siempre se continua realizando el proceso de análisis léxico, sintáctico y semántico heredado de la funcionalidad de **Ejecutar**.
+
+Ahora este programa se puede ejecutar de nos maneras:
+
+#### Ejecutar código aarch64 desde la interfaz de usuario
+
+La opción más simple para ejecutar el código ``aarch64`` generado después de la **compilación** es mediante el botón **Ensamblar y Ejecutar**, este botón realiza las acciones de **ensamblado**, **enlazado** y **ejecuta el código** dentro del **campo de salida**, para que de esta forma se pueda observar el funcionamiento sin salir de la interfaz de usuario.
+
+![Ejecutar Código](./imgs/22.png)
+
+#### Ejecutar código aarch64 desde la consola
+
+Otra opción para ejecutar este código es mediante la **consola**. Dentro de la raiz del proyecto se encuentra un script llamado ``ensamblar.sh``, que al ejecutarse, **ensambla**, **enlace** y **ejecuta el código** en ``aarch64`` en la cosola.
+
+![Ejecutar Código](./imgs/26.png)
+
+

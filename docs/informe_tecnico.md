@@ -1,28 +1,53 @@
-# Informe Técnico - JavaLang Interpreter
+# Informe Técnico – JavaLang Interpreter
+
+Bienvenido a la versión técnica del proyecto. Aquí te contamos, de forma directa y práctica, cómo está armado el intérprete/compilador, qué se agregó en esta fase (ARM64 y arreglos irregulares) y cómo validamos que todo funcione. La idea es que lo puedas leer como una guía técnica, no como un paper: con ejemplos, notas y decisiones claras.
 
 ## Índice
-- [Informe Técnico - JavaLang Interpreter](#informe-técnico---javalang-interpreter)
+- [Informe Técnico – JavaLang Interpreter](#informe-técnico--javalang-interpreter)
   - [Índice](#índice)
-  - [Gramática Formal de Javalang](#gramática-formal-de-javalang)
-  - [Diseño de Módulos](#diseño-de-módulos)
-    - [Modulo de Análisis Léxico (Flex)](#modulo-de-análisis-léxico-flex)
-    - [Módulo de Análisis Sintáctico (Bison)](#módulo-de-análisis-sintáctico-bison)
-    - [Módulo del Árbol de Sintaxis Abstracta (AST)](#módulo-del-árbol-de-sintaxis-abstracta-ast)
-    - [Módulo de Contexto y Tabla de Símbolos](#módulo-de-contexto-y-tabla-de-símbolos)
-  - [Desafíos Enfrentados](#desafíos-enfrentados)
-    - [Ambigüedad Gramatical: ``for``  vs. ``forEach``](#ambigüedad-gramatical-for--vs-foreach)
-      - [Problema](#problema)
-      - [Solución](#solución)
-    - [Gestión de Memoria: El Bug de la "Fotocopia Fantasma"](#gestión-de-memoria-el-bug-de-la-fotocopia-fantasma)
-      - [Problema](#problema-1)
-      - [Solución](#solución-1)
-    - [Propagación de Señales de Control (break, continue)](#propagación-de-señales-de-control-break-continue)
-      - [Problema](#problema-2)
-      - [Solución](#solución-2)
-  - [Resultados de Pruebas y Métricas de Cobertura](#resultados-de-pruebas-y-métricas-de-cobertura)
+  - [Resumen rápido](#resumen-rápido)
+  - [Qué cambió en esta fase (ARM64 + arreglos irregulares)](#qué-cambió-en-esta-fase-arm64--arreglos-irregulares)
+  - [Gramática formal de Javalang](#gramática-formal-de-javalang)
+    - [Cómo leer esta gramática](#cómo-leer-esta-gramática)
+  - [Arquitectura y módulos del proyecto](#arquitectura-y-módulos-del-proyecto)
+  - [Generación de código AArch64 (cómo lo hacemos)](#generación-de-código-aarch64-cómo-lo-hacemos)
+    - [Convención de llamada y registros](#convención-de-llamada-y-registros)
+    - [Marco de pila y locales](#marco-de-pila-y-locales)
+    - [Literales y utilidades de impresión](#literales-y-utilidades-de-impresión)
+    - [Modelo de arreglos y helpers](#modelo-de-arreglos-y-helpers)
+    - [Expresiones y sentencias relevantes](#expresiones-y-sentencias-relevantes)
+  - [Decisiones de diseño (por qué así)](#decisiones-de-diseño-por-qué-así)
+  - [Desafíos y cómo se resolvieron](#desafíos-y-cómo-se-resolvieron)
+  - [Pruebas y cómo correrlas](#pruebas-y-cómo-correrlas)
+  - [Glosario breve](#glosario-breve)
 
+---
 
-## Gramática Formal de Javalang
+## Resumen rápido
+
+- Backend ahora genera código para **AArch64 (ARM64)** listo para ensamblar y ejecutar (vía QEMU o máquina ARM nativa).
+- Soporte para **arreglos irregulares (jagged)**: arreglos cuyas filas pueden tener longitudes distintas (p. ej., `int[][]`).
+- Se reforzó el manejo de **strings** (uso de `strdup` en puntos clave) y se separaron buffers para evitar choques.
+- Se corrigió un caso difícil de **segfault** relacionado con inicializadores de arreglos y preservación de registros en ARM64.
+- Se agregaron pequeñas **utilidades de diagnóstico** (formatos y prints opt-in) para depurar sin molestar al usuario final.
+
+> Idea principal: emitir ensamblador claro y seguro que respete la ABI de ARM64, con un modelo de arreglos simple y consistente, y utilidades mínimas de runtime.
+
+---
+
+## Qué cambió en esta fase (ARM64 + arreglos irregulares)
+
+En esta entrega el foco estuvo en el backend y el runtime:
+
+- Generación de código para **AArch64**, respetando convención de llamada y alineación de pila.
+- **Jagged arrays**: el arreglo exterior es de punteros de 8 bytes; cada subarreglo lleva su propia cabecera y datos.
+- **Arrays.add / Arrays.indexOf**: rutas separadas para elementos de 4B y 8B, incluyendo punteros y `double`.
+- **foreach** sobre `int[][]`: carga con stride de 8B y guardia `null` para filas no inicializadas.
+- **Strings**: duplicación controlada (cuando se almacenan o retornan) para evitar aliasing con buffers.
+
+---
+
+## Gramática formal de Javalang
 
 ```c
 %start programa;
@@ -268,203 +293,208 @@ dims_vacias
     | '[' ']' 
     ;
 ```
+### Cómo leer esta gramática
 
-## Diseño de Módulos
-La arquitectura del intérprete sigue el flujo de un compilador:
+- Es una especificación Bison/Yacc. Si ves `%empty`, significa “producción vacía”.
+- Las reglas de `for_stmt`, `if_stmt`, `switch_stmt` y `expresion_creacion_arreglo` reflejan el comportamiento del lenguaje de entrada (similar a Java).
+- Para arreglos, presta atención a `inicializador_arreglo`, `lista_dims_expr` y `dims_vacias`: de aquí salen los casos regulares y jagged.
 
-### Modulo de Análisis Léxico (Flex)
-Este módulo tiene la responsabilidad de leer el archivo de código fuente (.java) como texto plano y descomponerlo en una secuencia de unidades lógicas mínimas, llamadas tokens.
-En este módulo se definieron patrones mediante expresiones regulares que identifican tokens del lenguaje y cada patrón se asoció con un token numérico que se entrega al analizador sintáctico.
+> Tip: si quieres ubicar una construcción del lenguaje en el código, empieza por la regla de la gramática y busca su visitante/constructor en `src/` (AST) y luego su emisión en `codegen`.
 
-### Módulo de Análisis Sintáctico (Bison)
-Este módulo tiene la responsabilidad de recibir la secuencia de tokens del analizador léxico y verificar si sigue las reglas gramaticales del lenguaje JavaLang. Su objetivo principal es construir un Árbol de Sintaxis Abstracta (AST) que represente la estructura jerárquica del código.
-En este modulo se crearon las reglas para la contruscción del lenguaje y a medida de que se va realizando este análisis, se crean nodos correspondientes al AST y se enlazan para crear el arbol completo.
+---
 
+## Arquitectura y módulos del proyecto
 
-### Módulo del Árbol de Sintaxis Abstracta (AST)
+La estructura completa está detallada en el Proyecto 1, pero aquí va un resumen práctico de esta fase:
 
-Este módulo tiene la responsabilidad servir como la estructura de datos central que representa el código fuente de una manera lógica y jerárquica, facilitando su posterior interpretación.
-En este módulo se diseñó un ``struct`` base que contiene campos comunes para todos los nodos y un puntero ``Result (*interpret)(AbstractExpresion*, Context*)``. Con este patrón de diseño cada nodo tiene su propia lógica de interpretación.
+- `entriesTools/lexer.l` y `entriesTools/parser.y`: análisis léxico y sintáctico (Flex/Bison).
+- `src/ast/*`: construcción del AST (nodos y recorrido).
+- `src/context/*`: contexto de ejecución/compilación, tipos, resultados y valores de arreglos.
+- `src/utils/*`: utilidades (formato de números estilo Java, conversión de char a UTF-8, etc.).
+- `src/*_reporter.c`: generación de reportes (errores, símbolos, AST).
+- `src/ast_grapher.*`: exportación de AST en DOT/SVG/PDF.
+- `src/output_buffer.*`: manejo de salida (bufferizado) para impresión.
+- `src` (backend ARM64): emisores por categoría (declaraciones, reasignaciones, expresiones) y helpers de runtime para arreglos.
 
+> Si buscas “dónde se crea un arreglo en memoria”, revisa los helpers en `src/context/` y las llamadas desde el codegen ARM64.
 
+---
 
-### Módulo de Contexto y Tabla de Símbolos
+## Generación de código AArch64 (cómo lo hacemos)
 
-Este módulo tiene la responsabilidad gestionar los ámbitos del programa y almacenar información sobre las variables y funciones declaradas.
-En este módulo se crea la estructura ``struct Context`` que representa un ámbito y que contiene el puntero a su contexto padre. Con esto se forma una lista enlazada que simula la pila de llamdas. Luego dentro de cada lista hay ``struct Symbol`` que se encarga de almacenar el nombre, tipo, valor y si es una contante.  
+La generación sigue el flujo clásico: del AST emitimos **ensamblador ARM64** que luego se ensambla, enlaza y ejecuta. A continuación, los puntos clave.
 
+### Punto de entrada y contrato
 
-## Desafíos Enfrentados
+Para compilar desde la GUI/CLI, llamamos al generador con la raíz del AST y la ruta de salida.
 
-Durante el desarrollo del intérprete presetó varios desafios complejos que requirieron un análisis profundo y soluciones precisas.
+Fragmento (GUI), `src/main.c`:
 
-### Ambigüedad Gramatical: ``for``  vs. ``forEach``
-
-#### Problema
-Al introducir el bucle ``forEach``, la gramática se volvió ambigua. Cuando el parser leía ``for (int i...``, no podía decidir si se trataba de un ``for`` clásico ``(for (int i = 0;...)`` o un ``forEach (for (int i :...)`` basándose en un solo token de anticipación.
-
-#### Solución
-Se creó una regla no terminal intermedia ``(for_head)`` que se encarga exclusivamente de analizar el contenido dentro de los paréntesis del ``for``. Esta regla fuerza a Bison a buscar el token decisivo antes de comprometerse con una de las dos producciones. 
-
-### Gestión de Memoria: El Bug de la "Fotocopia Fantasma"
-
-#### Problema
-Las modificaciones a los elementos de un arreglo dentro de un bucle ``for`` o en un arreglo final no se veían reflejadas. Por ejemplo, ``DIAS[1] = "Martes-Modificado";`` no cambiaba el valor.
-
-#### Solución
-Se rediseñó por completo la lógica de asignación de arreglos. En lugar de simplemente interpretar el lado izquierdo de la asignación, la nueva función navega por el AST para encontrar el nombre de la variable base, la busca directamente en la tabla de símbolos para obtener un puntero al ``ArrayValue`` original, y realiza la modificación sobre la estructura de datos real.
-
-### Propagación de Señales de Control (break, continue)
-
-#### Problema
-Después de ejecutar un ``forEach`` que contenía una sentencia ``continue``, el resto del programa dejaba de ejecutarse.
-
-#### Solución
-Se refinó la lógica de retorno de todas las estructuras de bucle. Ahora, las señales como ``continue`` y ``break`` son consumidas y limpiadas dentro del bucle que las genera. Solo las señales que deben propagarse a un nivel superior se devuelven.
-
-
-## Resultados de Pruebas y Métricas de Cobertura
-Para validar el correcto funcionamiento de todo, se realizaron distintos archivo de prueba dentro de la carpeta ``test`` para corroborar de que todo estuviera funcionando bien.
-Entre estos archivos de entrada se encuentra uno de los más importantes que seria el que se llama ```rubrica.usl```:
-```java
-// Función para probar Recursividad
-int factorial(int n) {
-    if (n <= 1) {
-        return 1;
-    }
-    return n * factorial(n - 1);
-}
-
-// Función void para probar llamadas sin retorno
-void imprimirSeparador() {
-    System.out.println("----------------------------------------");
-}
-
-// Función que prueba todas las estructuras de control
-void probarEstructurasDeControl() {
-    System.out.println("\n--- 2. Pruebas de Estructuras de Control ---");
-    
-    // Prueba de IF-ELSE IF-ELSE
-    int calificacion = 85;
-    if (calificacion > 90) {
-        System.out.println("Resultado: Excelente");
-    } else if (calificacion > 70) {
-        System.out.println("Resultado: Bueno"); // <-- Debería imprimir esto
-    } else {
-        System.out.println("Resultado: Necesita mejorar");
-    }
-
-    // Prueba de SWITCH con CASE, BREAK y DEFAULT
-    char opcion = 'B';
-    switch (opcion) {
-        case 'A': System.out.println("Switch: Opcion A"); break;
-        case 'B': System.out.println("Switch: Opcion B"); break; // <-- Debería imprimir esto
-        default: System.out.println("Switch: Opcion Default"); break;
-    }
-
-    // Prueba de WHILE con CONTINUE
-    int i = 0;
-    String resultadoWhile = "";
-    while (i < 5) {
-        i = i + 1;
-        if (i == 3) {
-            continue; // Saltar el número 3
-        }
-        resultadoWhile = resultadoWhile + i;
-    }
-    System.out.println("While (sin el 3): " + resultadoWhile); // Esperado: 1245
-
-    // Prueba de FOR CLÁSICO con BREAK
-    int ultimoI = 0;
-    for (int j = 0; j < 10; j = j + 1) {
-        if (j == 5) {
-            break; // Detener en 5
-        }
-        ultimoI = j;
-    }
-    System.out.println("For clasico se detuvo en: " + ultimoI); // Esperado: 4
-}
-
-
-public static void main(String[] args) {
-    System.out.println("====== INICIO: Rúbrica de Calificación del Intérprete ======");
-
-    // --- 1. VARIABLES, TIPOS, CONSTANTES Y OPERADORES ---
-    imprimirSeparador();
-    System.out.println("--- 1. Variables, Tipos, Constantes y Operadores ---");
-    final int CONSTANTE_FINAL = 100;
-    int a = 20;
-    double b = 5.5;
-    boolean c = true;
-    String d = "Hola";
-    char e = 'A';
-    
-    // Aritméticos y Relacionales
-    double calculo = (a + CONSTANTE_FINAL) / 10.0 * (b - 0.5); // (120 / 10.0) * 5.0 = 12.0 * 5.0 = 60.0
-    System.out.println("Calculo aritmetico: " + calculo);
-    System.out.println("Comparacion: " + (calculo == 60.0));
-
-    // Lógicos y Bitwise
-    int flags = 12; // 1100
-    int mascara = 10; // 1010
-    if ((flags & mascara) == 8 && (flags | mascara) == 14) { // AND=1000 (8), OR=1110 (14)
-        System.out.println("Operadores Bitwise OK.");
-    }
-
-    // --- 2. ESTRUCTURAS DE CONTROL ---
-    imprimirSeparador();
-    probarEstructurasDeControl();
-
-    // --- 3. ARREGLOS (MULTIDIMENSIONALES Y PROPIEDADES) ---
-    imprimirSeparador();
-    System.out.println("\n--- 3. Arreglos (Multidimensionales y Propiedades) ---");
-    final String[][] agenda = {{"Juan", "555-1234"}, {"Ana", "555-5678"}};
-    agenda[1][1] = "555-8765"; // Modificar contenido de arreglo final (DEBE funcionar)
-    System.out.println("Nuevo telefono de Ana: " + agenda[1][1]);
-    
-    // Prueba de .length en arreglo multidimensional
-    System.out.println("Numero de contactos: " + agenda.length);
-    
-    // Prueba de forEach anidado
-    String contactos = "";
-    for (String[] contacto : agenda) {
-        contactos = contactos + contacto[0] + "; ";
-    }
-    System.out.println("Nombres: " + contactos);
-
-    // --- 4. FUNCIONES (LLAMADAS Y RECURSIVIDAD) ---
-    imprimirSeparador();
-    System.out.println("\n--- 4. Funciones (Llamadas y Recursividad) ---");
-    System.out.println("Llamada a factorial(5): " + factorial(5));
-
-    // --- 5. FUNCIONES EMBEBIDAS ---
-    imprimirSeparador();
-    System.out.println("\n--- 5. Funciones Embebidas ---");
-    String[] partes = {"Prueba", "de", "Join"};
-    String joined = String.join("-", partes);
-    System.out.println("String.join: " + joined);
-
-    int[] numeros = {10, 20, 30, 20, 40};
-    System.out.println("Arrays.indexOf(20): " + Arrays.indexOf(numeros, 20));
-    
-    numeros = numeros.add(50);
-    System.out.println(".add(): Nuevo tamaño: " + numeros.length);
-
-    // --- 6. CASTEO Y STRINGS ---
-    imprimirSeparador();
-    System.out.println("\n--- 6. Casteo y Strings ---");
-    double valorDoble = 99.9;
-    int valorEntero = (int)valorDoble; // Casteo explícito
-    System.out.println("Casteo de 99.9 a int: " + valorEntero);
-
-    String str1 = "Java";
-    String str2 = "Lang";
-    String str3 = str1 + str2;
-    System.out.println("Concatenacion: " + str3);
-    System.out.println("Comparacion .equals(): " + str3.equals("JavaLang"));
-
-    System.out.println("\n====== FIN: Rúbrica de Calificación del Intérprete ======");
-}
+```c
+// Asegurar carpeta de salida
+mkdir("arm", 0777);
+// Generar ensamblador ARM64 en arm/salida.s
+int rc = arm64_generate_program(ast_root, "arm/salida.s");
 ```
 
-Al correrlo correctamente se dennotó que el programa funcionaba correctamente.
+Contrato del generador, `src/codegen/arm64_codegen.h`:
+
+```c
+// Genera un archivo en ensamblador AArch64
+int arm64_generate_program(AbstractExpresion *root, const char *out_path);
+```
+
+### Convención de llamada y registros
+
+- Parámetros escalares en **w0–w7/x0–x7**; flotantes en **d0–d7**. Retornos en **w0/x0** o **d0**.
+- Respetamos registros caller/callee-saved en nuestros helpers (p. ej., `new_array_flat_ptr`).
+- Pila alineada a 16 bytes; uso de **x29** como frame pointer.
+
+### Marco de pila y locales
+
+- Cada función reserva un frame fijo de **1024 bytes** al entrar; locales por offsets relativos a `x29`.
+- No hay subajustes dinámicos de `sp` dentro del cuerpo: menos riesgo de desalineación y corrupción.
+
+### Literales y utilidades de impresión
+
+- Recolectamos literales (`core_add_string_literal` / `core_add_double_literal`) en `.data`.
+- Formatos listos para `printf`: `fmt_int`, `fmt_double`, `fmt_string`, `fmt_char` y `fmt_ptr` (útil para diagnosticar punteros).
+- Soporte para `char` → UTF-8 (`char_to_utf8`) y formato de `double` estilo Java (`java_format_double`).
+
+### Modelo de arreglos y helpers
+
+- Memoria de arreglo:
+    - Cabecera: `dims` (int32, offset 0) + `sizes[dims]` (int32 c/u) + padding hasta 8 bytes.
+    - Datos alineados a 8B justo después de la cabecera.
+- Tamaños:
+    - Elementos tipo int-like: **4 bytes** (`int`, `char`, `boolean`).
+    - Punteros y `double`: **8 bytes**.
+- Constructores:
+    - `new_array_flat` (4B) y `new_array_flat_ptr` (8B, limpia a cero los datos).
+  
+    Extracto del helper de 8 bytes:
+
+```asm
+new_array_flat_ptr:
+        stp x29, x30, [sp, -16]!
+        mov x29, sp
+        // ... calcula tamaño cabecera + datos (8B por elemento) ...
+        mov x0, x22        // tamaño total
+        bl malloc          // reservar
+        mov x23, x0        // base del bloque
+        str w19, [x23]     // dims
+        // ... copiar sizes[] y limpiar zona de datos a cero ...
+        ret
+```
+- Direccionamiento:
+    - `array_element_addr` (4B) y `array_element_addr_ptr` (8B). Soportan acceso lineal o pointer-of-pointer.
+  
+    Extracto de direccionamiento 8B plano:
+
+```asm
+// x0 = arr_ptr, x1 = indices, w2 = num_indices
+array_element_addr_ptr:
+        // ... calcula offset lineal con strides ...
+        add x0, x9, x17
+        add x0, x0, x19, lsl #3   // 8 bytes por elemento
+        ret
+```
+- Jagged arrays:
+    - El arreglo exterior es **1D de punteros (8B)**; cada posición apunta a un subarreglo con su cabecera.
+    - Los inicializadores anidados preservan el puntero a cabecera viva y calculan la base de datos a partir de esa cabecera.
+
+### Expresiones y sentencias relevantes
+
+- **Arrays.add (a.add(elem))**
+    - Reserva nuevo arreglo de tamaño `n+1` con el helper correcto (4B u 8B).
+    - Copia con strides acordes y escribe el último elemento; si es string, se **duplica** (`strdup`).
+- **Arrays.indexOf**
+    - Para elementos de 8B compara punteros; para strings usa `strcmp`; para 4B, comparación numérica.
+- **foreach / for**
+    - Recalcula base y longitud por iteración. En `int[][]`, el stride es de 8B y hay **guardia null**.
+- **Strings**
+    - `String.valueOf` y concatenaciones usan buffers dedicados (`tmpbuf`/`joinbuf`) y `strdup` al retornar o almacenar.
+
+Fragmento representativo de asignación en arreglos (`src/codegen/estructuras/arm64_arreglos.c`):
+
+```c
+// Elegir helper para direccionar el slot destino
+if (base_t == STRING || base_t == DOUBLE || base_t == FLOAT || rhs_is_ptr)
+    emitln(ftext, "    bl array_element_addr_ptr");
+else
+    emitln(ftext, "    bl array_element_addr");
+
+// Para STRING, duplicamos antes de almacenar
+emitln(ftext, "    bl strdup");
+emitln(ftext, "    str x1, [x9]");  // guardar puntero duplicado
+```
+
+> En todo el backend se cuida: (1) respetar la ABI, (2) elegir el helper según tamaño de elemento, (3) mantener alineaciones, y (4) preservar registros con punteros vivos.
+
+---
+
+## Decisiones de diseño (por qué así)
+
+- **Frame fijo (1024B)**: hace el direccionamiento trivial con `[x29 - N]` y reduce bugs por desalineación.
+- **Cabeceras a 8B**: acceso natural para ints y punteros/doubles sin trampas.
+- **Doble familia de helpers (4B / 8B)**: el código generado queda simple y explícito.
+- **Regla de “elemento puntero”**: strings, `double` y subarreglos se tratan como 8B; esto simplifica jagged arrays.
+- **Cadenas “estables”**: `strdup` al almacenar/retornar; así no dependemos de buffers temporales.
+- **Buffers separados** (`tmpbuf` y `joinbuf`): evitan colisiones en concatenaciones y joins.
+- **Guardias null en foreach**: resiliencia en arreglos parcialmente inicializados.
+- **Instrumentación opcional**: puntos de log en caminos críticos que se pueden apagar sin tocar el usuario final.
+
+---
+
+## Desafíos y cómo se resolvieron
+
+- Integración **AArch64 ABI**:
+    - Validamos que llamadas a libc (`printf`, `malloc`, `strcat`, `strdup`, `strtol`) no corrompan registros vitales.
+    - En helpers propios, preservamos callee-saved y documentamos el contrato de entrada/salida.
+
+- **Arreglos irregulares**:
+    - Cálculo correcto de la base de datos tras `sizes[]` con padding a 8B.
+    - Direccionamiento pointer-of-pointer para accesos y `foreach`.
+
+- Caso difícil: **segfault** en prueba integral
+    - Hallazgo: en inicializadores 1D, **x0** (puntero a cabecera) se clobberaba tras llamadas anidadas (`strtol`, etc.). Resultado: se guardaba un puntero inválido.
+    - Fix: preservar cabecera en **x20**, calcular base desde **x20** y restaurar **x0** antes de devolver. Con esto, el puntero guardado es válido y estable.
+    - Además, reforzamos `Arrays.add` de 8B (copias con `ldr/str xN`) y añadimos guardias en `foreach`.
+
+- **Strings y buffers temporales**:
+    - Decidimos duplicar retornos/almacenes y separar buffers para eliminar aliasing y corrupción.
+
+- **Alineación y frame**:
+    - Mantener `sp` alineado en todas las rutas y evitar subajustes durante el cuerpo de las funciones.
+
+---
+
+## Pruebas y cómo correrlas
+
+- Entorno: ensamblamos **ARM64** y ejecutamos bajo **QEMU aarch64** con glibc del sistema.
+- Pruebas destacadas:
+    - `test/proyecto1/examen_final.usl`: mezcla arreglos 2D/jagged, `foreach`, recursión, `switch/while`, `String.join/valueOf`, `parseInt`, `Arrays.add/indexOf`.
+    - `test/proyecto1/prueba_arreglos2.usl`, `prueba_foreach*.usl`, `prueba_funciones.usl`, `prueba_doubles.usl`: cubren rutas específicas de tamaño de elemento y control de flujo.
+- Hallazgos:
+    - Se eliminaron fallas por stride/tamaño en `Arrays.add` y se estabilizó el manejo de strings.
+    - El clobber en inicializadores 1D quedó corregido preservando cabecera y restaurando registros al final.
+- Cobertura (cualitativa):
+    - Cubierto: declaraciones, reasignaciones, creación 1D/2D/jagged, accesos e iteración, joins, casteos, recursión.
+    - En seguimiento: `add` sobre arreglos de punteros en escenarios complejos (mezcla de inicializadores y parseos anidados).
+
+> Próximo paso: agregar un test mínimo de regresión para “crear `int[]` con parseos + `append` en `int[][]`” y evitar regresiones futuras.
+
+---
+
+## Glosario breve
+
+- **ABI**: reglas de llamada entre funciones (qué va en qué registro, quién guarda qué, etc.).
+- **Frame (marco de pila)**: bloque reservado en la pila para locales y temporales durante una función.
+- **Jagged array**: arreglo de arreglos donde cada “fila” puede tener tamaño distinto.
+- **Stride**: cantidad de bytes que se avanza para ir de un elemento al siguiente.
+- **Helper de runtime**: función de apoyo (en C/ASM) que realiza tareas comunes como reservar y preparar un arreglo.
+
+---
+
+¿Dudas o quieres profundizar en alguna parte? Revisa los fuentes en `src/` (están organizados por responsabilidad) y, si estás depurando, habilita la instrumentación opcional para ver lo que pasa sin romper el flujo del usuario.
+
