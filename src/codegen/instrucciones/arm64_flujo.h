@@ -11,11 +11,11 @@ void flujo_emit_label(FILE *f, const char *prefix, int id);
 
 // Pilas de control para break/continue
 void flujo_break_push(int id);
-int  flujo_break_peek(void);
+int flujo_break_peek(void);
 void flujo_break_pop(void);
 
 void flujo_continue_push(int id);
-int  flujo_continue_peek(void);
+int flujo_continue_peek(void);
 void flujo_continue_pop(void);
 
 #endif // ARM64_FLUJO_H

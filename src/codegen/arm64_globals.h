@@ -3,9 +3,10 @@
 
 #include <stdio.h>
 #include "ast/AbstractExpresion.h"
-#include "context/result.h" // for TipoDato
+#include "context/result.h"
 
-typedef struct GlobalInfo {
+typedef struct GlobalInfo
+{
     const char *name;
     TipoDato tipo;
     int is_const;

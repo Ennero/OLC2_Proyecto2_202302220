@@ -8,11 +8,17 @@ static int g_count = 0;
 
 void globals_reset(void) { g_count = 0; }
 
-void globals_register(const char *name, TipoDato tipo, int is_const, AbstractExpresion *init) {
-    if (!name || g_count >= (int)(sizeof(g_globals)/sizeof(g_globals[0]))) return;
-    // dedupe simple
-    for (int i = 0; i < g_count; ++i) {
-        if (strcmp(g_globals[i].name, name) == 0) return;
+// Registrar una variable global
+void globals_register(const char *name, TipoDato tipo, int is_const, AbstractExpresion *init)
+{
+    if (!name || g_count >= (int)(sizeof(g_globals) / sizeof(g_globals[0])))
+        return;
+
+    // Evitar duplicados
+    for (int i = 0; i < g_count; ++i)
+    {
+        if (strcmp(g_globals[i].name, name) == 0)
+            return;
     }
     g_globals[g_count].name = name;
     g_globals[g_count].tipo = tipo;
@@ -21,58 +27,99 @@ void globals_register(const char *name, TipoDato tipo, int is_const, AbstractExp
     g_count++;
 }
 
-const GlobalInfo *globals_lookup(const char *name) {
-    for (int i = 0; i < g_count; ++i) {
-        if (strcmp(g_globals[i].name, name) == 0) return &g_globals[i];
+// Buscar variable global por nombre
+const GlobalInfo *globals_lookup(const char *name)
+{
+    for (int i = 0; i < g_count; ++i)
+    {
+        if (strcmp(g_globals[i].name, name) == 0)
+            return &g_globals[i];
     }
     return NULL;
 }
 
-void globals_emit_data(FILE *f) {
-    if (g_count == 0) return;
+// Emitir sección .data con variables globales
+void globals_emit_data(FILE *f)
+{
+    if (g_count == 0)
+        return;
     // Emitimos una sección .data separada con símbolos globales
-    // Cada global ocupa 8 bytes (soportamos int/char/bool en 32 bits dentro de 8, y punteros/double 8)
     fprintf(f, "\n// --- Variables globales ---\n");
-    for (int i = 0; i < g_count; ++i) {
+    for (int i = 0; i < g_count; ++i)
+    {
         const GlobalInfo *gi = &g_globals[i];
         // etiqueta: g_<name>
         fprintf(f, "g_%s:    ", gi->name);
-        // Inicialización simple: si es primitivo INT/BOOLEAN/CHAR con valor literal, usar .quad con el valor.
+        // Si es primitivo INT/BOOLEAN/CHAR con valor literal, usar .quad con el valor.
         long init_q = 0;
         int has_init = 0;
-        if (gi->init && gi->init->node_type && strcmp(gi->init->node_type, "Primitivo") == 0) {
+        if (gi->init && gi->init->node_type && strcmp(gi->init->node_type, "Primitivo") == 0)
+        {
             PrimitivoExpresion *p = (PrimitivoExpresion *)gi->init;
-            if (p->tipo == INT) {
-                if (p->valor) {
+            if (p->tipo == INT)
+            {
+                if (p->valor)
+                {
+                    // Soportar decimal y hexadecimal
                     if (strncmp(p->valor, "0x", 2) == 0 || strncmp(p->valor, "0X", 2) == 0)
                         init_q = strtol(p->valor, NULL, 16);
-                    else init_q = strtol(p->valor, NULL, 10);
+                    else
+                        init_q = strtol(p->valor, NULL, 10);
                 }
                 has_init = 1;
-            } else if (p->tipo == BOOLEAN) {
+            }
+            else if (p->tipo == BOOLEAN)
+            {
                 init_q = (p->valor && strcmp(p->valor, "true") == 0) ? 1 : 0;
                 has_init = 1;
-            } else if (p->tipo == CHAR) {
-                // Minimal: tomar primer carácter o escape básico
-                if (p->valor) {
-                    const char *s = p->valor; size_t n = strlen(s);
+            }
+            else if (p->tipo == CHAR)
+            {
+                // Soportar escapes simples
+                if (p->valor)
+                {
+                    const char *s = p->valor;
+                    size_t n = strlen(s);
                     int cp = 0;
-                    if (n >= 2 && s[0] == '\\') {
-                        switch (s[1]) {
-                            case 'n': cp = '\n'; break;
-                            case 't': cp = '\t'; break;
-                            case 'r': cp = '\r'; break;
-                            case '\\': cp = '\\'; break;
-                            case '"': cp = '"'; break;
-                            case '\'': cp = '\''; break;
-                            default: cp = (unsigned char)s[1]; break;
+                    if (n >= 2 && s[0] == '\\')
+                    {
+                        switch (s[1])
+                        {
+                        case 'n':
+                            cp = '\n';
+                            break;
+                        case 't':
+                            cp = '\t';
+                            break;
+                        case 'r':
+                            cp = '\r';
+                            break;
+                        case '\\':
+                            cp = '\\';
+                            break;
+                        case '"':
+                            cp = '"';
+                            break;
+                        case '\'':
+                            cp = '\'';
+                            break;
+                        default:
+                            cp = (unsigned char)s[1];
+                            break;
                         }
-                    } else { cp = (unsigned char)s[0]; }
-                    init_q = cp; has_init = 1;
+                    }
+                    else
+                    {
+                        cp = (unsigned char)s[0];
+                    }
+                    init_q = cp;
+                    has_init = 1;
                 }
             }
         }
-        if (has_init) fprintf(f, ".quad %ld\n", init_q);
-        else fprintf(f, ".quad 0\n");
+        if (has_init)
+            fprintf(f, ".quad %ld\n", init_q);
+        else
+            fprintf(f, ".quad 0\n");
     }
 }

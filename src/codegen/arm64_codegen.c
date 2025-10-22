@@ -37,38 +37,30 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Atributo para silenciar warnings de funciones no usadas (GCC/Clang)
+// Atributo para silenciar warnings de funciones no usadas
 #ifndef UNUSED
 #define UNUSED __attribute__((unused))
 #endif
 
-// Pequeña util para escribir una línea en el archivo (delegar a core)
-static void emitln(FILE *f, const char *s) {
+// Pequeña util para escribir una línea en el archivo
+static void emitln(FILE *f, const char *s)
+{
 #ifdef ARM64_EMIT_GUARD
-    // Guard: evitar direccionamiento inmediato FP-relativo [x29, -imm]
-    if (s && strstr(s, "[x29, -") != NULL) {
+    if (s && strstr(s, "[x29, -") != NULL)
+    {
         fprintf(stderr, "WARN(codegen): emisión contiene [x29, -...]: %s\n", s);
     }
 #endif
     core_emitln(f, s);
 }
 
-// Delegar manejo de literales a core (mantener API histórica)
-// Se delega directamente donde se requiera, evitamos helpers locales sin uso
-
-// escape_for_asciz movido a core
-
 // ----------------- Gestión simple de variables locales -----------------
-// Variables locales delegadas a arm64_vars
-// Tip alias para compatibilidad local
 typedef VarEntry VarEntry;
 
 // ----------------- Helpers de labels -----------------
-// Etiquetas via helpers compartidos en flujo
 static void emit_label(FILE *f, const char *prefix, int id) { flujo_emit_label(f, prefix, id); }
 
 // ----------------- Pila simple de labels para 'break' -----------------
-// break/continue delegados a flujo helpers
 static void break_push(int id) UNUSED;
 static void break_push(int id) { flujo_break_push(id); }
 static int break_peek(void) { return flujo_break_peek(); }
@@ -87,256 +79,352 @@ static int __current_func_exit_id = -1;
 static int __is_main_context = 0;
 static TipoDato __current_func_ret = NULO;
 
-// Registro de funciones movido a codegen/funciones/arm64_funciones.*
-
 // ----------------- Recolección de variables globales -----------------
-static void globals_collect(AbstractExpresion *n) {
-    if (!n) return;
-    if (n->node_type && strcmp(n->node_type, "Declaracion") == 0) {
+static void globals_collect(AbstractExpresion *n)
+{
+    if (!n)
+        return;
+    if (n->node_type && strcmp(n->node_type, "Declaracion") == 0)
+    {
         DeclaracionVariable *d = (DeclaracionVariable *)n;
-        // Solo file-scope: heurística simple, considerar global si no estamos dentro de función: este recolector se llama en raíz.
-        // Arrays globales no soportados aún en codegen: ignorar si dimensiones > 0
-        if (d->dimensiones == 0) {
+        if (d->dimensiones == 0)
+        {
             AbstractExpresion *init = (n->numHijos > 0) ? n->hijos[0] : NULL;
             globals_register(d->nombre, d->tipo, d->es_constante ? 1 : 0, init);
         }
     }
-    for (size_t i = 0; i < n->numHijos; ++i) globals_collect(n->hijos[i]);
+    for (size_t i = 0; i < n->numHijos; ++i)
+        globals_collect(n->hijos[i]);
 }
 
-// ----------------- Emisión de llamada a función -----------------
-// Devuelve el tipo de retorno; para INT-like deja w1 con el valor; para DOUBLE deja d0
-// Emisión de llamadas a función movido a arm64_funciones
-
-// ----------------- Helpers de runtime para arreglos (flat) -----------------
-// new_array_flat(dims=w0, sizes_ptr=x1) -> x0: puntero a cabecera
-//  [align8] : int data[prod(sizes)]
-// Helpers de arrays movidos a codegen/estructuras/arm64_arreglos.*
-
-// ----------------- Emisión de expresiones -----------------
-// Implementaciones movidas a codegen/expresiones/*.c (arm64_num.c, arm64_bool.c, arm64_print.c)
-
 // Recorre el árbol emitiendo código para Print con literales primitivos
-static void gen_node(FILE *ftext, AbstractExpresion *node) {
-    if (!node) return;
+static void gen_node(FILE *ftext, AbstractExpresion *node)
+{
+    if (!node)
+        return;
+
     // Ignorar declaraciones de funciones en codegen (solo generamos el cuerpo de 'main')
-    if (node->node_type && strcmp(node->node_type, "FunctionDeclaration") == 0) {
+    if (node->node_type && strcmp(node->node_type, "FunctionDeclaration") == 0)
+    {
         return;
     }
+
     // Llamadas a función como sentencia
-    if (node->node_type && strcmp(node->node_type, "FunctionCall") == 0) {
+    if (node->node_type && strcmp(node->node_type, "FunctionCall") == 0)
+    {
         (void)arm64_emitir_llamada_funcion(node, ftext);
         return;
     }
+
     // Expresiones Postfix (x++ / x--) como sentencia: evaluar para que ocurra el efecto secundario
-    if (node->node_type && strcmp(node->node_type, "Postfix") == 0) {
+    if (node->node_type && strcmp(node->node_type, "Postfix") == 0)
+    {
         (void)emitir_eval_numerico(node, ftext);
         return;
     }
     // Delegar condicionales y ciclos a módulos especializados
-    if (arm64_emitir_condicional(node, ftext, (EmitirNodoFn)gen_node)) return;
-    if (arm64_emitir_ciclo(node, ftext, (EmitirNodoFn)gen_node)) return;
-    // ReturnStatement: evaluar opcionalmente la expresión y saltar al epílogo
-    if (node->node_type && strcmp(node->node_type, "ReturnStatement") == 0) {
-        if (node->numHijos > 0 && node->hijos[0]) {
+    if (arm64_emitir_condicional(node, ftext, (EmitirNodoFn)gen_node))
+        return;
+    if (arm64_emitir_ciclo(node, ftext, (EmitirNodoFn)gen_node))
+        return;
+
+    // Evaluar opcionalmente la expresión y saltar al epílogo
+    if (node->node_type && strcmp(node->node_type, "ReturnStatement") == 0)
+    {
+        if (node->numHijos > 0 && node->hijos[0])
+        {
             AbstractExpresion *rhs = node->hijos[0];
+
             // Evaluar expresión de retorno
-            if (__is_main_context) {
+            if (__is_main_context)
+            {
+
                 // En main, retornar código de salida (int en w0)
-                if (nodo_es_resultado_booleano(rhs) || (rhs->node_type && strcmp(rhs->node_type, "Primitivo") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Identificador") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Suma") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Resta") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Multiplicacion") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Division") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Modulo") == 0) || (rhs->node_type && strcmp(rhs->node_type, "NegacionUnaria") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Casteo") == 0)) {
+                if (nodo_es_resultado_booleano(rhs) || (rhs->node_type && strcmp(rhs->node_type, "Primitivo") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Identificador") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Suma") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Resta") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Multiplicacion") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Division") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Modulo") == 0) || (rhs->node_type && strcmp(rhs->node_type, "NegacionUnaria") == 0) || (rhs->node_type && strcmp(rhs->node_type, "Casteo") == 0))
+                {
                     TipoDato ty = emitir_eval_numerico(rhs, ftext);
-                    if (ty == DOUBLE) emitln(ftext, "    fcvtzs w0, d0"); else emitln(ftext, "    mov w0, w1");
-                } else if (expresion_es_cadena(rhs)) {
-                    emitln(ftext, "    mov w0, #0");
-                } else {
+                    if (ty == DOUBLE)
+                        emitln(ftext, "    fcvtzs w0, d0");
+                    else
+                        emitln(ftext, "    mov w0, w1");
+                }
+                else if (expresion_es_cadena(rhs))
+                {
                     emitln(ftext, "    mov w0, #0");
                 }
-            } else {
+                else
+                {
+                    emitln(ftext, "    mov w0, #0");
+                }
+            }
+            else
+            {
                 // En funciones: colocar retorno en registro segun tipo
                 if (
-                    __current_func_ret == DOUBLE || __current_func_ret == FLOAT
-                ) {
+                    __current_func_ret == DOUBLE || __current_func_ret == FLOAT)
+                {
                     TipoDato ty = emitir_eval_numerico(rhs, ftext);
-                    if (ty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
+                    if (ty != DOUBLE)
+                        emitln(ftext, "    scvtf d0, w1");
                     // d0 lleva retorno
-                } else if (__current_func_ret == BOOLEAN) {
+                }
+                else if (__current_func_ret == BOOLEAN)
+                {
                     // Evaluar expresion booleana y colocar 0/1 en w0
                     (void)emitir_eval_booleano(rhs, ftext);
                     emitln(ftext, "    mov w0, w1");
-                } else if (__current_func_ret == STRING) {
+                }
+                else if (__current_func_ret == STRING)
+                {
+
                     // Evaluar puntero a string en x1 y devolver SIEMPRE una copia independiente
-                    // para evitar aliasing con tmpbuf/joinbuf u otros buffers temporales.
-                    if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");
+                    if (!emitir_eval_string_ptr(rhs, ftext))
+                        emitln(ftext, "    mov x1, #0");
                     int lnull = flujo_next_label_id();
                     int lend = flujo_next_label_id();
-                    // Si x1 == NULL -> retornar NULL (x0=0); de lo contrario, strdup(x1)
+                    // Si x1 == NULL -> retornar NULL (x0=0), sino strdup(x1)
                     {
-                        char lab[96]; snprintf(lab, sizeof(lab), "    cbz x1, L_strret_null_%d", lnull); emitln(ftext, lab);
+                        char lab[96];
+                        snprintf(lab, sizeof(lab), "    cbz x1, L_strret_null_%d", lnull);
+                        emitln(ftext, lab);
                     }
                     emitln(ftext, "    mov x0, x1");
                     emitln(ftext, "    bl strdup");
                     {
-                        char br[96]; snprintf(br, sizeof(br), "    b L_strret_end_%d", lend); emitln(ftext, br);
+                        char br[96];
+                        snprintf(br, sizeof(br), "    b L_strret_end_%d", lend);
+                        emitln(ftext, br);
                     }
                     {
-                        char l1[96]; snprintf(l1, sizeof(l1), "L_strret_null_%d:", lnull); emitln(ftext, l1);
+                        char l1[96];
+                        snprintf(l1, sizeof(l1), "L_strret_null_%d:", lnull);
+                        emitln(ftext, l1);
                     }
                     emitln(ftext, "    mov x0, #0");
                     {
-                        char l2[96]; snprintf(l2, sizeof(l2), "L_strret_end_%d:", lend); emitln(ftext, l2);
+                        char l2[96];
+                        snprintf(l2, sizeof(l2), "L_strret_end_%d:", lend);
+                        emitln(ftext, l2);
                     }
-                } else if (__current_func_ret == ARRAY) {
+                }
+                else if (__current_func_ret == ARRAY)
+                {
                     // Retorno de arreglo: evaluar a puntero del arreglo en x1 y mover a x0
                     // Soportamos identificador directo o creación de arreglo; para otros casos, fallback 0
                     const char *rt = rhs->node_type ? rhs->node_type : "";
-                    if (strcmp(rt, "Identificador") == 0) {
+                    if (strcmp(rt, "Identificador") == 0)
+                    {
                         IdentificadorExpresion *rid = (IdentificadorExpresion *)rhs;
                         VarEntry *rv = vars_buscar(rid->nombre);
-                        if (rv && rv->tipo == ARRAY) {
-                            char l1[96]; snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", rv->offset); emitln(ftext, l1);
-                        } else {
+                        if (rv && rv->tipo == ARRAY)
+                        {
+                            char l1[96];
+                            snprintf(l1, sizeof(l1), "    sub x16, x29, #%d\n    ldr x1, [x16]", rv->offset);
+                            emitln(ftext, l1);
+                        }
+                        else
+                        {
                             const GlobalInfo *gi = globals_lookup(rid->nombre);
-                            if (gi && gi->tipo == ARRAY) {
-                                char l1[128]; snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", rid->nombre); emitln(ftext, l1);
-                            } else {
+                            if (gi && gi->tipo == ARRAY)
+                            {
+                                char l1[128];
+                                snprintf(l1, sizeof(l1), "    ldr x16, =g_%s\n    ldr x1, [x16]", rid->nombre);
+                                emitln(ftext, l1);
+                            }
+                            else
+                            {
                                 emitln(ftext, "    mov x1, #0");
                             }
                         }
                         emitln(ftext, "    mov x0, x1");
-                    } else if (strcmp(rt, "ArrayCreation") == 0 || strcmp(rt, "ArrayInitializer") == 0) {
-                        // Reutilizar lógica de declaración para crear arreglo temporal: evaluamos sizes/elementos y obtenemos x0
-                        // Implementación mínima: delegamos a paths usados en declaraciones creando el arreglo y dejando x0 listo
-                        // Para simplicidad MVP: soportar ArrayCreation con lista de tamaños 1D
+
+                        // x0 tiene el puntero al arreglo
+                    }
+                    else if (strcmp(rt, "ArrayCreation") == 0 || strcmp(rt, "ArrayInitializer") == 0)
+                    {
                         AbstractExpresion *lista = rhs->hijos[1];
                         int dims = (int)(lista ? lista->numHijos : 0);
                         int bytes = ((dims * 4) + 15) & ~15;
-                        if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
-                        for (int i = 0; i < dims; ++i) {
-                            TipoDato ty = emitir_eval_numerico(lista->hijos[i], ftext);
-                            if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
-                            char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4); emitln(ftext, st);
+                        if (bytes > 0)
+                        {
+                            char sub[64];
+                            snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes);
+                            emitln(ftext, sub);
                         }
-                        char mv0[64]; snprintf(mv0, sizeof(mv0), "    mov w0, #%d", dims); emitln(ftext, mv0);
+                        for (int i = 0; i < dims; ++i)
+                        {
+                            TipoDato ty = emitir_eval_numerico(lista->hijos[i], ftext);
+                            if (ty == DOUBLE)
+                                emitln(ftext, "    fcvtzs w1, d0");
+                            char st[64];
+                            snprintf(st, sizeof(st), "    str w1, [sp, #%d]", i * 4);
+                            emitln(ftext, st);
+                        }
+                        char mv0[64];
+                        snprintf(mv0, sizeof(mv0), "    mov w0, #%d", dims);
+                        emitln(ftext, mv0);
                         emitln(ftext, "    mov x1, sp");
-                        // Asumimos arreglo de punteros a string para este caso (como en ejemplo Fibonacci)
+
+                        // Asumimos arreglo de punteros a string para este caso
                         emitln(ftext, "    bl new_array_flat_ptr");
-                        if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
-                        // x0 ya contiene el puntero a retornar
-                    } else {
-                        // No soportado: retornar NULL
+                        if (bytes > 0)
+                        {
+                            char addb[64];
+                            snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes);
+                            emitln(ftext, addb);
+                        }
+                    }
+                    else
+                    {
                         emitln(ftext, "    mov x0, #0");
                     }
-                } else {
-                    // Escalares int/char -> w0
+                }
+                else
+                {
                     TipoDato ty = emitir_eval_numerico(rhs, ftext);
-                    if (ty == DOUBLE) emitln(ftext, "    fcvtzs w0, d0"); else emitln(ftext, "    mov w0, w1");
+                    if (ty == DOUBLE)
+                        emitln(ftext, "    fcvtzs w0, d0");
+                    else
+                        emitln(ftext, "    mov w0, w1");
                 }
             }
         }
-        if (__current_func_exit_id >= 0) {
+        if (__current_func_exit_id >= 0)
+        {
             // Saltar al epílogo de función; ahí se restaurará el stack con vars_epilogo
-            char br[64]; snprintf(br, sizeof(br), "    b L_func_exit_%d", __current_func_exit_id); emitln(ftext, br);
-        } else {
-            // No hay etiqueta de función (no debería ocurrir); emitir epílogo inline mínimo
+            char br[64];
+            snprintf(br, sizeof(br), "    b L_func_exit_%d", __current_func_exit_id);
+            emitln(ftext, br);
+        }
+        else
+        {
+            // No hay etiqueta de función, así que se emite epílogo inline mínimo
             emitln(ftext, "    // return fuera de contexto; epílogo inline");
             emitln(ftext, "    ldp x29, x30, [sp], 16");
             emitln(ftext, "    ret");
         }
         return;
     }
-    // ContinueStatement: saltar a la etiqueta de continuación más cercana (si existe)
-    if (node->node_type && strcmp(node->node_type, "ContinueStatement") == 0) {
+    // Saltar a la etiqueta de continuación más cercana
+    if (node->node_type && strcmp(node->node_type, "ContinueStatement") == 0)
+    {
         int cid = continue_peek();
-        if (cid >= 0) {
-            char cbr[64]; snprintf(cbr, sizeof(cbr), "    b L_continue_%d", cid); emitln(ftext, cbr);
-        } else {
+        if (cid >= 0)
+        {
+            char cbr[64];
+            snprintf(cbr, sizeof(cbr), "    b L_continue_%d", cid);
+            emitln(ftext, cbr);
+        }
+        else
+        {
             emitln(ftext, "    // 'continue' fuera de bucle; ignorado en codegen");
         }
         return;
     }
-    // BreakStatement: salto a etiqueta de ruptura más cercana (switch/loop)
-    if (node->node_type && strcmp(node->node_type, "BreakStatement") == 0) {
+
+    // BreakStatement: salto a etiqueta de ruptura más cercana
+    if (node->node_type && strcmp(node->node_type, "BreakStatement") == 0)
+    {
         int bid = break_peek();
-        if (bid >= 0) {
-            char brk[64]; snprintf(brk, sizeof(brk), "    b L_break_%d", bid); emitln(ftext, brk);
-        } else {
+        if (bid >= 0)
+        {
+            char brk[64];
+            snprintf(brk, sizeof(brk), "    b L_break_%d", bid);
+            emitln(ftext, brk);
+        }
+        else
+        {
             emitln(ftext, "    // 'break' fuera de contexto; ignorado en codegen");
         }
         return;
     }
-    // IfStatement: emitir saltos con labels y no recorrer hijos antes
-    // If/Switch fueron absorbidos por arm64_condicionales
-    // Manejo especial de bloques: crean un nuevo alcance de variables
-    if (node->node_type && strcmp(node->node_type, "Bloque") == 0) {
+    // Bloque: nuevo scope de variables
+    if (node->node_type && strcmp(node->node_type, "Bloque") == 0)
+    {
         vars_push_scope(ftext);
-        for (size_t i = 0; i < node->numHijos; i++) {
+        for (size_t i = 0; i < node->numHijos; i++)
+        {
             gen_node(ftext, node->hijos[i]);
         }
         vars_pop_scope(ftext);
         return;
     }
 
-    // Switch también delegado
+    // Declaraciones
+    if (arm64_emitir_declaracion(node, ftext))
+        return;
 
-    // While delegado
+    // Print Statement
+    if (arm64_emitir_print_stmt(node, ftext))
+        return;
 
-    // For delegado
-
-    // Declaraciones: emítelas directamente (incluyen su inicializador) y no recorras hijos antes
-    if (arm64_emitir_declaracion(node, ftext)) return;
-
-    // IMPORTANTE: No recorrer hijos de Print antes de emitirlo, para no evaluar
-    // expresiones con efectos secundarios (p.ej., Postfix) dos veces.
-    if (arm64_emitir_print_stmt(node, ftext)) return;
-
-    // Recorremos primero hijos (pre-orden simple para statements) excepto Bloque/IfStatement (ya manejados)
-    for (size_t i = 0; i < node->numHijos; i++) {
-        if (!node->hijos[i]) continue;
-        if (node->hijos[i]->node_type && (strcmp(node->hijos[i]->node_type, "Bloque") == 0 || strcmp(node->hijos[i]->node_type, "IfStatement") == 0)) {
+    // Recorremos primero hijos excepto Bloque/IfStatement
+    for (size_t i = 0; i < node->numHijos; i++)
+    {
+        if (!node->hijos[i])
+            continue;
+        if (node->hijos[i]->node_type && (strcmp(node->hijos[i]->node_type, "Bloque") == 0 || strcmp(node->hijos[i]->node_type, "IfStatement") == 0))
+        {
             gen_node(ftext, node->hijos[i]);
-        } else {
+        }
+        else
+        {
             gen_node(ftext, node->hijos[i]);
         }
     }
 
-    // Detectar por node_type minimalista
-    if (node->node_type && strcmp(node->node_type, "Instrucciones") == 0) {
+    // Detectar por node_type
+    if (node->node_type && strcmp(node->node_type, "Instrucciones") == 0)
+    {
         // ya recorremos hijos arriba
         return;
     }
     // Bloques ya fueron manejados arriba
-    if (node->node_type && strcmp(node->node_type, "MainFunction") == 0) {
+    if (node->node_type && strcmp(node->node_type, "MainFunction") == 0)
+    {
         // ya procesamos sus hijos
         return;
     }
     // Declaraciones ya manejadas antes
-    if (arm64_emitir_asignacion_arreglo(node, ftext)) return;
+    if (arm64_emitir_asignacion_arreglo(node, ftext))
+        return;
     // Reasignación simple: id = expr
-    if (arm64_emitir_reasignacion(node, ftext)) return;
+    if (arm64_emitir_reasignacion(node, ftext))
+        return;
     // Asignación compuesta: id op= expr
-    if (arm64_emitir_asignacion_compuesta(node, ftext)) return;
+    if (arm64_emitir_asignacion_compuesta(node, ftext))
+        return;
 }
 
 // Búsqueda recursiva del nodo MainFunction en el AST (file-scope)
-static AbstractExpresion *find_main(AbstractExpresion *n) {
-    if (!n) return NULL;
-    if (n->node_type && strcmp(n->node_type, "MainFunction") == 0) return n;
-    for (size_t i = 0; i < n->numHijos; ++i) {
+static AbstractExpresion *find_main(AbstractExpresion *n)
+{
+    if (!n)
+        return NULL;
+    if (n->node_type && strcmp(n->node_type, "MainFunction") == 0)
+        return n;
+    for (size_t i = 0; i < n->numHijos; ++i)
+    {
         AbstractExpresion *m = find_main(n->hijos[i]);
-        if (m) return m;
+        if (m)
+            return m;
     }
     return NULL;
 }
 
-int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
+// Genera el programa AArch64 completo desde el AST raíz
+int arm64_generate_program(AbstractExpresion *root, const char *out_path)
+{
     // Crear carpeta de salida si no existe
     FILE *f = fopen(out_path, "w");
-    if (!f) {
+    if (!f)
+    {
         // intentar crear carpeta "arm/" si la ruta lo contiene
         // estrategia simple: crear directorio arm/
         system("mkdir -p arm");
         f = fopen(out_path, "w");
-        if (!f) return 1;
+        if (!f)
+            return 1;
     }
 
     // Encabezado .data básico
@@ -357,11 +445,6 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "joinbuf:        .skip 16384");
     // Buffer para codificación UTF-8 de un solo carácter
     emitln(f, "charbuf:        .skip 8\n");
-
-    // Recorrer primero para llenar string literals durante gen
-    // Generaremos .text primero para recolectar datos de dobles/strings
-    // pero necesitamos escribir .data de strings antes de .text.
-    // Solución: escribimos placeholder; generamos el cuerpo a un buffer temporal.
 
     // Emite .text, helpers y funciones declaradas
     emitln(f, ".text");
@@ -447,7 +530,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     // Preservar argumentos antes de cualquier llamada (usar callee-saved)
     emitln(f, "    mov x24, x0"); // arr
     emitln(f, "    mov x23, x1"); // preserve delim in callee-saved
-    // (debug marker removed)
+
     // If arr is NULL, return empty string in joinbuf
     emitln(f, "    cbnz x24, 0f");
     emitln(f, "    ldr x0, =joinbuf");
@@ -473,7 +556,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    add x17, x15, #7");
     emitln(f, "    and x17, x17, #-8");
     emitln(f, "    add x18, x24, #8"); // sizes base
-    emitln(f, "    ldr w19, [x18]"); // n
+    emitln(f, "    ldr w19, [x18]");   // n
     // compute data base in callee-saved x21 to survive calls
     emitln(f, "    add x21, x24, x17");
     emitln(f, "    ldr x0, =joinbuf");
@@ -521,7 +604,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     // Preservar argumentos antes de cualquier llamada
     emitln(f, "    mov x24, x0");
     emitln(f, "    mov x23, x1"); // preserve delim
-    // (debug marker removed)
+
     // If arr is NULL, return empty string in joinbuf
     emitln(f, "    cbnz x24, 0f");
     emitln(f, "    ldr x0, =joinbuf");
@@ -564,7 +647,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "3:");
     emitln(f, "    add x22, x21, x20, lsl #2");
     emitln(f, "    ldr w22, [x22]");
-    emitln(f, "    add x0, sp, #48"); // int buffer after saved regs
+    emitln(f, "    add x0, sp, #48");
     emitln(f, "    ldr x1, =fmt_int");
     emitln(f, "    mov w2, w22");
     emitln(f, "    bl sprintf");
@@ -589,54 +672,72 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     globals_collect(root);
 
     // Emitir cada función como fn_<nombre>
-    for (int i = 0; i < arm64_funciones_count(); ++i) {
+    for (int i = 0; i < arm64_funciones_count(); ++i)
+    {
         const Arm64FuncionInfo *fi = arm64_funciones_get(i);
         // Reset de estado de variables por función
         vars_reset();
-        char lab[128]; snprintf(lab, sizeof(lab), "fn_%s:", fi->name); emitln(f, lab);
-    emitln(f, "    stp x29, x30, [sp, -16]!");
-    emitln(f, "    mov x29, sp");
-    // Reservar un frame fijo para variables temporales locales y offsets [x29 - N]
-    // Nota: Usamos 1024 bytes (alineado a 16) para simplificar y evitar corrupción por llamadas a libc
-    emitln(f, "    sub sp, sp, #1024");
-    // Reservar frame completo para locales una sola vez (se ajustará tras conocer local_bytes)
-    // De momento, posponemos hasta después de declarar parámetros. Guardamos etiqueta para inserción.
-        // Preparar estado de retorno para ReturnStatement
+        char lab[128];
+        snprintf(lab, sizeof(lab), "fn_%s:", fi->name);
+        emitln(f, lab);
+        emitln(f, "    stp x29, x30, [sp, -16]!");
+        emitln(f, "    mov x29, sp");
+
+        // Reservar un frame fijo para variables temporales locales y offsets [x29 - N]
+        emitln(f, "    sub sp, sp, #1024");
+
+        // Reservar frame completo para locales una sola vez
         __is_main_context = 0;
         __current_func_ret = fi->ret;
         __current_func_exit_id = flujo_next_label_id();
+
         // Crear variables locales para parámetros y mover desde registros de llamada
-        // Usar contadores separados de registros GPR (x/w) y FPR (d) según AArch64 SysV ABI
-        int cgpr = 0; // x0-x7 / w0-w7
-        int cfpr = 0; // d0-d7
-        for (int p = 0; p < fi->param_count && p < 8; ++p) {
+        int cgpr = 0;
+        int cfpr = 0;
+
+        // Parámetros en x0-x7 (enteros/punteros) y d0-d7 (flotantes)
+        for (int p = 0; p < fi->param_count && p < 8; ++p)
+        {
             int size = (fi->param_types[p] == DOUBLE || fi->param_types[p] == FLOAT) ? 8 : 8;
             VarEntry *v = vars_agregar_ext(fi->param_names[p], fi->param_types[p], size, 0, f);
-            // Marcar strings como pasados por referencia: almacenaremos la dirección de una ranura que contiene el puntero real
-            if (fi->param_types[p] == STRING) v->is_ref = 1;
-            if (fi->param_types[p] == DOUBLE || fi->param_types[p] == FLOAT) {
-                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d%d, [x16]", v->offset, cfpr); emitln(f, st);
+
+            // Mover desde registros de llamada a la pila
+            if (fi->param_types[p] == STRING)
+                v->is_ref = 1;
+            if (fi->param_types[p] == DOUBLE || fi->param_types[p] == FLOAT)
+            {
+                char st[96];
+                snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d%d, [x16]", v->offset, cfpr);
+                emitln(f, st);
                 cfpr++;
-            } else if (fi->param_types[p] == STRING || fi->param_types[p] == ARRAY) {
-                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x%d, [x16]", v->offset, cgpr); emitln(f, st);
+            }
+            else if (fi->param_types[p] == STRING || fi->param_types[p] == ARRAY)
+            {
+                char st[96];
+                snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x%d, [x16]", v->offset, cgpr);
+                emitln(f, st);
                 cgpr++;
-            } else {
-                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w%d, [x16]", v->offset, cgpr); emitln(f, st);
+            }
+            else
+            {
+                char st[96];
+                snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w%d, [x16]", v->offset, cgpr);
+                emitln(f, st);
                 cgpr++;
             }
         }
+
         // Reservas de locales se harán on-demand en vars_agregar; no reservar aquí
-        // Generar cuerpo
         gen_node(f, fi->body);
         // Salida de función
         emit_label(f, "L_func_exit", __current_func_exit_id);
         __current_func_exit_id = -1;
-    // Restaurar frame reservado y epílogo estándar
-    emitln(f, "    add sp, sp, #1024");
-    emitln(f, "    mov sp, x29");
+        // Restaurar frame reservado y epílogo estándar
+        emitln(f, "    add sp, sp, #1024");
+        emitln(f, "    mov sp, x29");
         emitln(f, "    ldp x29, x30, [sp], 16");
         emitln(f, "    ret\n");
-        // Fin de función; continuar con la siguiente
+        // Fin de función
     }
 
     // Ahora main
@@ -646,7 +747,6 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     emitln(f, "    mov x29, sp\n");
     // Reservar un frame fijo para temporales usados con [x29 - N]
     emitln(f, "    sub sp, sp, #1024");
-    // (debug START banner removed)
     // Reservar frame completo de main tras conocer local_bytes; de inicio 0, se actualizará después de declarar
 
     // Para poder generar secciones .data adicionales (dobles y strings) después,
@@ -660,17 +760,16 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
 
     // Buscar nodo de entrada (MainFunction) para garantizar que ejecutamos 'main' sin importar el orden
     AbstractExpresion *entry = find_main(root);
-    if (!entry) entry = root; // fallback: generar desde la raíz si no existe main
-
+    if (!entry)
+        entry = root;
     // Generación del cuerpo sólo desde 'main'
     gen_node(f, entry);
 
-    // Etiqueta de salida de función (usada por 'return')
+    // Etiqueta de salida de función
     emit_label(f, "L_func_exit", __current_func_exit_id);
     __current_func_exit_id = -1;
 
     // Epílogo
-    // Restaurar frame reservado y reset a FP
     emitln(f, "    add sp, sp, #1024");
     emitln(f, "    mov sp, x29");
     emitln(f, "\n    mov w0, #0");
@@ -686,6 +785,7 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
     core_emitln(f, ".data");
 
     fclose(f);
+
     // liberar estructuras
     core_reset_literals();
     vars_reset();
