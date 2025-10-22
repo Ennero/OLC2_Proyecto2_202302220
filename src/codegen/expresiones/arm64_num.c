@@ -427,9 +427,12 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
         emitir_parse_double(node->hijos[0], ftext);
         return DOUBLE;
     } else if (strcmp(t, "ArrayLength") == 0) {
-        // child should be an array identifier; load pointer and read sizes[0]
+        // child can be: Identificador | ArrayAccess | FunctionCall (that returns ARRAY)
         AbstractExpresion *arr = node->hijos[0];
-        if (arr && strcmp(arr->node_type ? arr->node_type : "", "Identificador") == 0) {
+        if (!arr) { emitln(ftext, "    mov w1, #0"); return INT; }
+        const char *nt = arr->node_type ? arr->node_type : "";
+        if (strcmp(nt, "Identificador") == 0) {
+            // arr.length -> sizes[0]
             IdentificadorExpresion *id = (IdentificadorExpresion *)arr;
             VarEntry *v = buscar_variable(id->nombre);
             if (v) {
@@ -441,7 +444,60 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
             emitln(ftext, "    add x18, x0, #8");
             emitln(ftext, "    ldr w1, [x18]");
             return INT;
-        } else if (arr && strcmp(arr->node_type ? arr->node_type : "", "FunctionCall") == 0) {
+        } else if (strcmp(nt, "ArrayAccess") == 0) {
+            // For nested access like a[i][j]... .length:
+            // - Flat arrays: read sizes[depth] from base header
+            // - Jagged arrays (built via initializer): descend pointers depth times, then read sizes[0]
+            int depth = 0; AbstractExpresion *it = arr;
+            while (it && it->node_type && strcmp(it->node_type, "ArrayAccess") == 0) { depth++; it = it->hijos[0]; }
+            if (!(it && it->node_type && strcmp(it->node_type, "Identificador") == 0)) {
+                emitln(ftext, "    mov w1, #0");
+                return INT;
+            }
+            // Build indices array on stack
+            AbstractExpresion **idx_nodes = NULL; if (depth > 0) idx_nodes = (AbstractExpresion**)malloc(sizeof(AbstractExpresion*) * (size_t)depth);
+            int pos = depth - 1; AbstractExpresion *it2 = arr;
+            for (int i = 0; i < depth; ++i) { idx_nodes[pos--] = it2->hijos[1]; it2 = it2->hijos[0]; }
+            int bytes = ((depth * 4) + 15) & ~15;
+            if (bytes > 0) { char sub[64]; snprintf(sub, sizeof(sub), "    sub sp, sp, #%d", bytes); emitln(ftext, sub); }
+            for (int k = 0; k < depth; ++k) {
+                TipoDato ty = emitir_eval_numerico(idx_nodes[k], ftext);
+                if (ty == DOUBLE) emitln(ftext, "    fcvtzs w1, d0");
+                char st[64]; snprintf(st, sizeof(st), "    str w1, [sp, #%d]", k * 4); emitln(ftext, st);
+            }
+            if (idx_nodes) free(idx_nodes);
+            // Load base pointer
+            IdentificadorExpresion *id = (IdentificadorExpresion *)it;
+            VarEntry *v = buscar_variable(id->nombre);
+            if (v) {
+                char ld[96]; snprintf(ld, sizeof(ld), "    sub x16, x29, #%d\n    ldr x0, [x16]", v->offset); emitln(ftext, ld);
+            } else {
+                char lg[128]; snprintf(lg, sizeof(lg), "    ldr x16, =g_%s\n    ldr x0, [x16]", id->nombre); emitln(ftext, lg);
+            }
+            // Inspect header dims to decide flat vs jagged
+            emitln(ftext, "    ldr w12, [x0]");
+            int lbl = flujo_next_label_id();
+            { char cmp[64]; snprintf(cmp, sizeof(cmp), "    cmp w12, #1"); emitln(ftext, cmp); }
+            { char bne[64]; snprintf(bne, sizeof(bne), "    b.ne L_len_flat_%d", lbl); emitln(ftext, bne); }
+            // Jagged: descend pointers depth times using one index at a time
+            for (int k = 0; k < depth; ++k) {
+                { char addp[96]; snprintf(addp, sizeof(addp), "    add x1, sp, #%d", k * 4); emitln(ftext, addp); }
+                emitln(ftext, "    mov w2, #1");
+                emitln(ftext, "    bl array_element_addr_ptr");
+                emitln(ftext, "    ldr x0, [x0]");
+            }
+            // Load sizes[0] from the final subarray header
+            emitln(ftext, "    add x18, x0, #8");
+            emitln(ftext, "    ldr w1, [x18]");
+            { char jmp[64]; snprintf(jmp, sizeof(jmp), "    b L_len_done_%d", lbl); emitln(ftext, jmp); }
+            // Flat case: sizes[depth] on base header
+            { char lab[64]; snprintf(lab, sizeof(lab), "L_len_flat_%d:", lbl); emitln(ftext, lab); }
+            { int off = 8 + (depth * 4); char ad[96]; snprintf(ad, sizeof(ad), "    add x18, x0, #%d", off); emitln(ftext, ad); }
+            emitln(ftext, "    ldr w1, [x18]");
+            { char labd[64]; snprintf(labd, sizeof(labd), "L_len_done_%d:", lbl); emitln(ftext, labd); }
+            if (bytes > 0) { char addb[64]; snprintf(addb, sizeof(addb), "    add sp, sp, #%d", bytes); emitln(ftext, addb); }
+            return INT;
+        } else if (strcmp(nt, "FunctionCall") == 0) {
             // Support .length on function call returning ARRAY
             TipoDato rty = arm64_emitir_llamada_funcion(arr, ftext);
             if (rty == ARRAY) {
@@ -449,11 +505,15 @@ TipoDato emitir_eval_numerico(AbstractExpresion *node, FILE *ftext) {
                 emitln(ftext, "    add x18, x0, #8");
                 emitln(ftext, "    ldr w1, [x18]");
                 return INT;
+            } else {
+                emitln(ftext, "    mov w1, #0");
+                return INT;
             }
+        } else {
+            // Fallback: not supported
+            emitln(ftext, "    mov w1, #0");
+            return INT;
         }
-        // Fallback: not an identifier; return 0
-        emitln(ftext, "    mov w1, #0");
-        return INT;
     } else if (strcmp(t, "ArraysIndexof") == 0) {
         // Arrays.indexOf(arrExpr, valExpr)
         AbstractExpresion *arr = node->hijos[0];

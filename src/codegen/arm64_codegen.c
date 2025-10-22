@@ -153,10 +153,16 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                 }
             } else {
                 // En funciones: colocar retorno en registro segun tipo
-                if (__current_func_ret == DOUBLE || __current_func_ret == FLOAT) {
+                if (
+                    __current_func_ret == DOUBLE || __current_func_ret == FLOAT
+                ) {
                     TipoDato ty = emitir_eval_numerico(rhs, ftext);
                     if (ty != DOUBLE) emitln(ftext, "    scvtf d0, w1");
                     // d0 lleva retorno
+                } else if (__current_func_ret == BOOLEAN) {
+                    // Evaluar expresion booleana y colocar 0/1 en w0
+                    (void)emitir_eval_booleano(rhs, ftext);
+                    emitln(ftext, "    mov w0, w1");
                 } else if (__current_func_ret == STRING) {
                     // Evaluar puntero a string en x1 -> mover a x0
                     if (!emitir_eval_string_ptr(rhs, ftext)) emitln(ftext, "    mov x1, #0");
@@ -203,7 +209,7 @@ static void gen_node(FILE *ftext, AbstractExpresion *node) {
                         emitln(ftext, "    mov x0, #0");
                     }
                 } else {
-                    // Escalares int/bool/char -> w0
+                    // Escalares int/char -> w0
                     TipoDato ty = emitir_eval_numerico(rhs, ftext);
                     if (ty == DOUBLE) emitln(ftext, "    fcvtzs w0, d0"); else emitln(ftext, "    mov w0, w1");
                 }
@@ -578,17 +584,23 @@ int arm64_generate_program(AbstractExpresion *root, const char *out_path) {
         __current_func_ret = fi->ret;
         __current_func_exit_id = flujo_next_label_id();
         // Crear variables locales para parámetros y mover desde registros de llamada
+        // Usar contadores separados de registros GPR (x/w) y FPR (d) según AArch64 SysV ABI
+        int cgpr = 0; // x0-x7 / w0-w7
+        int cfpr = 0; // d0-d7
         for (int p = 0; p < fi->param_count && p < 8; ++p) {
             int size = (fi->param_types[p] == DOUBLE || fi->param_types[p] == FLOAT) ? 8 : 8;
             VarEntry *v = vars_agregar_ext(fi->param_names[p], fi->param_types[p], size, 0, f);
             // Marcar strings como pasados por referencia: almacenaremos la dirección de una ranura que contiene el puntero real
             if (fi->param_types[p] == STRING) v->is_ref = 1;
             if (fi->param_types[p] == DOUBLE || fi->param_types[p] == FLOAT) {
-                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d%d, [x16]", v->offset, p); emitln(f, st);
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str d%d, [x16]", v->offset, cfpr); emitln(f, st);
+                cfpr++;
             } else if (fi->param_types[p] == STRING || fi->param_types[p] == ARRAY) {
-                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x%d, [x16]", v->offset, p); emitln(f, st);
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str x%d, [x16]", v->offset, cgpr); emitln(f, st);
+                cgpr++;
             } else {
-                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w%d, [x16]", v->offset, p); emitln(f, st);
+                char st[96]; snprintf(st, sizeof(st), "    sub x16, x29, #%d\n    str w%d, [x16]", v->offset, cgpr); emitln(f, st);
+                cgpr++;
             }
         }
         // Reservas de locales se harán on-demand en vars_agregar; no reservar aquí
