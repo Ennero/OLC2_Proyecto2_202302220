@@ -1,4 +1,4 @@
-# OLC2_Proyecto1_202302220
+# OLC2_Proyecto2_202302220
 
 # Instrucciones de configuración y ejecución del programa
 
@@ -45,14 +45,18 @@ source ~/.bashrc
 sudo apt install libatk1.0-dev libpango1.0-dev libcairo2-dev libgdk-pixbuf2.0-dev -y
 ```
 
+### 6. Instalar Flex y Bison (requeridos por el Makefile)
+```bash
+sudo apt install flex bison -y
+```
 
-### 6. Instalar Graphviz
+### 7. Instalar Graphviz
 ```bash
 sudo apt update
 sudo apt install graphviz -y
 ```
 
-### 7. Instalar QEMU y Coss-Compiler ARM (aarch64)
+### 8. Instalar QEMU y Cross-Compiler ARM (aarch64)
 
 Para ensamblar y ejecutar el código ARM (aarch64) que genera tu compilador, necesitas el compilador cruzado de GCC, las binutils (ensamblador) y el emulador QEMU.
 
@@ -60,8 +64,7 @@ Para ensamblar y ejecutar el código ARM (aarch64) que genera tu compilador, nec
 sudo apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu libc6-dev-arm64-cross qemu-user -y
 ```
 
-
-### 8. Verificar instalaciones
+### 9. Verificar instalaciones
 Verifica GTK3:
 ```bash
 pkg-config --modversion gtk+-3.0
@@ -92,18 +95,18 @@ qemu-aarch64 --version
 
 ## Configuraciones adicionales
 
-### 9. Configurar el proyecto en VS Code
+### 10. Configurar el proyecto en VS Code
 - Descarga e instala [VS Code](https://code.visualstudio.com).
 - Instala la extensión **C/C++** de Microsoft (busca "C/C++" en la pestaña de Extensiones).
 
-### 10. Crear el directorio del proyecto
-Crea un directorio (por ejemplo, `OLC2_Proyecto1_202302220`) y navega a él:
+### 11. Crear el directorio del proyecto (opcional)
+Si todavía no tienes el proyecto en tu máquina, clónalo o crea un directorio y navega a él. Ejemplo:
 ```bash
-mkdir ~/Escritorio/OLC2_Proyecto1_202302220
-cd ~/Escritorio/OLC2_Proyecto1_202302220
+mkdir ~/Escritorio/OLC2_Proyecto2_202302220
+cd ~/Escritorio/OLC2_Proyecto2_202302220
 ```
 
-### 11. Configurar VS Code para IntelliSense
+### 12. Configurar VS Code para IntelliSense
 - Abre el proyecto en VS Code (**File > Open Folder** y selecciona el directorio).
 - Crea o edita el archivo de configuración de IntelliSense: Presiona `Ctrl+Shift+P`, escribe `C/C++: Edit Configurations (JSON)` y selecciona.
 - Asegúrate de que tu archivo .vscode/c_cpp_properties.json incluya todas las rutas. El siguiente JSON está basado en el que proporcionaste y es correcto:
@@ -150,7 +153,7 @@ cd ~/Escritorio/OLC2_Proyecto1_202302220
 
 ## Compilar y Ejecutar el Compilador (GUI)
 
-### 12. Compilar el Programa (GUI)
+### 13. Compilar el Programa (GUI)
 - Abre una terminal en VS Code o en el directorio del proyecto.
 - Asegúrate de tener tu Makefile en el directorio raíz.
 - Compila el proyecto (esto creará el ejecutable en `./build/javalang`):
@@ -158,7 +161,7 @@ cd ~/Escritorio/OLC2_Proyecto1_202302220
 make
 ```
 
-### 13. Ejecutar el Programa (GUI)
+### 14. Ejecutar el Programa (GUI)
 
 - Asegúrate de tener tu script compile.sh con el contenido #!/bin/bash ./build/javalang y de que tenga permisos de ejecución (chmod +x compile.sh).
 - Ejecuta el programa:
@@ -167,82 +170,61 @@ make
 ```
 - Esto abrirá la interfaz gráfica de tu compilador.
 
- ## Ejecutar el Código ARM Generado
+## Ejecutar el Código ARM Generado
 
 Sigue estos pasos después de haber usado tu programa (GUI) para generar el código ensamblador ARM.
 
-### 14. Generar el código ARM
+### 15. Generar el código ARM
 
 - Usa tu programa (la GUI que ejecutaste en el paso 13) para analizar tu código fuente.
 
 - Asegúrate de que el programa genere el archivo de ensamblador en la ruta ./arm/salida.s, ya que el script de ejecución lo buscará allí por defecto.
 
-### 15. Crear el script de ejecución ARM
+### 16. Ensamblar y ejecutar con el script incluido
 
-- En el directorio raíz de tu proyecto, crea un nuevo archivo llamado run_arm.sh.
+Este repositorio ya incluye el script `./ensamblar.sh`, que realiza el ensamblado, enlace y ejecución bajo QEMU.
 
-- Pega el siguiente contenido en el archivo:
-
-``` bash
-#!/bin/bash
-
-set -euo pipefail
-
-# Por defecto arm/salida.s; permite override por $1
-ASM_FILE="${1:-./arm/salida.s}"
-OBJ_FILE="./arm/javalang.o"
-FMT_OBJ_FILE="./arm/java_num_format.o"
-BIN_FILE="./arm/javalang"
-
-if [ ! -f "$ASM_FILE" ]; then
-    echo "No se encontró $ASM_FILE. Ejecuta el compilador con --arm primero." >&2
-    exit 1
-fi
-
-mkdir -p ./arm
-
-echo "[1/3] Ensamblando $ASM_FILE"
-aarch64-linux-gnu-as -o "$OBJ_FILE" "$ASM_FILE"
-
-echo "[2/3] Compilando utilidades auxiliares (java_num_format) para aarch64"
-# Compilar helper de formateo numérico para AArch64
-aarch64-linux-gnu-gcc -c -O2 -o "$FMT_OBJ_FILE" ./src/utils/java_num_format.c
-
-echo "[2/3] Enlazando a binario"
-# Enlazamos contra la libc de aarch64 para tener printf y libm (fmod) disponibles
-if [ "${USE_STATIC:-0}" = "1" ]; then
-    echo "[INFO] Enlazando de forma estática (-static)"
-    aarch64-linux-gnu-gcc -static -no-pie -o "$BIN_FILE" "$OBJ_FILE" "$FMT_OBJ_FILE" -lm || {
-        echo "[WARN] Enlace estático falló, reintentando dinámico..." >&2
-        aarch64-linux-gnu-gcc -no-pie -o "$BIN_FILE" "$OBJ_FILE" "$FMT_OBJ_FILE" -lm
-    }
-else
-    aarch64-linux-gnu-gcc -no-pie -o "$BIN_FILE" "$OBJ_FILE" "$FMT_OBJ_FILE" -lm
-fi
-
-echo "[3/3] Ejecutando en qemu-aarch64"
-# Si existe el sysroot de aarch64 en el sistema, usarlo para la libc y el loader
-if [ -d "/usr/aarch64-linux-gnu" ]; then
-    qemu-aarch64 -L /usr/aarch64-linux-gnu "$BIN_FILE"
-else
-    echo "[WARN] No se encontró /usr/aarch64-linux-gnu. Intentando ejecutar sin sysroot..." >&2
-    echo "       Si falla con 'ld-linux-aarch64.so.1 not found', instala libc cruzada o usa -static." >&2
-    qemu-aarch64 "$BIN_FILE"
-fi
-```
-
-### 16. Ensamblar y Ejecutar el código ARM
-
-- Otorga permisos de ejecución al nuevo script:
+- Concede permisos de ejecución si es necesario:
 
 ```bash
-chmod +x run_arm.sh
+chmod +x ensamblar.sh
 ```
 
-- Ejecuta el script. Esto ensamblará, enlazará y ejecutará tu código ARM usando QEMU:
+- Ejecuta el script (usa `./arm/salida.s` por defecto):
 
 ```bash
-./run_arm.sh
+./ensamblar.sh
+```
+
+- También puedes pasarle una ruta específica al `.s` si generaste a otro archivo:
+
+```bash
+./ensamblar.sh ruta/a/tu_archivo.s
+```
+
+---
+
+## Uso por línea de comandos (CLI)
+
+Además de la GUI, el ejecutable soporta un modo CLI útil para automatizar pruebas:
+
+- Interpretar y ejecutar directamente un archivo `.usl`:
+
+```bash
+./build/javalang --run test/proyecto1/prueba_main.usl
+```
+
+- Generar ensamblador AArch64 a `arm/salida.s` y luego ensamblar/ejecutar:
+
+```bash
+./build/javalang --arm test/proyecto1/examen_final.usl
+./ensamblar.sh            # o ./ensamblar.sh arm/salida.s
+```
+
+Sugerencia: Puedes exportar `USE_STATIC=1` para intentar enlace estático (útil si QEMU no encuentra la libc de aarch64):
+
+```bash
+USE_STATIC=1 ./ensamblar.sh
 ```
 
 ---
@@ -252,4 +234,8 @@ chmod +x run_arm.sh
 
 - Este manual asume que tu proyecto tiene un ```Makefile``` y un ```compile.sh``` en la raíz.
 
-- También se asume una estructura de directorio ```src/``` que contiene el código fuente de tu compilador, incluyendo los archivos de ```flex``` (```src/entries/lexer.l```), ```bison```(```src/entries/parser.y```) y el archivo de utilidad C para ARM (```src/utils/java_num_format.c```).
+- También se asume una estructura de directorio ```src/``` que contiene el código fuente de tu compilador, incluyendo los archivos de ```flex``` (```src/entriesTools/lexer.l```), ```bison``` (```src/entriesTools/parser.y```), y el archivo de utilidad C para ARM (```src/utils/java_num_format.c```).
+
+- Para exportar el AST desde la GUI, se usa Graphviz (`dot`) y los resultados se guardan en la carpeta `ast-graph/` como `ast.svg` y `ast.pdf`.
+
+- El código ensamblador ARM64 se genera por la GUI y por CLI en la ruta `arm/salida.s`.
