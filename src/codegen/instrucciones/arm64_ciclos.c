@@ -88,6 +88,12 @@ int arm64_emitir_ciclo(AbstractExpresion *node, FILE *ftext, EmitirNodoFn gen_no
         flujo_emit_label(ftext, lbreak, wid);
         flujo_continue_pop();
         flujo_break_pop();
+
+        if (node->hijos[1]){
+            gen_node(ftext, node->hijos[1]);
+        }
+
+
         return 1;
     }
 
