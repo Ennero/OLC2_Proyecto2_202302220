@@ -1,0 +1,227 @@
+// Funciones sin parámetros
+void mostrarBienvenida() {
+    System.out.println("\n¡Bienvenido al Sistema de Gestión Académica!");
+    System.out.println("Versión 1.0 - Universidad San Carlos");
+}
+
+void mostrarMenuPrincipal() {
+    System.out.println("\nOpciones disponibles:");
+    System.out.println("1. Gestión de estudiantes");
+    System.out.println("2. Cálculo de promedios");
+    System.out.println("3. Reportes académicos");
+    System.out.println("4. Análisis estadístico");
+}
+
+void generarReporteFinal() {
+    System.out.println("\n--- REPORTE FINAL GENERADO ---");
+    System.out.println("Todas las funciones han sido probadas exitosamente");
+    System.out.println("Sistema verificado y operativo");
+}
+
+// Funciones con parámetros
+double calcularPromedio(int[] notas, String mensaje) {
+    int suma = notas[0] + notas[1] + notas[2];
+    notas[0] = notas[0] + 10;
+    notas[1] = notas[1] + 10;
+    notas[2] = notas[2] + 10;
+    mensaje += "--- Funcion calcular promedio (1 pt cada parametro) ---";
+    return suma / 3.0;
+}
+
+boolean verificarAprobacion(double promedio, double notaMinima) {
+    notaMinima = notaMinima + 10;
+    return promedio >= notaMinima;
+}
+
+String generarMensaje(int calificacion) {
+    calificacion -= 5;
+    String resultado = "Generar mensaje Estudiante: Carlos Perez - Calificación: " + String.valueOf(calificacion);
+    if (calificacion >= 90) {
+        resultado = resultado + " - EXCELENTE";
+    } else if (calificacion >= 80) {
+        resultado = resultado + " - MUY BUENO";
+    } else {
+        resultado = resultado + " - REGULAR";
+    }
+    return resultado;
+}
+
+// Funciones recursivas
+
+// Función recursiva 1: Búsqueda binaria
+int busquedaBinaria(int[] arreglo, int valor, int inicio, int fin) {
+    if (inicio > fin) {
+        return -1; // No encontrado
+    }
+    
+    int medio = inicio + (fin - inicio) / 2;
+    
+    if (arreglo[medio] == valor) {
+        return medio;
+    }
+    
+    if (arreglo[medio] > valor) {
+        return busquedaBinaria(arreglo, valor, inicio, medio - 1);
+    }
+    return busquedaBinaria(arreglo, valor, medio + 1, fin);
+}
+
+// Función recursiva 2: Suma de dígitos
+int sumarDigitos(int numero) {
+    if (numero == 0) {
+        return 0;
+    }
+    return (numero % 10) + sumarDigitos(numero / 10);
+}
+
+// Función recursiva 3: Potencia
+int potencia(int base, int exponente) {
+    if (exponente == 0) {
+        return 1;
+    }
+    if (exponente == 1) {
+        return base;
+    }
+    return base * potencia(base, exponente - 1);
+}
+
+// Función recursiva 4: Palindromo
+boolean esPalindromo(int numero) {
+    return numero == invertirNumero(numero, 0);
+}
+
+int invertirNumero(int numero, int invertido) {
+    if (numero == 0) {
+        return invertido;
+    }
+    return invertirNumero(numero / 10, invertido * 10 + numero % 10);
+}
+
+public static void main() {
+    System.out.println("=== SISTEMA DE GESTION ACADEMICA ===");
+    
+    // Funciones no recursivas sin parámetros
+    mostrarBienvenida();
+    mostrarMenuPrincipal();
+    
+    // Funciones no recursivas con parámetros por valor
+    double notaMinima = 80.0;
+    boolean esAprobado1 = verificarAprobacion(85 + 92 + 78.0, notaMinima); //85
+    boolean esAprobado2 = verificarAprobacion(90 + 88 + 94, notaMinima); //90.666
+    
+    System.out.println("Estudiante 1 aprobado: " + String.valueOf(esAprobado1));
+    System.out.println("Estudiante 2 aprobado: " + String.valueOf(esAprobado2));
+    
+    int calificacion = 95;
+    String mensaje = generarMensaje(calificacion);
+    System.out.println(mensaje);
+    mensaje = generarMensaje(calificacion);
+    System.out.println(mensaje);
+
+    // Funciones no recursivas con parámetros por referencia
+    int[] notasEstudiantes = {80, 80, 80, 80, 80};
+    String mensaje2 = "\n";
+    double promedio1 = calcularPromedio(notasEstudiantes, mensaje2);
+    double promedio2 = calcularPromedio(notasEstudiantes, mensaje2);
+    
+    System.out.println(mensaje2);
+    System.out.println("Promedio estudiante 1: " + String.valueOf(promedio1));
+    System.out.println("Promedio estudiante 2: " + String.valueOf(promedio2));
+    
+    // Funciones recursivas
+    System.out.println("\n--- FUNCIONES RECURSIVAS ---");
+    
+    // Función recursiva 1: Búsqueda binaria
+    int[] numerosOrdenados = {5, 12, 23, 34, 45, 56, 67, 78, 89, 90};
+    int valorBuscado = 45;
+    int posicionEncontrada = busquedaBinaria(numerosOrdenados, valorBuscado, 0, numerosOrdenados.length - 1);
+    System.out.println("Búsqueda binaria de " + String.valueOf(valorBuscado) + 
+                      ": posición " + String.valueOf(posicionEncontrada));
+    
+    valorBuscado = 23;
+    posicionEncontrada = busquedaBinaria(numerosOrdenados, valorBuscado, 0, numerosOrdenados.length - 1);
+    System.out.println("Búsqueda binaria de " + String.valueOf(valorBuscado) + 
+                      ": posición " + String.valueOf(posicionEncontrada));
+    
+    // Función recursiva 2: Suma de dígitos
+    int numero = 12345;
+    int sumaDigitos = sumarDigitos(numero);
+    System.out.println("Suma de dígitos de " + String.valueOf(numero) + ": " + String.valueOf(sumaDigitos));
+    
+    numero = 9876;
+    sumaDigitos = sumarDigitos(numero);
+    System.out.println("Suma de dígitos de " + String.valueOf(numero) + ": " + String.valueOf(sumaDigitos));
+    
+    // Función recursiva 3: Potencia
+    int base = 2;
+    int exponente = 8;
+    int resultadoPotencia = potencia(base, exponente);
+    System.out.println(String.valueOf(base) + " elevado a " + String.valueOf(exponente) + 
+                      " = " + String.valueOf(resultadoPotencia));
+    
+    base = 3;
+    exponente = 4;
+    resultadoPotencia = potencia(base, exponente);
+    System.out.println(String.valueOf(base) + " elevado a " + String.valueOf(exponente) + 
+                      " = " + String.valueOf(resultadoPotencia));
+
+    // Funcion recursiva 4: Palindromo
+    int numeroPalindromo = 121;
+    boolean esPalindromo1 = esPalindromo(numeroPalindromo);
+    System.out.println("El número " + String.valueOf(numeroPalindromo) + 
+                      " es palíndromo: " + String.valueOf(esPalindromo1));
+    
+    numeroPalindromo = 123;
+    boolean esPalindromo2 = esPalindromo(numeroPalindromo);
+    System.out.println("El número " + String.valueOf(numeroPalindromo) + 
+                      " es palíndromo: " + String.valueOf(esPalindromo2));
+                      
+    // Resumen final usando múltiples funciones
+    generarReporteFinal();
+    
+    System.out.println("\n=== SISTEMA COMPLETADO ===");
+}
+
+
+/*
+================================================================================
+SALIDA ESPERADA:
+================================================================================
+
+=== SISTEMA DE GESTION ACADEMICA ===
+
+¡Bienvenido al Sistema de Gestión Académica!
+Versión 1.0 - Universidad San Carlos
+
+Opciones disponibles:
+1. Gestión de estudiantes
+2. Cálculo de promedios
+3. Reportes académicos
+4. Análisis estadístico
+Estudiante 1 aprobado: true
+Estudiante 2 aprobado: true
+Generar mensaje Estudiante: Carlos Perez - Calificación: 90 - EXCELENTE
+Generar mensaje Estudiante: Carlos Perez - Calificación: 90 - EXCELENTE
+
+--- Funcion calcular promedio (1 pt cada parametro) ---
+Promedio estudiante 1: 80.0
+Promedio estudiante 2: 90.0
+
+--- FUNCIONES RECURSIVAS ---
+Búsqueda binaria de 45: posición 4
+Búsqueda binaria de 23: posición 2
+Suma de dígitos de 12345: 15
+Suma de dígitos de 9876: 30
+2 elevado a 8 = 256
+3 elevado a 4 = 81
+El número 121 es palíndromo: true
+El número 123 es palíndromo: false
+
+--- REPORTE FINAL GENERADO ---
+Todas las funciones han sido probadas exitosamente
+Sistema verificado y operativo
+
+=== SISTEMA COMPLETADO ===
+
+
+*/

@@ -575,7 +575,7 @@ fn_mostrarMatriz:
     movz w1, #0
     sub x16, x29, #32
     str w1, [x16]
-L_for_cond_2:
+L_for_cond_129:
     sub x16, x29, #32
     ldr w1, [x16]
     sub sp, sp, #16
@@ -590,7 +590,7 @@ L_for_cond_2:
     cmp w19, w1
     cset w1, lt
     cmp w1, #0
-    beq L_break_2
+    beq L_break_129
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
@@ -603,7 +603,7 @@ L_for_cond_2:
     movz w1, #0
     sub x16, x29, #48
     str w1, [x16]
-L_for_cond_3:
+L_for_cond_130:
     sub x16, x29, #48
     ldr w1, [x16]
     sub sp, sp, #16
@@ -616,25 +616,25 @@ L_for_cond_3:
     ldr x0, [x16]
     ldr w12, [x0]
     cmp w12, #1
-    b.ne L_len_flat_4
+    b.ne L_len_flat_131
     add x1, sp, #0
     mov w2, #1
     bl array_element_addr_ptr
     ldr x0, [x0]
     add x18, x0, #8
     ldr w1, [x18]
-    b L_len_done_4
-L_len_flat_4:
+    b L_len_done_131
+L_len_flat_131:
     add x18, x0, #12
     ldr w1, [x18]
-L_len_done_4:
+L_len_done_131:
     add sp, sp, #16
     ldr w19, [sp]
     add sp, sp, #16
     cmp w19, w1
     cset w1, lt
     cmp w1, #0
-    beq L_break_3
+    beq L_break_130
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: StringValueof
     sub sp, sp, #16
@@ -678,18 +678,18 @@ L_len_done_4:
     ldr x0, [x16]
     ldr w12, [x0]
     cmp w12, #1
-    b.ne L_len_flat_6
+    b.ne L_len_flat_133
     add x1, sp, #0
     mov w2, #1
     bl array_element_addr_ptr
     ldr x0, [x0]
     add x18, x0, #8
     ldr w1, [x18]
-    b L_len_done_6
-L_len_flat_6:
+    b L_len_done_133
+L_len_flat_133:
     add x18, x0, #12
     ldr w1, [x18]
-L_len_done_6:
+L_len_done_133:
     add sp, sp, #16
     sub sp, sp, #16
     str w1, [sp]
@@ -702,8 +702,8 @@ L_len_done_6:
     cmp w19, w1
     cset w1, lt
     cmp w1, #0
-    beq L_end_5
-L_then_5:
+    beq L_end_132
+L_then_132:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
@@ -712,15 +712,15 @@ L_then_5:
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-L_end_5:
-L_continue_3:
+L_end_132:
+L_continue_130:
     sub x16, x29, #48
     ldr w1, [x16]
     add w20, w1, #1
     sub x16, x29, #48
     str w20, [x16]
-    b L_for_cond_3
-L_break_3:
+    b L_for_cond_130
+L_break_130:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
@@ -729,19 +729,19 @@ L_break_3:
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-L_continue_2:
+L_continue_129:
     sub x16, x29, #32
     ldr w1, [x16]
     add w20, w1, #1
     sub x16, x29, #32
     str w20, [x16]
-    b L_for_cond_2
-L_break_2:
+    b L_for_cond_129
+L_break_129:
     // Print lista node_type: ListaExpresiones, numHijos=0
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-L_func_exit_1:
+L_func_exit_128:
     add sp, sp, #1024
     mov sp, x29
     ldp x29, x30, [sp], 16
@@ -773,18 +773,18 @@ fn_sumarMatrices:
     ldr x0, [x16]
     ldr w12, [x0]
     cmp w12, #1
-    b.ne L_len_flat_8
+    b.ne L_len_flat_135
     add x1, sp, #0
     mov w2, #1
     bl array_element_addr_ptr
     ldr x0, [x0]
     add x18, x0, #8
     ldr w1, [x18]
-    b L_len_done_8
-L_len_flat_8:
+    b L_len_done_135
+L_len_flat_135:
     add x18, x0, #12
     ldr w1, [x18]
-L_len_done_8:
+L_len_done_135:
     add sp, sp, #16
     sub x16, x29, #64
     str w1, [x16]
@@ -806,7 +806,7 @@ L_len_done_8:
     movz w1, #0
     sub x16, x29, #96
     str w1, [x16]
-L_for_cond_9:
+L_for_cond_136:
     sub x16, x29, #96
     ldr w1, [x16]
     sub sp, sp, #16
@@ -818,12 +818,12 @@ L_for_cond_9:
     cmp w19, w1
     cset w1, lt
     cmp w1, #0
-    beq L_break_9
+    beq L_break_136
     sub sp, sp, #16
     movz w1, #0
     sub x16, x29, #112
     str w1, [x16]
-L_for_cond_10:
+L_for_cond_137:
     sub x16, x29, #112
     ldr w1, [x16]
     sub sp, sp, #16
@@ -835,7 +835,7 @@ L_for_cond_10:
     cmp w19, w1
     cset w1, lt
     cmp w1, #0
-    beq L_break_10
+    beq L_break_137
     sub sp, sp, #16
     sub x16, x29, #96
     ldr w1, [x16]
@@ -887,27 +887,27 @@ L_for_cond_10:
     add sp, sp, #16
     str w1, [x9]
     add sp, sp, #16
-L_continue_10:
+L_continue_137:
     sub x16, x29, #112
     ldr w1, [x16]
     add w20, w1, #1
     sub x16, x29, #112
     str w20, [x16]
-    b L_for_cond_10
-L_break_10:
-L_continue_9:
+    b L_for_cond_137
+L_break_137:
+L_continue_136:
     sub x16, x29, #96
     ldr w1, [x16]
     add w20, w1, #1
     sub x16, x29, #96
     str w20, [x16]
-    b L_for_cond_9
-L_break_9:
+    b L_for_cond_136
+L_break_136:
     sub x16, x29, #80
     ldr x1, [x16]
     mov x0, x1
-    b L_func_exit_7
-L_func_exit_7:
+    b L_func_exit_134
+L_func_exit_134:
     add sp, sp, #1024
     mov sp, x29
     ldp x29, x30, [sp], 16
@@ -939,18 +939,18 @@ fn_multiplicarMatrices:
     ldr x0, [x16]
     ldr w12, [x0]
     cmp w12, #1
-    b.ne L_len_flat_12
+    b.ne L_len_flat_139
     add x1, sp, #0
     mov w2, #1
     bl array_element_addr_ptr
     ldr x0, [x0]
     add x18, x0, #8
     ldr w1, [x18]
-    b L_len_done_12
-L_len_flat_12:
+    b L_len_done_139
+L_len_flat_139:
     add x18, x0, #12
     ldr w1, [x18]
-L_len_done_12:
+L_len_done_139:
     add sp, sp, #16
     sub x16, x29, #64
     str w1, [x16]
@@ -962,18 +962,18 @@ L_len_done_12:
     ldr x0, [x16]
     ldr w12, [x0]
     cmp w12, #1
-    b.ne L_len_flat_13
+    b.ne L_len_flat_140
     add x1, sp, #0
     mov w2, #1
     bl array_element_addr_ptr
     ldr x0, [x0]
     add x18, x0, #8
     ldr w1, [x18]
-    b L_len_done_13
-L_len_flat_13:
+    b L_len_done_140
+L_len_flat_140:
     add x18, x0, #12
     ldr w1, [x18]
-L_len_done_13:
+L_len_done_140:
     add sp, sp, #16
     sub x16, x29, #80
     str w1, [x16]
@@ -995,7 +995,7 @@ L_len_done_13:
     movz w1, #0
     sub x16, x29, #112
     str w1, [x16]
-L_for_cond_14:
+L_for_cond_141:
     sub x16, x29, #112
     ldr w1, [x16]
     sub sp, sp, #16
@@ -1007,12 +1007,12 @@ L_for_cond_14:
     cmp w19, w1
     cset w1, lt
     cmp w1, #0
-    beq L_break_14
+    beq L_break_141
     sub sp, sp, #16
     movz w1, #0
     sub x16, x29, #128
     str w1, [x16]
-L_for_cond_15:
+L_for_cond_142:
     sub x16, x29, #128
     ldr w1, [x16]
     sub sp, sp, #16
@@ -1024,7 +1024,7 @@ L_for_cond_15:
     cmp w19, w1
     cset w1, lt
     cmp w1, #0
-    beq L_break_15
+    beq L_break_142
     sub sp, sp, #16
     sub x16, x29, #112
     ldr w1, [x16]
@@ -1048,7 +1048,7 @@ L_for_cond_15:
     movz w1, #0
     sub x16, x29, #144
     str w1, [x16]
-L_for_cond_16:
+L_for_cond_143:
     sub x16, x29, #144
     ldr w1, [x16]
     sub sp, sp, #16
@@ -1060,7 +1060,7 @@ L_for_cond_16:
     cmp w19, w1
     cset w1, lt
     cmp w1, #0
-    beq L_break_16
+    beq L_break_143
     sub sp, sp, #16
     sub x16, x29, #112
     ldr w1, [x16]
@@ -1131,35 +1131,35 @@ L_for_cond_16:
     add sp, sp, #16
     str w1, [x9]
     add sp, sp, #16
-L_continue_16:
+L_continue_143:
     sub x16, x29, #144
     ldr w1, [x16]
     add w20, w1, #1
     sub x16, x29, #144
     str w20, [x16]
-    b L_for_cond_16
-L_break_16:
-L_continue_15:
+    b L_for_cond_143
+L_break_143:
+L_continue_142:
     sub x16, x29, #128
     ldr w1, [x16]
     add w20, w1, #1
     sub x16, x29, #128
     str w20, [x16]
-    b L_for_cond_15
-L_break_15:
-L_continue_14:
+    b L_for_cond_142
+L_break_142:
+L_continue_141:
     sub x16, x29, #112
     ldr w1, [x16]
     add w20, w1, #1
     sub x16, x29, #112
     str w20, [x16]
-    b L_for_cond_14
-L_break_14:
+    b L_for_cond_141
+L_break_141:
     sub x16, x29, #96
     ldr x1, [x16]
     mov x0, x1
-    b L_func_exit_11
-L_func_exit_11:
+    b L_func_exit_138
+L_func_exit_138:
     add sp, sp, #1024
     mov sp, x29
     ldp x29, x30, [sp], 16
@@ -1188,18 +1188,18 @@ fn_calcularTranspuesta:
     ldr x0, [x16]
     ldr w12, [x0]
     cmp w12, #1
-    b.ne L_len_flat_18
+    b.ne L_len_flat_145
     add x1, sp, #0
     mov w2, #1
     bl array_element_addr_ptr
     ldr x0, [x0]
     add x18, x0, #8
     ldr w1, [x18]
-    b L_len_done_18
-L_len_flat_18:
+    b L_len_done_145
+L_len_flat_145:
     add x18, x0, #12
     ldr w1, [x18]
-L_len_done_18:
+L_len_done_145:
     add sp, sp, #16
     sub x16, x29, #48
     str w1, [x16]
@@ -1221,7 +1221,7 @@ L_len_done_18:
     movz w1, #0
     sub x16, x29, #80
     str w1, [x16]
-L_for_cond_19:
+L_for_cond_146:
     sub x16, x29, #80
     ldr w1, [x16]
     sub sp, sp, #16
@@ -1233,12 +1233,12 @@ L_for_cond_19:
     cmp w19, w1
     cset w1, lt
     cmp w1, #0
-    beq L_break_19
+    beq L_break_146
     sub sp, sp, #16
     movz w1, #0
     sub x16, x29, #96
     str w1, [x16]
-L_for_cond_20:
+L_for_cond_147:
     sub x16, x29, #96
     ldr w1, [x16]
     sub sp, sp, #16
@@ -1250,7 +1250,7 @@ L_for_cond_20:
     cmp w19, w1
     cset w1, lt
     cmp w1, #0
-    beq L_break_20
+    beq L_break_147
     sub sp, sp, #16
     sub x16, x29, #96
     ldr w1, [x16]
@@ -1283,27 +1283,27 @@ L_for_cond_20:
     add sp, sp, #16
     str w1, [x9]
     add sp, sp, #16
-L_continue_20:
+L_continue_147:
     sub x16, x29, #96
     ldr w1, [x16]
     add w20, w1, #1
     sub x16, x29, #96
     str w20, [x16]
-    b L_for_cond_20
-L_break_20:
-L_continue_19:
+    b L_for_cond_147
+L_break_147:
+L_continue_146:
     sub x16, x29, #80
     ldr w1, [x16]
     add w20, w1, #1
     sub x16, x29, #80
     str w20, [x16]
-    b L_for_cond_19
-L_break_19:
+    b L_for_cond_146
+L_break_146:
     sub x16, x29, #64
     ldr x1, [x16]
     mov x0, x1
-    b L_func_exit_17
-L_func_exit_17:
+    b L_func_exit_144
+L_func_exit_144:
     add sp, sp, #1024
     mov sp, x29
     ldp x29, x30, [sp], 16
@@ -1380,8 +1380,8 @@ fn_calcularDeterminante2x2:
     add sp, sp, #16
     sub w1, w19, w1
     mov w0, w1
-    b L_func_exit_21
-L_func_exit_21:
+    b L_func_exit_148
+L_func_exit_148:
     add sp, sp, #1024
     mov sp, x29
     ldp x29, x30, [sp], 16
@@ -1675,8 +1675,8 @@ fn_calcularDeterminante3x3:
     add sp, sp, #16
     add w1, w19, w1
     mov w0, w1
-    b L_func_exit_22
-L_func_exit_22:
+    b L_func_exit_149
+L_func_exit_149:
     add sp, sp, #1024
     mov sp, x29
     ldp x29, x30, [sp], 16
@@ -2153,18 +2153,18 @@ main:
     ldr x0, [x16]
     ldr w12, [x0]
     cmp w12, #1
-    b.ne L_len_flat_24
+    b.ne L_len_flat_151
     add x1, sp, #0
     mov w2, #1
     bl array_element_addr_ptr
     ldr x0, [x0]
     add x18, x0, #8
     ldr w1, [x18]
-    b L_len_done_24
-L_len_flat_24:
+    b L_len_done_151
+L_len_flat_151:
     add x18, x0, #12
     ldr w1, [x18]
-L_len_done_24:
+L_len_done_151:
     add sp, sp, #16
     sub sp, sp, #128
     mov w21, w1
@@ -2232,18 +2232,18 @@ L_len_done_24:
     ldr x0, [x16]
     ldr w12, [x0]
     cmp w12, #1
-    b.ne L_len_flat_25
+    b.ne L_len_flat_152
     add x1, sp, #0
     mov w2, #1
     bl array_element_addr_ptr
     ldr x0, [x0]
     add x18, x0, #8
     ldr w1, [x18]
-    b L_len_done_25
-L_len_flat_25:
+    b L_len_done_152
+L_len_flat_152:
     add x18, x0, #12
     ldr w1, [x18]
-L_len_done_25:
+L_len_done_152:
     add sp, sp, #16
     sub sp, sp, #128
     mov w21, w1
@@ -2311,18 +2311,18 @@ L_len_done_25:
     ldr x0, [x16]
     ldr w12, [x0]
     cmp w12, #1
-    b.ne L_len_flat_26
+    b.ne L_len_flat_153
     add x1, sp, #0
     mov w2, #1
     bl array_element_addr_ptr
     ldr x0, [x0]
     add x18, x0, #8
     ldr w1, [x18]
-    b L_len_done_26
-L_len_flat_26:
+    b L_len_done_153
+L_len_flat_153:
     add x18, x0, #12
     ldr w1, [x18]
-L_len_done_26:
+L_len_done_153:
     add sp, sp, #16
     sub sp, sp, #128
     mov w21, w1
@@ -2390,18 +2390,18 @@ L_len_done_26:
     ldr x0, [x16]
     ldr w12, [x0]
     cmp w12, #1
-    b.ne L_len_flat_27
+    b.ne L_len_flat_154
     add x1, sp, #0
     mov w2, #1
     bl array_element_addr_ptr
     ldr x0, [x0]
     add x18, x0, #8
     ldr w1, [x18]
-    b L_len_done_27
-L_len_flat_27:
+    b L_len_done_154
+L_len_flat_154:
     add x18, x0, #12
     ldr w1, [x18]
-L_len_done_27:
+L_len_done_154:
     add sp, sp, #16
     sub sp, sp, #128
     mov w21, w1
@@ -2432,568 +2432,13 @@ L_len_done_27:
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-    sub sp, sp, #16
-    sub sp, sp, #16
-    movz w1, #4
-    str w1, [sp, #0]
-    movz w1, #4
-    str w1, [sp, #4]
-    movz w1, #3
-    str w1, [sp, #8]
-    mov w0, #3
-    mov x1, sp
-    bl new_array_flat
-    sub x16, x29, #80
-    str x0, [x16]
-    add sp, sp, #16
-    sub sp, sp, #16
-    sub sp, sp, #16
-    mov w1, #2
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x20, x0
-    mov x21, x0
-    ldr w12, [x21]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x21, x21, x17
-    sub sp, sp, #32
-    stp x20, x21, [sp]
-    sub sp, sp, #16
-    mov w1, #3
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x20, x0
-    mov x21, x0
-    ldr w12, [x21]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x21, x21, x17
-    sub sp, sp, #32
-    stp x20, x21, [sp]
-    sub sp, sp, #16
-    mov w1, #3
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x22, x0
-    ldr w12, [x22]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x22, x22, x17
-    mov x23, #0
-    ldr x16, =dbl_lit_14
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    mov x23, #1
-    ldr x16, =dbl_lit_15
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    mov x23, #2
-    ldr x16, =dbl_lit_16
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    add sp, sp, #16
-    ldp x20, x21, [sp]
-    add sp, sp, #32
-    mov x23, #0
-    str x0, [x21, x23, lsl #3]
-    sub sp, sp, #32
-    stp x20, x21, [sp]
-    sub sp, sp, #16
-    mov w1, #3
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x22, x0
-    ldr w12, [x22]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x22, x22, x17
-    mov x23, #0
-    ldr x16, =dbl_lit_17
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    mov x23, #1
-    ldr x16, =dbl_lit_18
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    mov x23, #2
-    ldr x16, =dbl_lit_19
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    add sp, sp, #16
-    ldp x20, x21, [sp]
-    add sp, sp, #32
-    mov x23, #1
-    str x0, [x21, x23, lsl #3]
-    sub sp, sp, #32
-    stp x20, x21, [sp]
-    sub sp, sp, #16
-    mov w1, #3
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x22, x0
-    ldr w12, [x22]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x22, x22, x17
-    mov x23, #0
-    ldr x16, =dbl_lit_20
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    mov x23, #1
-    ldr x16, =dbl_lit_21
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    mov x23, #2
-    ldr x16, =dbl_lit_22
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    add sp, sp, #16
-    ldp x20, x21, [sp]
-    add sp, sp, #32
-    mov x23, #2
-    str x0, [x21, x23, lsl #3]
-    mov x0, x20
-    add sp, sp, #16
-    ldp x20, x21, [sp]
-    add sp, sp, #32
-    mov x23, #0
-    str x0, [x21, x23, lsl #3]
-    sub sp, sp, #32
-    stp x20, x21, [sp]
-    sub sp, sp, #16
-    mov w1, #3
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x20, x0
-    mov x21, x0
-    ldr w12, [x21]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x21, x21, x17
-    sub sp, sp, #32
-    stp x20, x21, [sp]
-    sub sp, sp, #16
-    mov w1, #3
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x22, x0
-    ldr w12, [x22]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x22, x22, x17
-    mov x23, #0
-    ldr x16, =dbl_lit_23
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    mov x23, #1
-    ldr x16, =dbl_lit_24
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    mov x23, #2
-    ldr x16, =dbl_lit_25
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    add sp, sp, #16
-    ldp x20, x21, [sp]
-    add sp, sp, #32
-    mov x23, #0
-    str x0, [x21, x23, lsl #3]
-    sub sp, sp, #32
-    stp x20, x21, [sp]
-    sub sp, sp, #16
-    mov w1, #3
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x22, x0
-    ldr w12, [x22]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x22, x22, x17
-    mov x23, #0
-    ldr x16, =dbl_lit_26
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    mov x23, #1
-    ldr x16, =dbl_lit_27
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    mov x23, #2
-    ldr x16, =dbl_lit_28
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    add sp, sp, #16
-    ldp x20, x21, [sp]
-    add sp, sp, #32
-    mov x23, #1
-    str x0, [x21, x23, lsl #3]
-    sub sp, sp, #32
-    stp x20, x21, [sp]
-    sub sp, sp, #16
-    mov w1, #3
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x22, x0
-    ldr w12, [x22]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x22, x22, x17
-    mov x23, #0
-    ldr x16, =dbl_lit_29
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    mov x23, #1
-    ldr x16, =dbl_lit_30
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    mov x23, #2
-    ldr x16, =dbl_lit_31
-    ldr d0, [x16]
-    str d0, [x22, x23, lsl #3]
-    add sp, sp, #16
-    ldp x20, x21, [sp]
-    add sp, sp, #32
-    mov x23, #2
-    str x0, [x21, x23, lsl #3]
-    mov x0, x20
-    add sp, sp, #16
-    ldp x20, x21, [sp]
-    add sp, sp, #32
-    mov x23, #1
-    str x0, [x21, x23, lsl #3]
-    mov x0, x20
-    add sp, sp, #16
-    sub x16, x29, #96
-    str x0, [x16]
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_32
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Suma
     // String concatenation to tmpbuf (print)
     ldr x0, =tmpbuf
     mov w2, #0
     strb w2, [x0]
-    ldr x1, =str_lit_33
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub x16, x29, #80
-    ldr x0, [x16]
-    // load sizes[0] from header: [x0+8]
-    add x18, x0, #8
-    ldr w1, [x18]
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_9
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    movz w1, #0
-    str w1, [sp, #0]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    ldr w12, [x0]
-    cmp w12, #1
-    b.ne L_len_flat_28
-    add x1, sp, #0
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x0, [x0]
-    add x18, x0, #8
-    ldr w1, [x18]
-    b L_len_done_28
-L_len_flat_28:
-    add x18, x0, #12
-    ldr w1, [x18]
-L_len_done_28:
-    add sp, sp, #16
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_9
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    movz w1, #0
-    str w1, [sp, #0]
-    movz w1, #0
-    str w1, [sp, #4]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    ldr w12, [x0]
-    cmp w12, #1
-    b.ne L_len_flat_29
-    add x1, sp, #0
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x0, [x0]
-    add x1, sp, #4
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x0, [x0]
-    add x18, x0, #8
-    ldr w1, [x18]
-    b L_len_done_29
-L_len_flat_29:
-    add x18, x0, #16
-    ldr w1, [x18]
-L_len_done_29:
-    add sp, sp, #16
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x0, =fmt_string
-    ldr x1, =tmpbuf
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    // String concatenation to tmpbuf (print)
-    ldr x0, =tmpbuf
-    mov w2, #0
-    strb w2, [x0]
-    ldr x1, =str_lit_34
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub x16, x29, #96
-    ldr x0, [x16]
-    // load sizes[0] from header: [x0+8]
-    add x18, x0, #8
-    ldr w1, [x18]
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_9
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    movz w1, #0
-    str w1, [sp, #0]
-    sub x16, x29, #96
-    ldr x0, [x16]
-    ldr w12, [x0]
-    cmp w12, #1
-    b.ne L_len_flat_30
-    add x1, sp, #0
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x0, [x0]
-    add x18, x0, #8
-    ldr w1, [x18]
-    b L_len_done_30
-L_len_flat_30:
-    add x18, x0, #12
-    ldr w1, [x18]
-L_len_done_30:
-    add sp, sp, #16
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_9
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    movz w1, #0
-    str w1, [sp, #0]
-    movz w1, #0
-    str w1, [sp, #4]
-    sub x16, x29, #96
-    ldr x0, [x16]
-    ldr w12, [x0]
-    cmp w12, #1
-    b.ne L_len_flat_31
-    add x1, sp, #0
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x0, [x0]
-    add x1, sp, #4
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x0, [x0]
-    add x18, x0, #8
-    ldr w1, [x18]
-    b L_len_done_31
-L_len_flat_31:
-    add x18, x0, #16
-    ldr w1, [x18]
-L_len_done_31:
-    add sp, sp, #16
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x0, =fmt_string
-    ldr x1, =tmpbuf
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_35
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    // String concatenation to tmpbuf (print)
-    ldr x0, =tmpbuf
-    mov w2, #0
-    strb w2, [x0]
-    ldr x1, =str_lit_36
+    ldr x1, =str_lit_14
     cmp x1, #0
     ldr x16, =null_str
     csel x1, x16, x1, eq
@@ -3089,7 +2534,7 @@ L_len_done_31:
     ldr x0, =tmpbuf
     mov w2, #0
     strb w2, [x0]
-    ldr x1, =str_lit_37
+    ldr x1, =str_lit_15
     cmp x1, #0
     ldr x16, =null_str
     csel x1, x16, x1, eq
@@ -3131,7 +2576,7 @@ L_len_done_31:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_38
+    ldr x1, =str_lit_16
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
@@ -3148,7 +2593,7 @@ L_len_done_31:
     bl array_element_addr_ptr
     sub sp, sp, #16
     str x0, [sp]
-    ldr x16, =dbl_lit_39
+    ldr x16, =dbl_lit_17
     ldr d0, [x16]
     ldr x9, [sp]
     add sp, sp, #16
@@ -3166,7 +2611,7 @@ L_len_done_31:
     bl array_element_addr_ptr
     sub sp, sp, #16
     str x0, [sp]
-    ldr x16, =dbl_lit_40
+    ldr x16, =dbl_lit_18
     ldr d0, [x16]
     ldr x9, [sp]
     add sp, sp, #16
@@ -3184,7 +2629,7 @@ L_len_done_31:
     bl array_element_addr_ptr
     sub sp, sp, #16
     str x0, [sp]
-    ldr x16, =dbl_lit_41
+    ldr x16, =dbl_lit_19
     ldr d0, [x16]
     ldr x9, [sp]
     add sp, sp, #16
@@ -3202,7 +2647,7 @@ L_len_done_31:
     bl array_element_addr_ptr
     sub sp, sp, #16
     str x0, [sp]
-    ldr x16, =dbl_lit_42
+    ldr x16, =dbl_lit_20
     ldr d0, [x16]
     ldr x9, [sp]
     add sp, sp, #16
@@ -3220,7 +2665,7 @@ L_len_done_31:
     bl array_element_addr_ptr
     sub sp, sp, #16
     str x0, [sp]
-    ldr x16, =dbl_lit_43
+    ldr x16, =dbl_lit_21
     ldr d0, [x16]
     ldr x9, [sp]
     add sp, sp, #16
@@ -3238,7 +2683,7 @@ L_len_done_31:
     bl array_element_addr_ptr
     sub sp, sp, #16
     str x0, [sp]
-    ldr x16, =dbl_lit_44
+    ldr x16, =dbl_lit_22
     ldr d0, [x16]
     ldr x9, [sp]
     add sp, sp, #16
@@ -3247,7 +2692,7 @@ L_len_done_31:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_45
+    ldr x1, =str_lit_23
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
@@ -3255,545 +2700,7 @@ L_len_done_31:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_46
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    sub sp, sp, #16
-    movz w1, #0
-    str w1, [sp, #0]
-    movz w1, #0
-    str w1, [sp, #4]
-    movz w1, #0
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    movz w1, #88
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    movz w1, #0
-    str w1, [sp, #0]
-    movz w1, #0
-    str w1, [sp, #4]
-    movz w1, #1
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    movz w1, #92
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    movz w1, #0
-    str w1, [sp, #0]
-    movz w1, #0
-    str w1, [sp, #4]
-    movz w1, #2
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    movz w1, #85
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    movz w1, #1
-    str w1, [sp, #0]
-    movz w1, #1
-    str w1, [sp, #4]
-    movz w1, #0
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    movz w1, #85
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    movz w1, #1
-    str w1, [sp, #0]
-    movz w1, #1
-    str w1, [sp, #4]
-    movz w1, #1
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    movz w1, #90
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    movz w1, #1
-    str w1, [sp, #0]
-    movz w1, #1
-    str w1, [sp, #4]
-    movz w1, #2
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    movz w1, #88
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    movz w1, #2
-    str w1, [sp, #0]
-    movz w1, #2
-    str w1, [sp, #4]
-    movz w1, #0
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    movz w1, #92
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    movz w1, #2
-    str w1, [sp, #0]
-    movz w1, #2
-    str w1, [sp, #4]
-    movz w1, #1
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    movz w1, #87
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    movz w1, #2
-    str w1, [sp, #0]
-    movz w1, #2
-    str w1, [sp, #4]
-    movz w1, #2
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    movz w1, #94
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    movz w1, #3
-    str w1, [sp, #0]
-    movz w1, #3
-    str w1, [sp, #4]
-    movz w1, #0
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    movz w1, #96
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    movz w1, #3
-    str w1, [sp, #0]
-    movz w1, #3
-    str w1, [sp, #4]
-    movz w1, #1
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    movz w1, #93
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    movz w1, #3
-    str w1, [sp, #0]
-    movz w1, #3
-    str w1, [sp, #4]
-    movz w1, #2
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    sub sp, sp, #16
-    str x0, [sp]
-    movz w1, #97
-    ldr x9, [sp]
-    add sp, sp, #16
-    str w1, [x9]
-    add sp, sp, #16
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_47
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    // String concatenation to tmpbuf (print)
-    ldr x0, =tmpbuf
-    mov w2, #0
-    strb w2, [x0]
-    ldr x1, =str_lit_48
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    movz w1, #0
-    str w1, [sp, #0]
-    movz w1, #0
-    str w1, [sp, #4]
-    movz w1, #0
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    ldr w1, [x0]
-    add sp, sp, #16
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_3
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    movz w1, #0
-    str w1, [sp, #0]
-    movz w1, #0
-    str w1, [sp, #4]
-    movz w1, #1
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    ldr w1, [x0]
-    add sp, sp, #16
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_3
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    movz w1, #0
-    str w1, [sp, #0]
-    movz w1, #0
-    str w1, [sp, #4]
-    movz w1, #2
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    ldr w1, [x0]
-    add sp, sp, #16
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_4
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x0, =fmt_string
-    ldr x1, =tmpbuf
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    // String concatenation to tmpbuf (print)
-    ldr x0, =tmpbuf
-    mov w2, #0
-    strb w2, [x0]
-    ldr x1, =str_lit_49
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    movz w1, #3
-    str w1, [sp, #0]
-    movz w1, #3
-    str w1, [sp, #4]
-    movz w1, #0
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    ldr w1, [x0]
-    add sp, sp, #16
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_3
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    movz w1, #3
-    str w1, [sp, #0]
-    movz w1, #3
-    str w1, [sp, #4]
-    movz w1, #1
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    ldr w1, [x0]
-    add sp, sp, #16
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_3
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    movz w1, #3
-    str w1, [sp, #0]
-    movz w1, #3
-    str w1, [sp, #4]
-    movz w1, #2
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    ldr w1, [x0]
-    add sp, sp, #16
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_4
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x0, =fmt_string
-    ldr x1, =tmpbuf
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    sub sp, sp, #16
-    movz w1, #0
-    str w1, [sp, #0]
-    movz w1, #1
-    str w1, [sp, #4]
-    movz w1, #2
-    str w1, [sp, #8]
-    sub x16, x29, #96
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr_ptr
-    sub sp, sp, #16
-    str x0, [sp]
-    ldr x16, =dbl_lit_50
-    ldr d0, [x16]
-    ldr x9, [sp]
-    add sp, sp, #16
-    str d0, [x9]
-    add sp, sp, #16
-    sub sp, sp, #16
-    movz w1, #1
-    str w1, [sp, #0]
-    movz w1, #0
-    str w1, [sp, #4]
-    movz w1, #1
-    str w1, [sp, #8]
-    sub x16, x29, #96
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr_ptr
-    sub sp, sp, #16
-    str x0, [sp]
-    ldr x16, =dbl_lit_51
-    ldr d0, [x16]
-    ldr x9, [sp]
-    add sp, sp, #16
-    str d0, [x9]
-    add sp, sp, #16
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_52
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_53
+    ldr x1, =str_lit_24
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
@@ -3815,65 +2722,65 @@ L_len_done_31:
     and x17, x17, #-8
     add x22, x22, x17
     mov x23, #0
-    ldr x1, =str_lit_54
+    ldr x1, =str_lit_25
     str x1, [x22, x23, lsl #3]
     mov x23, #1
-    ldr x1, =str_lit_55
+    ldr x1, =str_lit_26
     str x1, [x22, x23, lsl #3]
     mov x23, #2
-    ldr x1, =str_lit_56
+    ldr x1, =str_lit_27
     str x1, [x22, x23, lsl #3]
     mov x23, #3
-    ldr x1, =str_lit_57
+    ldr x1, =str_lit_28
     str x1, [x22, x23, lsl #3]
     add sp, sp, #16
+    sub x16, x29, #80
+    str x0, [x16]
+    sub sp, sp, #16
+    sub sp, sp, #16
+    mov w1, #4
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    ldr x1, =str_lit_29
+    str x1, [x22, x23, lsl #3]
+    mov x23, #1
+    ldr x1, =str_lit_30
+    str x1, [x22, x23, lsl #3]
+    mov x23, #2
+    ldr x1, =str_lit_31
+    str x1, [x22, x23, lsl #3]
+    mov x23, #3
+    ldr x1, =str_lit_32
+    str x1, [x22, x23, lsl #3]
+    add sp, sp, #16
+    sub x16, x29, #96
+    str x0, [x16]
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_33
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    sub sp, sp, #16
+    movz w1, #0
     sub x16, x29, #112
-    str x0, [x16]
-    sub sp, sp, #16
-    sub sp, sp, #16
-    mov w1, #4
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x22, x0
-    ldr w12, [x22]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x22, x22, x17
-    mov x23, #0
-    ldr x1, =str_lit_58
-    str x1, [x22, x23, lsl #3]
-    mov x23, #1
-    ldr x1, =str_lit_59
-    str x1, [x22, x23, lsl #3]
-    mov x23, #2
-    ldr x1, =str_lit_60
-    str x1, [x22, x23, lsl #3]
-    mov x23, #3
-    ldr x1, =str_lit_61
-    str x1, [x22, x23, lsl #3]
-    add sp, sp, #16
-    sub x16, x29, #128
-    str x0, [x16]
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_62
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    sub sp, sp, #16
-    movz w1, #0
-    sub x16, x29, #144
     str w1, [x16]
-L_for_cond_32:
-    sub x16, x29, #144
+L_for_cond_155:
+    sub x16, x29, #112
     ldr w1, [x16]
     sub sp, sp, #16
     str w1, [sp]
@@ -3887,24 +2794,24 @@ L_for_cond_32:
     cmp w19, w1
     cset w1, lt
     cmp w1, #0
-    beq L_break_32
+    beq L_break_155
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Suma
     // String concatenation to tmpbuf (print)
     ldr x0, =tmpbuf
     mov w2, #0
     strb w2, [x0]
-    ldr x1, =str_lit_63
+    ldr x1, =str_lit_34
     cmp x1, #0
     ldr x16, =null_str
     csel x1, x16, x1, eq
     ldr x0, =tmpbuf
     bl strcat
     sub sp, sp, #16
-    sub x16, x29, #144
+    sub x16, x29, #112
     ldr w1, [x16]
     str w1, [sp, #0]
-    sub x16, x29, #128
+    sub x16, x29, #96
     ldr x0, [x16]
     mov x1, sp
     mov w2, #1
@@ -3916,7 +2823,7 @@ L_for_cond_32:
     csel x1, x16, x1, eq
     ldr x0, =tmpbuf
     bl strcat
-    ldr x1, =str_lit_64
+    ldr x1, =str_lit_35
     cmp x1, #0
     ldr x16, =null_str
     csel x1, x16, x1, eq
@@ -3930,50 +2837,50 @@ L_for_cond_32:
     bl printf
     sub sp, sp, #16
     movz w1, #0
-    sub x16, x29, #160
+    sub x16, x29, #128
     str w1, [x16]
     sub sp, sp, #16
     movz w1, #0
-    sub x16, x29, #176
+    sub x16, x29, #144
     str w1, [x16]
-L_for_cond_33:
-    sub x16, x29, #176
+L_for_cond_156:
+    sub x16, x29, #144
     ldr w1, [x16]
     sub sp, sp, #16
     str w1, [sp]
     sub sp, sp, #16
-    sub x16, x29, #144
+    sub x16, x29, #112
     ldr w1, [x16]
     str w1, [sp, #0]
     sub x16, x29, #16
     ldr x0, [x16]
     ldr w12, [x0]
     cmp w12, #1
-    b.ne L_len_flat_34
+    b.ne L_len_flat_157
     add x1, sp, #0
     mov w2, #1
     bl array_element_addr_ptr
     ldr x0, [x0]
     add x18, x0, #8
     ldr w1, [x18]
-    b L_len_done_34
-L_len_flat_34:
+    b L_len_done_157
+L_len_flat_157:
     add x18, x0, #12
     ldr w1, [x18]
-L_len_done_34:
+L_len_done_157:
     add sp, sp, #16
     ldr w19, [sp]
     add sp, sp, #16
     cmp w19, w1
     cset w1, lt
     cmp w1, #0
-    beq L_break_33
+    beq L_break_156
     sub sp, sp, #16
     sub sp, sp, #16
-    sub x16, x29, #144
+    sub x16, x29, #112
     ldr w1, [x16]
     str w1, [sp, #0]
-    sub x16, x29, #176
+    sub x16, x29, #144
     ldr w1, [x16]
     str w1, [sp, #4]
     sub x16, x29, #16
@@ -3983,7 +2890,7 @@ L_len_done_34:
     bl array_element_addr
     ldr w1, [x0]
     add sp, sp, #16
-    sub x16, x29, #192
+    sub x16, x29, #160
     str w1, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Suma
@@ -3991,17 +2898,17 @@ L_len_done_34:
     ldr x0, =tmpbuf
     mov w2, #0
     strb w2, [x0]
-    ldr x1, =str_lit_65
+    ldr x1, =str_lit_36
     cmp x1, #0
     ldr x16, =null_str
     csel x1, x16, x1, eq
     ldr x0, =tmpbuf
     bl strcat
     sub sp, sp, #16
-    sub x16, x29, #176
+    sub x16, x29, #144
     ldr w1, [x16]
     str w1, [sp, #0]
-    sub x16, x29, #112
+    sub x16, x29, #80
     ldr x0, [x16]
     mov x1, sp
     mov w2, #1
@@ -4013,13 +2920,13 @@ L_len_done_34:
     csel x1, x16, x1, eq
     ldr x0, =tmpbuf
     bl strcat
-    ldr x1, =str_lit_66
+    ldr x1, =str_lit_37
     cmp x1, #0
     ldr x16, =null_str
     csel x1, x16, x1, eq
     ldr x0, =tmpbuf
     bl strcat
-    sub x16, x29, #192
+    sub x16, x29, #160
     ldr w1, [x16]
     sub sp, sp, #128
     mov w21, w1
@@ -4042,46 +2949,46 @@ L_len_done_34:
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-    sub x16, x29, #160
+    sub x16, x29, #128
     ldr w19, [x16]
-    sub x16, x29, #192
+    sub x16, x29, #160
     ldr w1, [x16]
     add w1, w19, w1
-    sub x16, x29, #160
+    sub x16, x29, #128
     str w1, [x16]
-L_continue_33:
-    sub x16, x29, #176
+L_continue_156:
+    sub x16, x29, #144
     ldr w1, [x16]
     add w20, w1, #1
-    sub x16, x29, #176
+    sub x16, x29, #144
     str w20, [x16]
-    b L_for_cond_33
-L_break_33:
+    b L_for_cond_156
+L_break_156:
     sub sp, sp, #16
-    sub x16, x29, #160
+    sub x16, x29, #128
     ldr w1, [x16]
     sub sp, sp, #16
     str w1, [sp]
     sub sp, sp, #16
-    sub x16, x29, #144
+    sub x16, x29, #112
     ldr w1, [x16]
     str w1, [sp, #0]
     sub x16, x29, #16
     ldr x0, [x16]
     ldr w12, [x0]
     cmp w12, #1
-    b.ne L_len_flat_35
+    b.ne L_len_flat_158
     add x1, sp, #0
     mov w2, #1
     bl array_element_addr_ptr
     ldr x0, [x0]
     add x18, x0, #8
     ldr w1, [x18]
-    b L_len_done_35
-L_len_flat_35:
+    b L_len_done_158
+L_len_flat_158:
     add x18, x0, #12
     ldr w1, [x18]
-L_len_done_35:
+L_len_done_158:
     add sp, sp, #16
     scvtf d0, w1
     ldr w19, [sp]
@@ -4089,7 +2996,7 @@ L_len_done_35:
     fmov d9, d0
     fdiv d0, d8, d9
     add sp, sp, #16
-    sub x16, x29, #208
+    sub x16, x29, #176
     str d0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Suma
@@ -4097,13 +3004,13 @@ L_len_done_35:
     ldr x0, =tmpbuf
     mov w2, #0
     strb w2, [x0]
-    ldr x1, =str_lit_67
+    ldr x1, =str_lit_38
     cmp x1, #0
     ldr x16, =null_str
     csel x1, x16, x1, eq
     ldr x0, =tmpbuf
     bl strcat
-    sub x16, x29, #208
+    sub x16, x29, #176
     ldr d0, [x16]
     sub sp, sp, #128
     mov x0, sp
@@ -4128,18 +3035,18 @@ L_len_done_35:
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-L_continue_32:
-    sub x16, x29, #144
+L_continue_155:
+    sub x16, x29, #112
     ldr w1, [x16]
     add w20, w1, #1
-    sub x16, x29, #144
+    sub x16, x29, #112
     str w20, [x16]
-    b L_for_cond_32
-L_break_32:
+    b L_for_cond_155
+L_break_155:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_68
+    ldr x1, =str_lit_39
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
@@ -4150,7 +3057,7 @@ L_break_32:
     ldr x0, =tmpbuf
     mov w2, #0
     strb w2, [x0]
-    ldr x1, =str_lit_69
+    ldr x1, =str_lit_40
     cmp x1, #0
     ldr x16, =null_str
     csel x1, x16, x1, eq
@@ -4195,14 +3102,14 @@ L_break_32:
     ldr x0, =tmpbuf
     mov w2, #0
     strb w2, [x0]
-    ldr x1, =str_lit_70
+    ldr x1, =str_lit_41
     cmp x1, #0
     ldr x16, =null_str
     csel x1, x16, x1, eq
     ldr x0, =tmpbuf
     bl strcat
     sub sp, sp, #16
-    sub x16, x29, #128
+    sub x16, x29, #96
     ldr x0, [x16]
     // load sizes[0] from header: [x0+8]
     add x18, x0, #8
@@ -4214,7 +3121,7 @@ L_break_32:
     add sp, sp, #16
     sub w1, w19, w1
     str w1, [sp, #0]
-    sub x16, x29, #112
+    sub x16, x29, #80
     ldr x0, [x16]
     // load sizes[0] from header: [x0+8]
     add x18, x0, #8
@@ -4260,14 +3167,14 @@ L_break_32:
     ldr x0, =tmpbuf
     mov w2, #0
     strb w2, [x0]
-    ldr x1, =str_lit_71
+    ldr x1, =str_lit_42
     cmp x1, #0
     ldr x16, =null_str
     csel x1, x16, x1, eq
     ldr x0, =tmpbuf
     bl strcat
     sub sp, sp, #16
-    sub x16, x29, #128
+    sub x16, x29, #96
     ldr x0, [x16]
     // load sizes[0] from header: [x0+8]
     add x18, x0, #8
@@ -4279,7 +3186,7 @@ L_break_32:
     add sp, sp, #16
     sdiv w1, w19, w1
     str w1, [sp, #0]
-    sub x16, x29, #112
+    sub x16, x29, #80
     ldr x0, [x16]
     // load sizes[0] from header: [x0+8]
     add x18, x0, #8
@@ -4322,7 +3229,7 @@ L_break_32:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_72
+    ldr x1, =str_lit_43
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
@@ -4330,691 +3237,7 @@ L_break_32:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_73
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    sub sp, sp, #16
-    sub sp, sp, #16
-    mov w1, #3
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x22, x0
-    ldr w12, [x22]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x22, x22, x17
-    mov x23, #0
-    ldr x1, =str_lit_74
-    str x1, [x22, x23, lsl #3]
-    mov x23, #1
-    ldr x1, =str_lit_75
-    str x1, [x22, x23, lsl #3]
-    mov x23, #2
-    ldr x1, =str_lit_76
-    str x1, [x22, x23, lsl #3]
-    add sp, sp, #16
-    sub x16, x29, #224
-    str x0, [x16]
-    sub sp, sp, #16
-    movz w1, #0
-    sub x16, x29, #240
-    str w1, [x16]
-L_for_cond_36:
-    sub x16, x29, #240
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    movz w1, #2
-    ldr w19, [sp]
-    add sp, sp, #16
-    cmp w19, w1
-    cset w1, lt
-    cmp w1, #0
-    beq L_break_36
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    // String concatenation to tmpbuf (print)
-    ldr x0, =tmpbuf
-    mov w2, #0
-    strb w2, [x0]
-    ldr x1, =str_lit_63
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    sub x16, x29, #240
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #128
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x1, [x0]
-    add sp, sp, #16
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_64
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x0, =fmt_string
-    ldr x1, =tmpbuf
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    sub sp, sp, #16
-    movz w1, #0
-    sub x16, x29, #256
-    str w1, [x16]
-L_for_cond_37:
-    sub x16, x29, #256
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    movz w1, #2
-    ldr w19, [sp]
-    add sp, sp, #16
-    cmp w19, w1
-    cset w1, lt
-    cmp w1, #0
-    beq L_break_37
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    // String concatenation to tmpbuf (print)
-    ldr x0, =tmpbuf
-    mov w2, #0
-    strb w2, [x0]
-    ldr x1, =str_lit_65
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    sub x16, x29, #256
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #112
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x1, [x0]
-    add sp, sp, #16
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_64
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x0, =fmt_string
-    ldr x1, =tmpbuf
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    sub sp, sp, #16
-    movz w1, #0
-    sub x16, x29, #272
-    str w1, [x16]
-L_for_cond_38:
-    sub x16, x29, #272
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    sub sp, sp, #16
-    sub x16, x29, #240
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #256
-    ldr w1, [x16]
-    str w1, [sp, #4]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    ldr w12, [x0]
-    cmp w12, #1
-    b.ne L_len_flat_39
-    add x1, sp, #0
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x0, [x0]
-    add x1, sp, #4
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x0, [x0]
-    add x18, x0, #8
-    ldr w1, [x18]
-    b L_len_done_39
-L_len_flat_39:
-    add x18, x0, #16
-    ldr w1, [x18]
-L_len_done_39:
-    add sp, sp, #16
-    ldr w19, [sp]
-    add sp, sp, #16
-    cmp w19, w1
-    cset w1, lt
-    cmp w1, #0
-    beq L_break_38
-    sub sp, sp, #16
-    sub sp, sp, #16
-    sub x16, x29, #240
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #256
-    ldr w1, [x16]
-    str w1, [sp, #4]
-    sub x16, x29, #272
-    ldr w1, [x16]
-    str w1, [sp, #8]
-    sub x16, x29, #80
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr
-    ldr w1, [x0]
-    add sp, sp, #16
-    sub x16, x29, #288
-    str w1, [x16]
-    sub x16, x29, #288
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    movz w1, #0
-    ldr w19, [sp]
-    add sp, sp, #16
-    cmp w19, w1
-    cset w1, gt
-    cmp w1, #0
-    beq L_end_40
-L_then_40:
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    // String concatenation to tmpbuf (print)
-    ldr x0, =tmpbuf
-    mov w2, #0
-    strb w2, [x0]
-    ldr x1, =str_lit_77
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    sub x16, x29, #272
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #224
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x1, [x0]
-    add sp, sp, #16
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_66
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub x16, x29, #288
-    ldr w1, [x16]
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x0, =fmt_string
-    ldr x1, =tmpbuf
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-L_end_40:
-L_continue_38:
-    sub x16, x29, #272
-    ldr w1, [x16]
-    add w20, w1, #1
-    sub x16, x29, #272
-    str w20, [x16]
-    b L_for_cond_38
-L_break_38:
-L_continue_37:
-    sub x16, x29, #256
-    ldr w1, [x16]
-    add w20, w1, #1
-    sub x16, x29, #256
-    str w20, [x16]
-    b L_for_cond_37
-L_break_37:
-    // Print lista node_type: ListaExpresiones, numHijos=0
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-L_continue_36:
-    sub x16, x29, #240
-    ldr w1, [x16]
-    add w20, w1, #1
-    sub x16, x29, #240
-    str w20, [x16]
-    b L_for_cond_36
-L_break_36:
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_78
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    sub sp, sp, #16
-    sub sp, sp, #16
-    mov w1, #2
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x22, x0
-    ldr w12, [x22]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x22, x22, x17
-    mov x23, #0
-    ldr x1, =str_lit_79
-    str x1, [x22, x23, lsl #3]
-    mov x23, #1
-    ldr x1, =str_lit_80
-    str x1, [x22, x23, lsl #3]
-    add sp, sp, #16
-    sub x16, x29, #304
-    str x0, [x16]
-    sub sp, sp, #16
-    sub sp, sp, #16
-    mov w1, #3
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x22, x0
-    ldr w12, [x22]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x22, x22, x17
-    mov x23, #0
-    ldr x1, =str_lit_81
-    str x1, [x22, x23, lsl #3]
-    mov x23, #1
-    ldr x1, =str_lit_82
-    str x1, [x22, x23, lsl #3]
-    mov x23, #2
-    ldr x1, =str_lit_83
-    str x1, [x22, x23, lsl #3]
-    add sp, sp, #16
-    sub x16, x29, #320
-    str x0, [x16]
-    sub sp, sp, #16
-    sub sp, sp, #16
-    mov w1, #3
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat_ptr
-    mov x22, x0
-    ldr w12, [x22]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x22, x22, x17
-    mov x23, #0
-    ldr x1, =str_lit_84
-    str x1, [x22, x23, lsl #3]
-    mov x23, #1
-    ldr x1, =str_lit_85
-    str x1, [x22, x23, lsl #3]
-    mov x23, #2
-    ldr x1, =str_lit_86
-    str x1, [x22, x23, lsl #3]
-    add sp, sp, #16
-    sub x16, x29, #336
-    str x0, [x16]
-    sub sp, sp, #16
-    movz w1, #0
-    sub x16, x29, #352
-    str w1, [x16]
-L_for_cond_41:
-    sub x16, x29, #352
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    sub x16, x29, #96
-    ldr x0, [x16]
-    // load sizes[0] from header: [x0+8]
-    add x18, x0, #8
-    ldr w1, [x18]
-    ldr w19, [sp]
-    add sp, sp, #16
-    cmp w19, w1
-    cset w1, lt
-    cmp w1, #0
-    beq L_break_41
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    // String concatenation to tmpbuf (print)
-    ldr x0, =tmpbuf
-    mov w2, #0
-    strb w2, [x0]
-    sub sp, sp, #16
-    sub x16, x29, #352
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #304
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x1, [x0]
-    add sp, sp, #16
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_64
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x0, =fmt_string
-    ldr x1, =tmpbuf
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    sub sp, sp, #16
-    movz w1, #0
-    sub x16, x29, #368
-    str w1, [x16]
-L_for_cond_42:
-    sub x16, x29, #368
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    sub sp, sp, #16
-    sub x16, x29, #352
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #96
-    ldr x0, [x16]
-    ldr w12, [x0]
-    cmp w12, #1
-    b.ne L_len_flat_43
-    add x1, sp, #0
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x0, [x0]
-    add x18, x0, #8
-    ldr w1, [x18]
-    b L_len_done_43
-L_len_flat_43:
-    add x18, x0, #12
-    ldr w1, [x18]
-L_len_done_43:
-    add sp, sp, #16
-    ldr w19, [sp]
-    add sp, sp, #16
-    cmp w19, w1
-    cset w1, lt
-    cmp w1, #0
-    beq L_break_42
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    // String concatenation to tmpbuf (print)
-    ldr x0, =tmpbuf
-    mov w2, #0
-    strb w2, [x0]
-    ldr x1, =str_lit_65
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    sub x16, x29, #368
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #320
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x1, [x0]
-    add sp, sp, #16
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_64
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x0, =fmt_string
-    ldr x1, =tmpbuf
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    sub sp, sp, #16
-    movz w1, #0
-    sub x16, x29, #384
-    str w1, [x16]
-L_for_cond_44:
-    sub x16, x29, #384
-    ldr w1, [x16]
-    sub sp, sp, #16
-    str w1, [sp]
-    sub sp, sp, #16
-    sub x16, x29, #352
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #368
-    ldr w1, [x16]
-    str w1, [sp, #4]
-    sub x16, x29, #96
-    ldr x0, [x16]
-    ldr w12, [x0]
-    cmp w12, #1
-    b.ne L_len_flat_45
-    add x1, sp, #0
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x0, [x0]
-    add x1, sp, #4
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x0, [x0]
-    add x18, x0, #8
-    ldr w1, [x18]
-    b L_len_done_45
-L_len_flat_45:
-    add x18, x0, #16
-    ldr w1, [x18]
-L_len_done_45:
-    add sp, sp, #16
-    ldr w19, [sp]
-    add sp, sp, #16
-    cmp w19, w1
-    cset w1, lt
-    cmp w1, #0
-    beq L_break_44
-    sub sp, sp, #16
-    sub sp, sp, #16
-    sub x16, x29, #352
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #368
-    ldr w1, [x16]
-    str w1, [sp, #4]
-    sub x16, x29, #384
-    ldr w1, [x16]
-    str w1, [sp, #8]
-    sub x16, x29, #96
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #3
-    bl array_element_addr_ptr
-    ldr d0, [x0]
-    add sp, sp, #16
-    sub x16, x29, #400
-    str d0, [x16]
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    // String concatenation to tmpbuf (print)
-    ldr x0, =tmpbuf
-    mov w2, #0
-    strb w2, [x0]
-    ldr x1, =str_lit_77
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub sp, sp, #16
-    sub x16, x29, #384
-    ldr w1, [x16]
-    str w1, [sp, #0]
-    sub x16, x29, #336
-    ldr x0, [x16]
-    mov x1, sp
-    mov w2, #1
-    bl array_element_addr_ptr
-    ldr x1, [x0]
-    add sp, sp, #16
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_66
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub x16, x29, #400
-    ldr d0, [x16]
-    sub sp, sp, #128
-    mov x0, sp
-    mov x1, #128
-    bl java_format_double
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x1, =str_lit_87
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x0, =fmt_string
-    ldr x1, =tmpbuf
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-L_continue_44:
-    sub x16, x29, #384
-    ldr w1, [x16]
-    add w20, w1, #1
-    sub x16, x29, #384
-    str w20, [x16]
-    b L_for_cond_44
-L_break_44:
-L_continue_42:
-    sub x16, x29, #368
-    ldr w1, [x16]
-    add w20, w1, #1
-    sub x16, x29, #368
-    str w20, [x16]
-    b L_for_cond_42
-L_break_42:
-L_continue_41:
-    sub x16, x29, #352
-    ldr w1, [x16]
-    add w20, w1, #1
-    sub x16, x29, #352
-    str w20, [x16]
-    b L_for_cond_41
-L_break_41:
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_88
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_89
+    ldr x1, =str_lit_44
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
@@ -5031,7 +3254,7 @@ L_break_41:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_90
+    ldr x1, =str_lit_45
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
@@ -5062,17 +3285,17 @@ L_break_41:
     add sp, sp, #16
     bl fn_sumarMatrices
     mov x1, x0
-    sub x16, x29, #416
+    sub x16, x29, #192
     str x0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_91
+    ldr x1, =str_lit_46
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-    sub x16, x29, #416
+    sub x16, x29, #192
     ldr x1, [x16]
     mov x0, x1
     sub sp, sp, #16
@@ -5098,17 +3321,17 @@ L_break_41:
     add sp, sp, #16
     bl fn_multiplicarMatrices
     mov x1, x0
-    sub x16, x29, #432
+    sub x16, x29, #208
     str x0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_92
+    ldr x1, =str_lit_47
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-    sub x16, x29, #432
+    sub x16, x29, #208
     ldr x1, [x16]
     mov x0, x1
     sub sp, sp, #16
@@ -5120,7 +3343,7 @@ L_break_41:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_93
+    ldr x1, =str_lit_48
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
@@ -5128,7 +3351,7 @@ L_break_41:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_94
+    ldr x1, =str_lit_49
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
@@ -5136,7 +3359,7 @@ L_break_41:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_95
+    ldr x1, =str_lit_50
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
@@ -5144,7 +3367,7 @@ L_break_41:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_96
+    ldr x1, =str_lit_51
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
@@ -5270,17 +3493,17 @@ L_break_41:
     str x0, [x21, x23, lsl #3]
     mov x0, x20
     add sp, sp, #16
-    sub x16, x29, #448
+    sub x16, x29, #224
     str x0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_97
+    ldr x1, =str_lit_52
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-    sub x16, x29, #448
+    sub x16, x29, #224
     ldr x1, [x16]
     mov x0, x1
     sub sp, sp, #16
@@ -5290,7 +3513,7 @@ L_break_41:
     bl fn_mostrarMatriz
     mov w1, w0
     sub sp, sp, #16
-    sub x16, x29, #448
+    sub x16, x29, #224
     ldr x1, [x16]
     mov x0, x1
     sub sp, sp, #16
@@ -5299,17 +3522,17 @@ L_break_41:
     add sp, sp, #16
     bl fn_calcularTranspuesta
     mov x1, x0
-    sub x16, x29, #464
+    sub x16, x29, #240
     str x0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_98
+    ldr x1, =str_lit_53
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-    sub x16, x29, #464
+    sub x16, x29, #240
     ldr x1, [x16]
     mov x0, x1
     sub sp, sp, #16
@@ -5321,11 +3544,20 @@ L_break_41:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_99
+    ldr x1, =str_lit_54
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
+    sub x16, x29, #48
+    ldr x1, [x16]
+    mov x0, x1
+    sub sp, sp, #16
+    str x0, [sp]
+    ldr x0, [sp]
+    add sp, sp, #16
+    bl fn_mostrarMatriz
+    mov w1, w0
     sub sp, sp, #16
     sub x16, x29, #48
     ldr x1, [x16]
@@ -5336,19 +3568,10 @@ L_break_41:
     add sp, sp, #16
     bl fn_calcularTranspuesta
     mov x1, x0
-    sub x16, x29, #480
+    sub x16, x29, #256
     str x0, [x16]
-    sub x16, x29, #480
-    ldr x1, [x16]
-    mov x0, x1
     sub sp, sp, #16
-    str x0, [sp]
-    ldr x0, [sp]
-    add sp, sp, #16
-    bl fn_mostrarMatriz
-    mov w1, w0
-    sub sp, sp, #16
-    sub x16, x29, #480
+    sub x16, x29, #256
     ldr x1, [x16]
     mov x0, x1
     sub sp, sp, #16
@@ -5357,17 +3580,17 @@ L_break_41:
     add sp, sp, #16
     bl fn_calcularTranspuesta
     mov x1, x0
-    sub x16, x29, #496
+    sub x16, x29, #272
     str x0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_100
+    ldr x1, =str_lit_55
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-    sub x16, x29, #496
+    sub x16, x29, #272
     ldr x1, [x16]
     mov x0, x1
     sub sp, sp, #16
@@ -5379,7 +3602,7 @@ L_break_41:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_101
+    ldr x1, =str_lit_56
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
@@ -5459,17 +3682,17 @@ L_break_41:
     str x0, [x21, x23, lsl #3]
     mov x0, x20
     add sp, sp, #16
-    sub x16, x29, #512
+    sub x16, x29, #288
     str x0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_102
+    ldr x1, =str_lit_57
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-    sub x16, x29, #512
+    sub x16, x29, #288
     ldr x1, [x16]
     mov x0, x1
     sub sp, sp, #16
@@ -5479,7 +3702,7 @@ L_break_41:
     bl fn_mostrarMatriz
     mov w1, w0
     sub sp, sp, #16
-    sub x16, x29, #512
+    sub x16, x29, #288
     ldr x1, [x16]
     mov x0, x1
     sub sp, sp, #16
@@ -5488,7 +3711,7 @@ L_break_41:
     add sp, sp, #16
     bl fn_calcularDeterminante2x2
     mov w1, w0
-    sub x16, x29, #528
+    sub x16, x29, #304
     str w1, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Suma
@@ -5496,13 +3719,13 @@ L_break_41:
     ldr x0, =tmpbuf
     mov w2, #0
     strb w2, [x0]
-    ldr x1, =str_lit_103
+    ldr x1, =str_lit_58
     cmp x1, #0
     ldr x16, =null_str
     csel x1, x16, x1, eq
     ldr x0, =tmpbuf
     bl strcat
-    sub x16, x29, #528
+    sub x16, x29, #304
     ldr w1, [x16]
     sub sp, sp, #128
     mov w21, w1
@@ -5525,7 +3748,1972 @@ L_break_41:
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_59
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    sub x16, x29, #48
+    ldr x1, [x16]
+    mov x0, x1
     sub sp, sp, #16
+    str x0, [sp]
+    ldr x0, [sp]
+    add sp, sp, #16
+    bl fn_mostrarMatriz
+    mov w1, w0
+    sub sp, sp, #16
+    sub x16, x29, #48
+    ldr x1, [x16]
+    mov x0, x1
+    sub sp, sp, #16
+    str x0, [sp]
+    ldr x0, [sp]
+    add sp, sp, #16
+    bl fn_calcularDeterminante3x3
+    mov w1, w0
+    sub x16, x29, #320
+    str w1, [x16]
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Suma
+    // String concatenation to tmpbuf (print)
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    ldr x1, =str_lit_60
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub x16, x29, #320
+    ldr w1, [x16]
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x0, =fmt_string
+    ldr x1, =tmpbuf
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_61
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    sub sp, sp, #16
+    sub sp, sp, #16
+    movz w1, #4
+    str w1, [sp, #0]
+    movz w1, #4
+    str w1, [sp, #4]
+    movz w1, #3
+    str w1, [sp, #8]
+    mov w0, #3
+    mov x1, sp
+    bl new_array_flat
+    sub x16, x29, #336
+    str x0, [x16]
+    add sp, sp, #16
+    sub sp, sp, #16
+    sub sp, sp, #16
+    mov w1, #2
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x20, x0
+    mov x21, x0
+    ldr w12, [x21]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x21, x21, x17
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #3
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x20, x0
+    mov x21, x0
+    ldr w12, [x21]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x21, x21, x17
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #3
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    ldr x16, =dbl_lit_62
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    mov x23, #1
+    ldr x16, =dbl_lit_63
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    mov x23, #2
+    ldr x16, =dbl_lit_64
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #0
+    str x0, [x21, x23, lsl #3]
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #3
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    ldr x16, =dbl_lit_65
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    mov x23, #1
+    ldr x16, =dbl_lit_66
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    mov x23, #2
+    ldr x16, =dbl_lit_67
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #1
+    str x0, [x21, x23, lsl #3]
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #3
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    ldr x16, =dbl_lit_68
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    mov x23, #1
+    ldr x16, =dbl_lit_69
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    mov x23, #2
+    ldr x16, =dbl_lit_70
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #2
+    str x0, [x21, x23, lsl #3]
+    mov x0, x20
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #0
+    str x0, [x21, x23, lsl #3]
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #3
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x20, x0
+    mov x21, x0
+    ldr w12, [x21]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x21, x21, x17
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #3
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    ldr x16, =dbl_lit_71
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    mov x23, #1
+    ldr x16, =dbl_lit_72
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    mov x23, #2
+    ldr x16, =dbl_lit_73
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #0
+    str x0, [x21, x23, lsl #3]
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #3
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    ldr x16, =dbl_lit_74
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    mov x23, #1
+    ldr x16, =dbl_lit_75
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    mov x23, #2
+    ldr x16, =dbl_lit_76
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #1
+    str x0, [x21, x23, lsl #3]
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #3
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    ldr x16, =dbl_lit_77
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    mov x23, #1
+    ldr x16, =dbl_lit_78
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    mov x23, #2
+    ldr x16, =dbl_lit_79
+    ldr d0, [x16]
+    str d0, [x22, x23, lsl #3]
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #2
+    str x0, [x21, x23, lsl #3]
+    mov x0, x20
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #1
+    str x0, [x21, x23, lsl #3]
+    mov x0, x20
+    add sp, sp, #16
+    sub x16, x29, #352
+    str x0, [x16]
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_80
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Suma
+    // String concatenation to tmpbuf (print)
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    ldr x1, =str_lit_81
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub x16, x29, #336
+    ldr x0, [x16]
+    // load sizes[0] from header: [x0+8]
+    add x18, x0, #8
+    ldr w1, [x18]
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_9
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    movz w1, #0
+    str w1, [sp, #0]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    ldr w12, [x0]
+    cmp w12, #1
+    b.ne L_len_flat_159
+    add x1, sp, #0
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x18, x0, #8
+    ldr w1, [x18]
+    b L_len_done_159
+L_len_flat_159:
+    add x18, x0, #12
+    ldr w1, [x18]
+L_len_done_159:
+    add sp, sp, #16
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_9
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    movz w1, #0
+    str w1, [sp, #0]
+    movz w1, #0
+    str w1, [sp, #4]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    ldr w12, [x0]
+    cmp w12, #1
+    b.ne L_len_flat_160
+    add x1, sp, #0
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x1, sp, #4
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x18, x0, #8
+    ldr w1, [x18]
+    b L_len_done_160
+L_len_flat_160:
+    add x18, x0, #16
+    ldr w1, [x18]
+L_len_done_160:
+    add sp, sp, #16
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x0, =fmt_string
+    ldr x1, =tmpbuf
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Suma
+    // String concatenation to tmpbuf (print)
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    ldr x1, =str_lit_82
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub x16, x29, #352
+    ldr x0, [x16]
+    // load sizes[0] from header: [x0+8]
+    add x18, x0, #8
+    ldr w1, [x18]
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_9
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    movz w1, #0
+    str w1, [sp, #0]
+    sub x16, x29, #352
+    ldr x0, [x16]
+    ldr w12, [x0]
+    cmp w12, #1
+    b.ne L_len_flat_161
+    add x1, sp, #0
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x18, x0, #8
+    ldr w1, [x18]
+    b L_len_done_161
+L_len_flat_161:
+    add x18, x0, #12
+    ldr w1, [x18]
+L_len_done_161:
+    add sp, sp, #16
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_9
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    movz w1, #0
+    str w1, [sp, #0]
+    movz w1, #0
+    str w1, [sp, #4]
+    sub x16, x29, #352
+    ldr x0, [x16]
+    ldr w12, [x0]
+    cmp w12, #1
+    b.ne L_len_flat_162
+    add x1, sp, #0
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x1, sp, #4
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x18, x0, #8
+    ldr w1, [x18]
+    b L_len_done_162
+L_len_flat_162:
+    add x18, x0, #16
+    ldr w1, [x18]
+L_len_done_162:
+    add sp, sp, #16
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x0, =fmt_string
+    ldr x1, =tmpbuf
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_83
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    sub sp, sp, #16
+    movz w1, #0
+    str w1, [sp, #0]
+    movz w1, #0
+    str w1, [sp, #4]
+    movz w1, #0
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    sub sp, sp, #16
+    str x0, [sp]
+    movz w1, #88
+    ldr x9, [sp]
+    add sp, sp, #16
+    str w1, [x9]
+    add sp, sp, #16
+    sub sp, sp, #16
+    movz w1, #0
+    str w1, [sp, #0]
+    movz w1, #0
+    str w1, [sp, #4]
+    movz w1, #1
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    sub sp, sp, #16
+    str x0, [sp]
+    movz w1, #92
+    ldr x9, [sp]
+    add sp, sp, #16
+    str w1, [x9]
+    add sp, sp, #16
+    sub sp, sp, #16
+    movz w1, #0
+    str w1, [sp, #0]
+    movz w1, #0
+    str w1, [sp, #4]
+    movz w1, #2
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    sub sp, sp, #16
+    str x0, [sp]
+    movz w1, #85
+    ldr x9, [sp]
+    add sp, sp, #16
+    str w1, [x9]
+    add sp, sp, #16
+    sub sp, sp, #16
+    movz w1, #1
+    str w1, [sp, #0]
+    movz w1, #1
+    str w1, [sp, #4]
+    movz w1, #0
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    sub sp, sp, #16
+    str x0, [sp]
+    movz w1, #85
+    ldr x9, [sp]
+    add sp, sp, #16
+    str w1, [x9]
+    add sp, sp, #16
+    sub sp, sp, #16
+    movz w1, #1
+    str w1, [sp, #0]
+    movz w1, #1
+    str w1, [sp, #4]
+    movz w1, #1
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    sub sp, sp, #16
+    str x0, [sp]
+    movz w1, #90
+    ldr x9, [sp]
+    add sp, sp, #16
+    str w1, [x9]
+    add sp, sp, #16
+    sub sp, sp, #16
+    movz w1, #1
+    str w1, [sp, #0]
+    movz w1, #1
+    str w1, [sp, #4]
+    movz w1, #2
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    sub sp, sp, #16
+    str x0, [sp]
+    movz w1, #88
+    ldr x9, [sp]
+    add sp, sp, #16
+    str w1, [x9]
+    add sp, sp, #16
+    sub sp, sp, #16
+    movz w1, #2
+    str w1, [sp, #0]
+    movz w1, #2
+    str w1, [sp, #4]
+    movz w1, #0
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    sub sp, sp, #16
+    str x0, [sp]
+    movz w1, #92
+    ldr x9, [sp]
+    add sp, sp, #16
+    str w1, [x9]
+    add sp, sp, #16
+    sub sp, sp, #16
+    movz w1, #2
+    str w1, [sp, #0]
+    movz w1, #2
+    str w1, [sp, #4]
+    movz w1, #1
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    sub sp, sp, #16
+    str x0, [sp]
+    movz w1, #87
+    ldr x9, [sp]
+    add sp, sp, #16
+    str w1, [x9]
+    add sp, sp, #16
+    sub sp, sp, #16
+    movz w1, #2
+    str w1, [sp, #0]
+    movz w1, #2
+    str w1, [sp, #4]
+    movz w1, #2
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    sub sp, sp, #16
+    str x0, [sp]
+    movz w1, #94
+    ldr x9, [sp]
+    add sp, sp, #16
+    str w1, [x9]
+    add sp, sp, #16
+    sub sp, sp, #16
+    movz w1, #3
+    str w1, [sp, #0]
+    movz w1, #3
+    str w1, [sp, #4]
+    movz w1, #0
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    sub sp, sp, #16
+    str x0, [sp]
+    movz w1, #96
+    ldr x9, [sp]
+    add sp, sp, #16
+    str w1, [x9]
+    add sp, sp, #16
+    sub sp, sp, #16
+    movz w1, #3
+    str w1, [sp, #0]
+    movz w1, #3
+    str w1, [sp, #4]
+    movz w1, #1
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    sub sp, sp, #16
+    str x0, [sp]
+    movz w1, #93
+    ldr x9, [sp]
+    add sp, sp, #16
+    str w1, [x9]
+    add sp, sp, #16
+    sub sp, sp, #16
+    movz w1, #3
+    str w1, [sp, #0]
+    movz w1, #3
+    str w1, [sp, #4]
+    movz w1, #2
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    sub sp, sp, #16
+    str x0, [sp]
+    movz w1, #97
+    ldr x9, [sp]
+    add sp, sp, #16
+    str w1, [x9]
+    add sp, sp, #16
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_84
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Suma
+    // String concatenation to tmpbuf (print)
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    ldr x1, =str_lit_85
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    movz w1, #0
+    str w1, [sp, #0]
+    movz w1, #0
+    str w1, [sp, #4]
+    movz w1, #0
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    ldr w1, [x0]
+    add sp, sp, #16
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_3
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    movz w1, #0
+    str w1, [sp, #0]
+    movz w1, #0
+    str w1, [sp, #4]
+    movz w1, #1
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    ldr w1, [x0]
+    add sp, sp, #16
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_3
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    movz w1, #0
+    str w1, [sp, #0]
+    movz w1, #0
+    str w1, [sp, #4]
+    movz w1, #2
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    ldr w1, [x0]
+    add sp, sp, #16
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_4
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x0, =fmt_string
+    ldr x1, =tmpbuf
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Suma
+    // String concatenation to tmpbuf (print)
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    ldr x1, =str_lit_86
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    movz w1, #3
+    str w1, [sp, #0]
+    movz w1, #3
+    str w1, [sp, #4]
+    movz w1, #0
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    ldr w1, [x0]
+    add sp, sp, #16
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_3
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    movz w1, #3
+    str w1, [sp, #0]
+    movz w1, #3
+    str w1, [sp, #4]
+    movz w1, #1
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    ldr w1, [x0]
+    add sp, sp, #16
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_3
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    movz w1, #3
+    str w1, [sp, #0]
+    movz w1, #3
+    str w1, [sp, #4]
+    movz w1, #2
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    ldr w1, [x0]
+    add sp, sp, #16
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_4
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x0, =fmt_string
+    ldr x1, =tmpbuf
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    sub sp, sp, #16
+    movz w1, #0
+    str w1, [sp, #0]
+    movz w1, #1
+    str w1, [sp, #4]
+    movz w1, #2
+    str w1, [sp, #8]
+    sub x16, x29, #352
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr_ptr
+    sub sp, sp, #16
+    str x0, [sp]
+    ldr x16, =dbl_lit_87
+    ldr d0, [x16]
+    ldr x9, [sp]
+    add sp, sp, #16
+    str d0, [x9]
+    add sp, sp, #16
+    sub sp, sp, #16
+    movz w1, #1
+    str w1, [sp, #0]
+    movz w1, #0
+    str w1, [sp, #4]
+    movz w1, #1
+    str w1, [sp, #8]
+    sub x16, x29, #352
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr_ptr
+    sub sp, sp, #16
+    str x0, [sp]
+    ldr x16, =dbl_lit_88
+    ldr d0, [x16]
+    ldr x9, [sp]
+    add sp, sp, #16
+    str d0, [x9]
+    add sp, sp, #16
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_89
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_90
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_91
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    sub sp, sp, #16
+    sub sp, sp, #16
+    mov w1, #3
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    ldr x1, =str_lit_92
+    str x1, [x22, x23, lsl #3]
+    mov x23, #1
+    ldr x1, =str_lit_93
+    str x1, [x22, x23, lsl #3]
+    mov x23, #2
+    ldr x1, =str_lit_94
+    str x1, [x22, x23, lsl #3]
+    add sp, sp, #16
+    sub x16, x29, #368
+    str x0, [x16]
+    sub sp, sp, #16
+    movz w1, #0
+    sub x16, x29, #384
+    str w1, [x16]
+L_for_cond_163:
+    sub x16, x29, #384
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    movz w1, #2
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, lt
+    cmp w1, #0
+    beq L_break_163
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Suma
+    // String concatenation to tmpbuf (print)
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    ldr x1, =str_lit_34
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    sub x16, x29, #384
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #96
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x1, [x0]
+    add sp, sp, #16
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_35
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x0, =fmt_string
+    ldr x1, =tmpbuf
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    sub sp, sp, #16
+    movz w1, #0
+    sub x16, x29, #400
+    str w1, [x16]
+L_for_cond_164:
+    sub x16, x29, #400
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    movz w1, #2
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, lt
+    cmp w1, #0
+    beq L_break_164
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Suma
+    // String concatenation to tmpbuf (print)
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    ldr x1, =str_lit_36
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    sub x16, x29, #400
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #80
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x1, [x0]
+    add sp, sp, #16
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_35
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x0, =fmt_string
+    ldr x1, =tmpbuf
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    sub sp, sp, #16
+    movz w1, #0
+    sub x16, x29, #416
+    str w1, [x16]
+L_for_cond_165:
+    sub x16, x29, #416
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    sub sp, sp, #16
+    sub x16, x29, #384
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #400
+    ldr w1, [x16]
+    str w1, [sp, #4]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    ldr w12, [x0]
+    cmp w12, #1
+    b.ne L_len_flat_166
+    add x1, sp, #0
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x1, sp, #4
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x18, x0, #8
+    ldr w1, [x18]
+    b L_len_done_166
+L_len_flat_166:
+    add x18, x0, #16
+    ldr w1, [x18]
+L_len_done_166:
+    add sp, sp, #16
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, lt
+    cmp w1, #0
+    beq L_break_165
+    sub sp, sp, #16
+    sub sp, sp, #16
+    sub x16, x29, #384
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #400
+    ldr w1, [x16]
+    str w1, [sp, #4]
+    sub x16, x29, #416
+    ldr w1, [x16]
+    str w1, [sp, #8]
+    sub x16, x29, #336
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr
+    ldr w1, [x0]
+    add sp, sp, #16
+    sub x16, x29, #432
+    str w1, [x16]
+    sub x16, x29, #432
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    movz w1, #0
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, gt
+    cmp w1, #0
+    beq L_end_167
+L_then_167:
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Suma
+    // String concatenation to tmpbuf (print)
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    ldr x1, =str_lit_95
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    sub x16, x29, #416
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #368
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x1, [x0]
+    add sp, sp, #16
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_37
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub x16, x29, #432
+    ldr w1, [x16]
+    sub sp, sp, #128
+    mov w21, w1
+    mov x0, sp
+    ldr x1, =fmt_int
+    mov w2, w21
+    bl sprintf
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x0, =fmt_string
+    ldr x1, =tmpbuf
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+L_end_167:
+L_continue_165:
+    sub x16, x29, #416
+    ldr w1, [x16]
+    add w20, w1, #1
+    sub x16, x29, #416
+    str w20, [x16]
+    b L_for_cond_165
+L_break_165:
+L_continue_164:
+    sub x16, x29, #400
+    ldr w1, [x16]
+    add w20, w1, #1
+    sub x16, x29, #400
+    str w20, [x16]
+    b L_for_cond_164
+L_break_164:
+    // Print lista node_type: ListaExpresiones, numHijos=0
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+L_continue_163:
+    sub x16, x29, #384
+    ldr w1, [x16]
+    add w20, w1, #1
+    sub x16, x29, #384
+    str w20, [x16]
+    b L_for_cond_163
+L_break_163:
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_96
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    sub sp, sp, #16
+    sub sp, sp, #16
+    mov w1, #2
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    ldr x1, =str_lit_97
+    str x1, [x22, x23, lsl #3]
+    mov x23, #1
+    ldr x1, =str_lit_98
+    str x1, [x22, x23, lsl #3]
+    add sp, sp, #16
+    sub x16, x29, #448
+    str x0, [x16]
+    sub sp, sp, #16
+    sub sp, sp, #16
+    mov w1, #3
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    ldr x1, =str_lit_99
+    str x1, [x22, x23, lsl #3]
+    mov x23, #1
+    ldr x1, =str_lit_100
+    str x1, [x22, x23, lsl #3]
+    mov x23, #2
+    ldr x1, =str_lit_101
+    str x1, [x22, x23, lsl #3]
+    add sp, sp, #16
+    sub x16, x29, #464
+    str x0, [x16]
+    sub sp, sp, #16
+    sub sp, sp, #16
+    mov w1, #3
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    ldr x1, =str_lit_102
+    str x1, [x22, x23, lsl #3]
+    mov x23, #1
+    ldr x1, =str_lit_103
+    str x1, [x22, x23, lsl #3]
+    mov x23, #2
+    ldr x1, =str_lit_104
+    str x1, [x22, x23, lsl #3]
+    add sp, sp, #16
+    sub x16, x29, #480
+    str x0, [x16]
+    sub sp, sp, #16
+    movz w1, #0
+    sub x16, x29, #496
+    str w1, [x16]
+L_for_cond_168:
+    sub x16, x29, #496
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    sub x16, x29, #352
+    ldr x0, [x16]
+    // load sizes[0] from header: [x0+8]
+    add x18, x0, #8
+    ldr w1, [x18]
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, lt
+    cmp w1, #0
+    beq L_break_168
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Suma
+    // String concatenation to tmpbuf (print)
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    sub sp, sp, #16
+    sub x16, x29, #496
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #448
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x1, [x0]
+    add sp, sp, #16
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_35
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x0, =fmt_string
+    ldr x1, =tmpbuf
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    sub sp, sp, #16
+    movz w1, #0
+    sub x16, x29, #512
+    str w1, [x16]
+L_for_cond_169:
+    sub x16, x29, #512
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    sub sp, sp, #16
+    sub x16, x29, #496
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #352
+    ldr x0, [x16]
+    ldr w12, [x0]
+    cmp w12, #1
+    b.ne L_len_flat_170
+    add x1, sp, #0
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x18, x0, #8
+    ldr w1, [x18]
+    b L_len_done_170
+L_len_flat_170:
+    add x18, x0, #12
+    ldr w1, [x18]
+L_len_done_170:
+    add sp, sp, #16
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, lt
+    cmp w1, #0
+    beq L_break_169
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Suma
+    // String concatenation to tmpbuf (print)
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    ldr x1, =str_lit_36
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    sub x16, x29, #512
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #464
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x1, [x0]
+    add sp, sp, #16
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_35
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x0, =fmt_string
+    ldr x1, =tmpbuf
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    sub sp, sp, #16
+    movz w1, #0
+    sub x16, x29, #528
+    str w1, [x16]
+L_for_cond_171:
+    sub x16, x29, #528
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    sub sp, sp, #16
+    sub x16, x29, #496
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #512
+    ldr w1, [x16]
+    str w1, [sp, #4]
+    sub x16, x29, #352
+    ldr x0, [x16]
+    ldr w12, [x0]
+    cmp w12, #1
+    b.ne L_len_flat_172
+    add x1, sp, #0
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x1, sp, #4
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x18, x0, #8
+    ldr w1, [x18]
+    b L_len_done_172
+L_len_flat_172:
+    add x18, x0, #16
+    ldr w1, [x18]
+L_len_done_172:
+    add sp, sp, #16
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, lt
+    cmp w1, #0
+    beq L_break_171
+    sub sp, sp, #16
+    sub sp, sp, #16
+    sub x16, x29, #496
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #512
+    ldr w1, [x16]
+    str w1, [sp, #4]
+    sub x16, x29, #528
+    ldr w1, [x16]
+    str w1, [sp, #8]
+    sub x16, x29, #352
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #3
+    bl array_element_addr_ptr
+    ldr d0, [x0]
+    add sp, sp, #16
+    sub x16, x29, #544
+    str d0, [x16]
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Suma
+    // String concatenation to tmpbuf (print)
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    ldr x1, =str_lit_95
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub sp, sp, #16
+    sub x16, x29, #528
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #480
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x1, [x0]
+    add sp, sp, #16
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_37
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub x16, x29, #544
+    ldr d0, [x16]
+    sub sp, sp, #128
+    mov x0, sp
+    mov x1, #128
+    bl java_format_double
+    mov x0, sp
+    bl strdup
+    add sp, sp, #128
+    mov x1, x0
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x1, =str_lit_105
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    ldr x0, =fmt_string
+    ldr x1, =tmpbuf
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+L_continue_171:
+    sub x16, x29, #528
+    ldr w1, [x16]
+    add w20, w1, #1
+    sub x16, x29, #528
+    str w20, [x16]
+    b L_for_cond_171
+L_break_171:
+L_continue_169:
+    sub x16, x29, #512
+    ldr w1, [x16]
+    add w20, w1, #1
+    sub x16, x29, #512
+    str w20, [x16]
+    b L_for_cond_169
+L_break_169:
+L_continue_168:
+    sub x16, x29, #496
+    ldr w1, [x16]
+    add w20, w1, #1
+    sub x16, x29, #496
+    str w20, [x16]
+    b L_for_cond_168
+L_break_168:
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Primitivo
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_106
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    sub sp, sp, #16
+    sub sp, sp, #16
+    mov w1, #2
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x20, x0
+    mov x21, x0
+    ldr w12, [x21]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x21, x21, x17
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #2
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x20, x0
+    mov x21, x0
+    ldr w12, [x21]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x21, x21, x17
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #2
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x20, x0
+    mov x21, x0
+    ldr w12, [x21]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x21, x21, x17
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #2
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    movz w1, #1
+    str w1, [x22, x23, lsl #2]
+    mov x23, #1
+    movz w1, #2
+    str w1, [x22, x23, lsl #2]
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #0
+    str x0, [x21, x23, lsl #3]
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #2
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    movz w1, #3
+    str w1, [x22, x23, lsl #2]
+    mov x23, #1
+    movz w1, #4
+    str w1, [x22, x23, lsl #2]
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #1
+    str x0, [x21, x23, lsl #3]
+    mov x0, x20
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #0
+    str x0, [x21, x23, lsl #3]
+    sub sp, sp, #32
+    stp x20, x21, [sp]
     sub sp, sp, #16
     mov w1, #2
     str w1, [sp]
@@ -5563,7 +5751,7 @@ L_break_41:
     movz w1, #5
     str w1, [x22, x23, lsl #2]
     mov x23, #1
-    movz w1, #2
+    movz w1, #6
     str w1, [x22, x23, lsl #2]
     add sp, sp, #16
     ldp x20, x21, [sp]
@@ -5588,10 +5776,10 @@ L_break_41:
     and x17, x17, #-8
     add x22, x22, x17
     mov x23, #0
-    movz w1, #3
+    movz w1, #7
     str w1, [x22, x23, lsl #2]
     mov x23, #1
-    movz w1, #4
+    movz w1, #8
     str w1, [x22, x23, lsl #2]
     add sp, sp, #16
     ldp x20, x21, [sp]
@@ -5600,139 +5788,20 @@ L_break_41:
     str x0, [x21, x23, lsl #3]
     mov x0, x20
     add sp, sp, #16
-    sub x16, x29, #544
-    str x0, [x16]
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_104
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    sub x16, x29, #544
-    ldr x1, [x16]
-    mov x0, x1
-    sub sp, sp, #16
-    str x0, [sp]
-    ldr x0, [sp]
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #1
+    str x0, [x21, x23, lsl #3]
+    mov x0, x20
     add sp, sp, #16
-    bl fn_mostrarMatriz
-    mov w1, w0
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #0
+    str x0, [x21, x23, lsl #3]
+    sub sp, sp, #32
+    stp x20, x21, [sp]
     sub sp, sp, #16
-    sub x16, x29, #544
-    ldr x1, [x16]
-    mov x0, x1
-    sub sp, sp, #16
-    str x0, [sp]
-    ldr x0, [sp]
-    add sp, sp, #16
-    bl fn_calcularDeterminante2x2
-    mov w1, w0
-    sub x16, x29, #560
-    str w1, [x16]
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    // String concatenation to tmpbuf (print)
-    ldr x0, =tmpbuf
-    mov w2, #0
-    strb w2, [x0]
-    ldr x1, =str_lit_103
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub x16, x29, #560
-    ldr w1, [x16]
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x0, =fmt_string
-    ldr x1, =tmpbuf
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_105
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    sub x16, x29, #48
-    ldr x1, [x16]
-    mov x0, x1
-    sub sp, sp, #16
-    str x0, [sp]
-    ldr x0, [sp]
-    add sp, sp, #16
-    bl fn_mostrarMatriz
-    mov w1, w0
-    sub sp, sp, #16
-    sub x16, x29, #48
-    ldr x1, [x16]
-    mov x0, x1
-    sub sp, sp, #16
-    str x0, [sp]
-    ldr x0, [sp]
-    add sp, sp, #16
-    bl fn_calcularDeterminante3x3
-    mov w1, w0
-    sub x16, x29, #576
-    str w1, [x16]
-    // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Suma
-    // String concatenation to tmpbuf (print)
-    ldr x0, =tmpbuf
-    mov w2, #0
-    strb w2, [x0]
-    ldr x1, =str_lit_106
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    sub x16, x29, #576
-    ldr w1, [x16]
-    sub sp, sp, #128
-    mov w21, w1
-    mov x0, sp
-    ldr x1, =fmt_int
-    mov w2, w21
-    bl sprintf
-    mov x0, sp
-    bl strdup
-    add sp, sp, #128
-    mov x1, x0
-    cmp x1, #0
-    ldr x16, =null_str
-    csel x1, x16, x1, eq
-    ldr x0, =tmpbuf
-    bl strcat
-    ldr x0, =fmt_string
-    ldr x1, =tmpbuf
-    bl printf
-    ldr x0, =fmt_string
-    ldr x1, =str_lit_2
-    bl printf
-    sub sp, sp, #16
-    sub sp, sp, #16
-    mov w1, #3
+    mov w1, #2
     str w1, [sp]
     mov w0, #1
     mov x1, sp
@@ -5750,7 +5819,25 @@ L_break_41:
     sub sp, sp, #32
     stp x20, x21, [sp]
     sub sp, sp, #16
-    mov w1, #3
+    mov w1, #2
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x20, x0
+    mov x21, x0
+    ldr w12, [x21]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x21, x21, x17
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #2
     str w1, [sp]
     mov w0, #1
     mov x1, sp
@@ -5765,14 +5852,10 @@ L_break_41:
     and x17, x17, #-8
     add x22, x22, x17
     mov x23, #0
-    movz w1, #2
+    movz w1, #9
     str w1, [x22, x23, lsl #2]
     mov x23, #1
-    movz w1, #1
-    neg w1, w1
-    str w1, [x22, x23, lsl #2]
-    mov x23, #2
-    movz w1, #3
+    movz w1, #10
     str w1, [x22, x23, lsl #2]
     add sp, sp, #16
     ldp x20, x21, [sp]
@@ -5782,7 +5865,7 @@ L_break_41:
     sub sp, sp, #32
     stp x20, x21, [sp]
     sub sp, sp, #16
-    mov w1, #3
+    mov w1, #2
     str w1, [sp]
     mov w0, #1
     mov x1, sp
@@ -5797,84 +5880,374 @@ L_break_41:
     and x17, x17, #-8
     add x22, x22, x17
     mov x23, #0
-    movz w1, #1
+    movz w1, #11
     str w1, [x22, x23, lsl #2]
     mov x23, #1
-    movz w1, #0
-    str w1, [x22, x23, lsl #2]
-    mov x23, #2
-    movz w1, #1
+    movz w1, #12
     str w1, [x22, x23, lsl #2]
     add sp, sp, #16
     ldp x20, x21, [sp]
     add sp, sp, #32
     mov x23, #1
-    str x0, [x21, x23, lsl #3]
-    sub sp, sp, #32
-    stp x20, x21, [sp]
-    sub sp, sp, #16
-    mov w1, #3
-    str w1, [sp]
-    mov w0, #1
-    mov x1, sp
-    bl new_array_flat
-    mov x22, x0
-    ldr w12, [x22]
-    mov x15, #8
-    uxtw x16, w12
-    lsl x16, x16, #2
-    add x15, x15, x16
-    add x17, x15, #7
-    and x17, x17, #-8
-    add x22, x22, x17
-    mov x23, #0
-    movz w1, #1
-    str w1, [x22, x23, lsl #2]
-    mov x23, #1
-    movz w1, #2
-    str w1, [x22, x23, lsl #2]
-    mov x23, #2
-    movz w1, #1
-    neg w1, w1
-    str w1, [x22, x23, lsl #2]
-    add sp, sp, #16
-    ldp x20, x21, [sp]
-    add sp, sp, #32
-    mov x23, #2
     str x0, [x21, x23, lsl #3]
     mov x0, x20
     add sp, sp, #16
-    sub x16, x29, #592
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #0
+    str x0, [x21, x23, lsl #3]
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #2
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat_ptr
+    mov x20, x0
+    mov x21, x0
+    ldr w12, [x21]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x21, x21, x17
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #2
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    movz w1, #13
+    str w1, [x22, x23, lsl #2]
+    mov x23, #1
+    movz w1, #14
+    str w1, [x22, x23, lsl #2]
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #0
+    str x0, [x21, x23, lsl #3]
+    sub sp, sp, #32
+    stp x20, x21, [sp]
+    sub sp, sp, #16
+    mov w1, #2
+    str w1, [sp]
+    mov w0, #1
+    mov x1, sp
+    bl new_array_flat
+    mov x22, x0
+    ldr w12, [x22]
+    mov x15, #8
+    uxtw x16, w12
+    lsl x16, x16, #2
+    add x15, x15, x16
+    add x17, x15, #7
+    and x17, x17, #-8
+    add x22, x22, x17
+    mov x23, #0
+    movz w1, #15
+    str w1, [x22, x23, lsl #2]
+    mov x23, #1
+    movz w1, #16
+    str w1, [x22, x23, lsl #2]
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #1
+    str x0, [x21, x23, lsl #3]
+    mov x0, x20
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #1
+    str x0, [x21, x23, lsl #3]
+    mov x0, x20
+    add sp, sp, #16
+    ldp x20, x21, [sp]
+    add sp, sp, #32
+    mov x23, #1
+    str x0, [x21, x23, lsl #3]
+    mov x0, x20
+    add sp, sp, #16
+    sub x16, x29, #560
     str x0, [x16]
+    sub sp, sp, #16
+    movz w1, #0
+    sub x16, x29, #576
+    str w1, [x16]
+    sub sp, sp, #16
+    movz w1, #0
+    sub x16, x29, #592
+    str w1, [x16]
+    sub sp, sp, #16
+    movz w1, #0
+    sub x16, x29, #608
+    str w1, [x16]
+L_for_cond_173:
+    sub x16, x29, #608
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    sub x16, x29, #560
+    ldr x0, [x16]
+    // load sizes[0] from header: [x0+8]
+    add x18, x0, #8
+    ldr w1, [x18]
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, lt
+    cmp w1, #0
+    beq L_break_173
+    sub sp, sp, #16
+    movz w1, #0
+    sub x16, x29, #624
+    str w1, [x16]
+L_for_cond_174:
+    sub x16, x29, #624
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    sub sp, sp, #16
+    sub x16, x29, #608
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #560
+    ldr x0, [x16]
+    ldr w12, [x0]
+    cmp w12, #1
+    b.ne L_len_flat_175
+    add x1, sp, #0
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x18, x0, #8
+    ldr w1, [x18]
+    b L_len_done_175
+L_len_flat_175:
+    add x18, x0, #12
+    ldr w1, [x18]
+L_len_done_175:
+    add sp, sp, #16
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, lt
+    cmp w1, #0
+    beq L_break_174
+    sub sp, sp, #16
+    movz w1, #0
+    sub x16, x29, #640
+    str w1, [x16]
+L_for_cond_176:
+    sub x16, x29, #640
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    sub sp, sp, #16
+    sub x16, x29, #608
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #624
+    ldr w1, [x16]
+    str w1, [sp, #4]
+    sub x16, x29, #560
+    ldr x0, [x16]
+    ldr w12, [x0]
+    cmp w12, #1
+    b.ne L_len_flat_177
+    add x1, sp, #0
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x1, sp, #4
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x18, x0, #8
+    ldr w1, [x18]
+    b L_len_done_177
+L_len_flat_177:
+    add x18, x0, #16
+    ldr w1, [x18]
+L_len_done_177:
+    add sp, sp, #16
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, lt
+    cmp w1, #0
+    beq L_break_176
+    sub sp, sp, #16
+    movz w1, #0
+    sub x16, x29, #656
+    str w1, [x16]
+L_for_cond_178:
+    sub x16, x29, #656
+    ldr w1, [x16]
+    sub sp, sp, #16
+    str w1, [sp]
+    sub sp, sp, #16
+    sub x16, x29, #608
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #624
+    ldr w1, [x16]
+    str w1, [sp, #4]
+    sub x16, x29, #640
+    ldr w1, [x16]
+    str w1, [sp, #8]
+    sub x16, x29, #560
+    ldr x0, [x16]
+    ldr w12, [x0]
+    cmp w12, #1
+    b.ne L_len_flat_179
+    add x1, sp, #0
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x1, sp, #4
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x1, sp, #8
+    mov w2, #1
+    bl array_element_addr_ptr
+    ldr x0, [x0]
+    add x18, x0, #8
+    ldr w1, [x18]
+    b L_len_done_179
+L_len_flat_179:
+    add x18, x0, #20
+    ldr w1, [x18]
+L_len_done_179:
+    add sp, sp, #16
+    ldr w19, [sp]
+    add sp, sp, #16
+    cmp w19, w1
+    cset w1, lt
+    cmp w1, #0
+    beq L_break_178
+    sub x16, x29, #576
+    ldr w19, [x16]
+    sub sp, sp, #16
+    sub x16, x29, #608
+    ldr w1, [x16]
+    str w1, [sp, #0]
+    sub x16, x29, #624
+    ldr w1, [x16]
+    str w1, [sp, #4]
+    sub x16, x29, #640
+    ldr w1, [x16]
+    str w1, [sp, #8]
+    sub x16, x29, #656
+    ldr w1, [x16]
+    str w1, [sp, #12]
+    sub x16, x29, #560
+    ldr x0, [x16]
+    mov x1, sp
+    mov w2, #4
+    bl array_element_addr
+    ldr w1, [x0]
+    add sp, sp, #16
+    add w1, w19, w1
+    sub x16, x29, #576
+    str w1, [x16]
+    sub x16, x29, #592
+    ldr w1, [x16]
+    add w20, w1, #1
+    sub x16, x29, #592
+    str w20, [x16]
+L_continue_178:
+    sub x16, x29, #656
+    ldr w1, [x16]
+    add w20, w1, #1
+    sub x16, x29, #656
+    str w20, [x16]
+    b L_for_cond_178
+L_break_178:
+L_continue_176:
+    sub x16, x29, #640
+    ldr w1, [x16]
+    add w20, w1, #1
+    sub x16, x29, #640
+    str w20, [x16]
+    b L_for_cond_176
+L_break_176:
+L_continue_174:
+    sub x16, x29, #624
+    ldr w1, [x16]
+    add w20, w1, #1
+    sub x16, x29, #624
+    str w20, [x16]
+    b L_for_cond_174
+L_break_174:
+L_continue_173:
+    sub x16, x29, #608
+    ldr w1, [x16]
+    add w20, w1, #1
+    sub x16, x29, #608
+    str w20, [x16]
+    b L_for_cond_173
+L_break_173:
+    sub sp, sp, #16
+    sub x16, x29, #576
+    ldr w1, [x16]
+    scvtf d0, w1
+    sub sp, sp, #16
+    str d0, [sp]
+    sub x16, x29, #592
+    ldr w1, [x16]
+    ldr d8, [sp]
+    scvtf d9, w1
+    fdiv d0, d8, d9
+    add sp, sp, #16
+    sub x16, x29, #672
+    str d0, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
-    // print expr node_type: Primitivo
-    ldr x0, =fmt_string
+    // print expr node_type: Suma
+    // String concatenation to tmpbuf (print)
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
     ldr x1, =str_lit_107
+    cmp x1, #0
+    ldr x16, =null_str
+    csel x1, x16, x1, eq
+    ldr x0, =tmpbuf
+    bl strcat
+    sub x16, x29, #576
+    ldr w1, [x16]
+    sub sp, sp, #128
+    mov x0, sp
+    mov w2, w1
+    ldr x1, =fmt_int
+    bl sprintf
+    mov x1, sp
+    ldr x0, =tmpbuf
+    bl strcat
+    add sp, sp, #128
+    ldr x0, =fmt_string
+    ldr x1, =tmpbuf
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-    sub x16, x29, #592
-    ldr x1, [x16]
-    mov x0, x1
-    sub sp, sp, #16
-    str x0, [sp]
-    ldr x0, [sp]
-    add sp, sp, #16
-    bl fn_mostrarMatriz
-    mov w1, w0
-    sub sp, sp, #16
-    sub x16, x29, #592
-    ldr x1, [x16]
-    mov x0, x1
-    sub sp, sp, #16
-    str x0, [sp]
-    ldr x0, [sp]
-    add sp, sp, #16
-    bl fn_calcularDeterminante3x3
-    mov w1, w0
-    sub x16, x29, #608
-    str w1, [x16]
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Suma
     // String concatenation to tmpbuf (print)
@@ -5887,23 +6260,45 @@ L_break_41:
     csel x1, x16, x1, eq
     ldr x0, =tmpbuf
     bl strcat
-    sub x16, x29, #608
+    sub x16, x29, #592
     ldr w1, [x16]
     sub sp, sp, #128
-    mov w21, w1
     mov x0, sp
+    mov w2, w1
     ldr x1, =fmt_int
-    mov w2, w21
     bl sprintf
-    mov x0, sp
-    bl strdup
+    mov x1, sp
+    ldr x0, =tmpbuf
+    bl strcat
     add sp, sp, #128
-    mov x1, x0
+    ldr x0, =fmt_string
+    ldr x1, =tmpbuf
+    bl printf
+    ldr x0, =fmt_string
+    ldr x1, =str_lit_2
+    bl printf
+    // Print lista node_type: ListaExpresiones, numHijos=1
+    // print expr node_type: Suma
+    // String concatenation to tmpbuf (print)
+    ldr x0, =tmpbuf
+    mov w2, #0
+    strb w2, [x0]
+    ldr x1, =str_lit_109
     cmp x1, #0
     ldr x16, =null_str
     csel x1, x16, x1, eq
     ldr x0, =tmpbuf
     bl strcat
+    sub x16, x29, #672
+    ldr d0, [x16]
+    sub sp, sp, #128
+    mov x0, sp
+    mov x1, #128
+    bl java_format_double
+    mov x1, sp
+    ldr x0, =tmpbuf
+    bl strcat
+    add sp, sp, #128
     ldr x0, =fmt_string
     ldr x1, =tmpbuf
     bl printf
@@ -5913,12 +6308,12 @@ L_break_41:
     // Print lista node_type: ListaExpresiones, numHijos=1
     // print expr node_type: Primitivo
     ldr x0, =fmt_string
-    ldr x1, =str_lit_109
+    ldr x1, =str_lit_110
     bl printf
     ldr x0, =fmt_string
     ldr x1, =str_lit_2
     bl printf
-L_func_exit_23:
+L_func_exit_150:
     add sp, sp, #1024
     mov sp, x29
 
@@ -5940,103 +6335,104 @@ str_lit_9:    .asciz " x "
 str_lit_10:    .asciz "- promediosPorSemestre: "
 str_lit_11:    .asciz "- matrizA: "
 str_lit_12:    .asciz "- matrizB: "
-str_lit_13:    .asciz "\n--- DECLARACION DE MATRICES 3D ---"
-dbl_lit_14:    .double 20.5
-dbl_lit_15:    .double 22.1
-dbl_lit_16:    .double 25.3
-dbl_lit_17:    .double 19.8
-dbl_lit_18:    .double 21.5
-dbl_lit_19:    .double 24.7
-dbl_lit_20:    .double 21.2
-dbl_lit_21:    .double 23.0
-dbl_lit_22:    .double 26.1
-dbl_lit_23:    .double 18.5
-dbl_lit_24:    .double 20.1
-dbl_lit_25:    .double 23.3
-dbl_lit_26:    .double 17.8
-dbl_lit_27:    .double 19.5
-dbl_lit_28:    .double 22.7
-dbl_lit_29:    .double 19.2
-dbl_lit_30:    .double 21.0
-dbl_lit_31:    .double 24.1
-str_lit_32:    .asciz "Matrices 3D declaradas exitosamente:"
-str_lit_33:    .asciz "- evaluacionesDetalladas: "
-str_lit_34:    .asciz "- temperaturasPorDia: "
-str_lit_35:    .asciz "\n--- MODIFICACION DE ELEMENTOS 2D ---"
-str_lit_36:    .asciz "Calificación original del Estudiante 1 en Física: "
-str_lit_37:    .asciz "Nueva calificación del Estudiante 1 en Física: "
-str_lit_38:    .asciz "Modificaciones adicionales realizadas en otras posiciones"
-dbl_lit_39:    .double 85.5
-dbl_lit_40:    .double 87.2
-dbl_lit_41:    .double 89.1
-dbl_lit_42:    .double 90.3
-dbl_lit_43:    .double 88.7
-dbl_lit_44:    .double 91.2
-str_lit_45:    .asciz "Matriz de promedios por semestre inicializada"
-str_lit_46:    .asciz "\n--- MODIFICACION DE ELEMENTOS 3D ---"
-str_lit_47:    .asciz "Cubo de evaluaciones detalladas inicializado:"
-str_lit_48:    .asciz "- Estudiante 1, Matemáticas: ["
-str_lit_49:    .asciz "- Estudiante 4, Biología: ["
-dbl_lit_50:    .double 25.5
-dbl_lit_51:    .double 21.8
-str_lit_52:    .asciz "Temperaturas específicas modificadas"
-str_lit_53:    .asciz "\n--- ACCESO A ELEMENTOS 2D ---"
-str_lit_54:    .asciz "Matemáticas"
-str_lit_55:    .asciz "Física"
-str_lit_56:    .asciz "Química"
-str_lit_57:    .asciz "Biología"
-str_lit_58:    .asciz "Ana"
-str_lit_59:    .asciz "Luis"
-str_lit_60:    .asciz "María"
-str_lit_61:    .asciz "Carlos"
-str_lit_62:    .asciz "Análisis de calificaciones por estudiante:"
-str_lit_63:    .asciz "Estudiante "
-str_lit_64:    .asciz ":"
-str_lit_65:    .asciz "  "
-str_lit_66:    .asciz ": "
-str_lit_67:    .asciz "  Promedio: "
-str_lit_68:    .asciz "Acceso directo a elementos específicos:"
-str_lit_69:    .asciz "Primera calificación (Ana, Matemáticas): "
-str_lit_70:    .asciz "Última calificación (Carlos, Biología): "
-str_lit_71:    .asciz "Elemento central: "
-str_lit_72:    .asciz "\n--- ACCESO A ELEMENTOS 3D ---"
-str_lit_73:    .asciz "Análisis de evaluaciones detalladas:"
-str_lit_74:    .asciz "Examen 1"
-str_lit_75:    .asciz "Examen 2"
-str_lit_76:    .asciz "Proyecto"
-str_lit_77:    .asciz "    "
-str_lit_78:    .asciz "Temperaturas registradas:"
-str_lit_79:    .asciz "Semana 1"
-str_lit_80:    .asciz "Semana 2"
-str_lit_81:    .asciz "Lunes"
-str_lit_82:    .asciz "Martes"
-str_lit_83:    .asciz "Miércoles"
-str_lit_84:    .asciz "Mañana"
-str_lit_85:    .asciz "Tarde"
-str_lit_86:    .asciz "Noche"
-str_lit_87:    .asciz "°C"
-str_lit_88:    .asciz "\n--- OPERACIONES CON MATRICES ---"
-str_lit_89:    .asciz "Matriz A:"
-str_lit_90:    .asciz "Matriz B:"
-str_lit_91:    .asciz "Suma A + B:"
-str_lit_92:    .asciz "Producto A * B:"
-str_lit_93:    .asciz "Verificando operaciones:"
-str_lit_94:    .asciz "- Suma completada correctamente"
-str_lit_95:    .asciz "- Multiplicación completada correctamente"
-str_lit_96:    .asciz "\n--- TRANSPUESTA DE MATRIZ ---"
-str_lit_97:    .asciz "Matriz original (3x4):"
-str_lit_98:    .asciz "Matriz transpuesta (4x3):"
-str_lit_99:    .asciz "Transpuesta de matriz A:"
-str_lit_100:    .asciz "Doble transpuesta de A (debe ser igual a A original):"
-str_lit_101:    .asciz "\n--- CALCULO DE DETERMINANTES ---"
-str_lit_102:    .asciz "Matriz 2x2:"
-str_lit_103:    .asciz "Determinante 2x2: "
-str_lit_104:    .asciz "\nSegunda matriz 2x2:"
-str_lit_105:    .asciz "\nMatriz A (3x3):"
-str_lit_106:    .asciz "Determinante 3x3 de matriz A: "
-str_lit_107:    .asciz "\nMatriz especial 3x3:"
-str_lit_108:    .asciz "Determinante 3x3: "
-str_lit_109:    .asciz "\n=== ANALISIS DE DATOS ACADEMICOS COMPLETADO ==="
+str_lit_13:    .asciz "\n--- MODIFICACION DE ELEMENTOS 2D ---"
+str_lit_14:    .asciz "Calificación original del Estudiante 1 en Física: "
+str_lit_15:    .asciz "Nueva calificación del Estudiante 1 en Física: "
+str_lit_16:    .asciz "Modificaciones adicionales realizadas en otras posiciones"
+dbl_lit_17:    .double 85.5
+dbl_lit_18:    .double 87.2
+dbl_lit_19:    .double 89.1
+dbl_lit_20:    .double 90.3
+dbl_lit_21:    .double 88.7
+dbl_lit_22:    .double 91.2
+str_lit_23:    .asciz "Matriz de promedios por semestre inicializada"
+str_lit_24:    .asciz "\n--- ACCESO A ELEMENTOS 2D ---"
+str_lit_25:    .asciz "Matemáticas"
+str_lit_26:    .asciz "Física"
+str_lit_27:    .asciz "Química"
+str_lit_28:    .asciz "Biología"
+str_lit_29:    .asciz "Ana"
+str_lit_30:    .asciz "Luis"
+str_lit_31:    .asciz "María"
+str_lit_32:    .asciz "Carlos"
+str_lit_33:    .asciz "Análisis de calificaciones por estudiante:"
+str_lit_34:    .asciz "Estudiante "
+str_lit_35:    .asciz ":"
+str_lit_36:    .asciz "  "
+str_lit_37:    .asciz ": "
+str_lit_38:    .asciz "  Promedio: "
+str_lit_39:    .asciz "Acceso directo a elementos específicos:"
+str_lit_40:    .asciz "Primera calificación (Ana, Matemáticas): "
+str_lit_41:    .asciz "Última calificación (Carlos, Biología): "
+str_lit_42:    .asciz "Elemento central: "
+str_lit_43:    .asciz "\n--- OPERACIONES CON MATRICES ---"
+str_lit_44:    .asciz "Matriz A:"
+str_lit_45:    .asciz "Matriz B:"
+str_lit_46:    .asciz "Suma A + B:"
+str_lit_47:    .asciz "Producto A * B:"
+str_lit_48:    .asciz "Verificando operaciones:"
+str_lit_49:    .asciz "- Suma completada correctamente"
+str_lit_50:    .asciz "- Multiplicación completada correctamente"
+str_lit_51:    .asciz "\n--- TRANSPUESTA DE MATRIZ ---"
+str_lit_52:    .asciz "Matriz original (3x4):"
+str_lit_53:    .asciz "Matriz transpuesta (4x3):"
+str_lit_54:    .asciz "Matriz original A:"
+str_lit_55:    .asciz "Doble transpuesta de A (debe ser igual a A original):"
+str_lit_56:    .asciz "\n--- CALCULO DE DETERMINANTES ---"
+str_lit_57:    .asciz "Matriz 2x2:"
+str_lit_58:    .asciz "Determinante 2x2: "
+str_lit_59:    .asciz "\nMatriz A (3x3):"
+str_lit_60:    .asciz "Determinante 3x3 de matriz A: "
+str_lit_61:    .asciz "\n--- DECLARACION DE MATRICES 3D ---"
+dbl_lit_62:    .double 20.5
+dbl_lit_63:    .double 22.1
+dbl_lit_64:    .double 25.3
+dbl_lit_65:    .double 19.8
+dbl_lit_66:    .double 21.5
+dbl_lit_67:    .double 24.7
+dbl_lit_68:    .double 21.2
+dbl_lit_69:    .double 23.0
+dbl_lit_70:    .double 26.1
+dbl_lit_71:    .double 18.5
+dbl_lit_72:    .double 20.1
+dbl_lit_73:    .double 23.3
+dbl_lit_74:    .double 17.8
+dbl_lit_75:    .double 19.5
+dbl_lit_76:    .double 22.7
+dbl_lit_77:    .double 19.2
+dbl_lit_78:    .double 21.0
+dbl_lit_79:    .double 24.1
+str_lit_80:    .asciz "Matrices 3D declaradas exitosamente:"
+str_lit_81:    .asciz "- evaluacionesDetalladas: "
+str_lit_82:    .asciz "- temperaturasPorDia: "
+str_lit_83:    .asciz "\n--- MODIFICACION DE ELEMENTOS 3D ---"
+str_lit_84:    .asciz "Cubo de evaluaciones detalladas inicializado:"
+str_lit_85:    .asciz "- Estudiante 1, Matemáticas: ["
+str_lit_86:    .asciz "- Estudiante 4, Biología: ["
+dbl_lit_87:    .double 25.5
+dbl_lit_88:    .double 21.8
+str_lit_89:    .asciz "Temperaturas específicas modificadas"
+str_lit_90:    .asciz "\n--- ACCESO A ELEMENTOS 3D ---"
+str_lit_91:    .asciz "Análisis de evaluaciones detalladas:"
+str_lit_92:    .asciz "Examen 1"
+str_lit_93:    .asciz "Examen 2"
+str_lit_94:    .asciz "Proyecto"
+str_lit_95:    .asciz "    "
+str_lit_96:    .asciz "Temperaturas registradas:"
+str_lit_97:    .asciz "Semana 1"
+str_lit_98:    .asciz "Semana 2"
+str_lit_99:    .asciz "Lunes"
+str_lit_100:    .asciz "Martes"
+str_lit_101:    .asciz "Miércoles"
+str_lit_102:    .asciz "Mañana"
+str_lit_103:    .asciz "Tarde"
+str_lit_104:    .asciz "Noche"
+str_lit_105:    .asciz "°C"
+str_lit_106:    .asciz "\n--- CALCULO DE PROMEDIOS ---"
+str_lit_107:    .asciz "Suma total = "
+str_lit_108:    .asciz "Cantidad de elementos = "
+str_lit_109:    .asciz "Promedio = "
+str_lit_110:    .asciz "\n=== ANALISIS DE DATOS ACADEMICOS COMPLETADO ==="
 
 // --- Variables globales ---
 g_i:    .quad 0
@@ -6056,6 +6452,8 @@ g_menor3:    .quad 0
 g_suma:    .quad 0
 g_nota:    .quad 0
 g_promedio:    .quad 0
+g_determinante2x2:    .quad 0
+g_determinante3x3:    .quad 0
 g_estudiante:    .quad 0
 g_materia:    .quad 0
 g_evaluacion:    .quad 0
@@ -6063,8 +6461,6 @@ g_semana:    .quad 0
 g_dia:    .quad 0
 g_periodo:    .quad 0
 g_temp:    .quad 0
-g_determinante2x2:    .quad 0
-g_det2x2_2:    .quad 0
-g_determinante3x3:    .quad 0
-g_det3x3_especial:    .quad 0
+g_contador:    .quad 0
+g_l:    .quad 0
 .data

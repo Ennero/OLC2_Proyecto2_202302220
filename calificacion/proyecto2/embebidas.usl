@@ -1,0 +1,116 @@
+public static void main() {
+    // Parseo de enteros
+    System.out.println("\n--- PARSEO DE ENTEROS ---");
+    
+    String numeroTexto1 = "123";
+    String numeroTexto2 = "456";
+    String numeroTexto3 = "789";
+    
+    int num1 = Integer.parseInt(numeroTexto1);
+    int num2 = Integer.parseInt(numeroTexto2);
+    int num3 = Integer.parseInt(numeroTexto3);
+    
+    System.out.println("Parseando '" + numeroTexto1 + "' a entero: " + String.valueOf(num1));
+    System.out.println("Parseando '" + numeroTexto2 + "' a entero: " + String.valueOf(num2));
+    System.out.println("Parseando '" + numeroTexto3 + "' a entero: " + String.valueOf(num3));
+    
+    int suma = num1 + num2 + num3;
+    System.out.println("Suma de números parseados: " + String.valueOf(suma));
+
+    // Parseo de flotantes
+    System.out.println("\n--- PARSEO DE FLOTANTES ---");
+    
+    String decimal1 = "3.14159";
+    String decimal2 = "2.71828";
+    
+    double pi = Double.parseDouble(decimal1);
+    double e = Double.parseDouble(decimal2);
+    
+    System.out.println("Parseando '" + decimal1 + "' a double: " + String.valueOf(pi));
+    System.out.println("Parseando '" + decimal2 + "' a double: " + String.valueOf(e));
+    
+    double producto = pi * e;
+    System.out.println("Producto PI * E: " + String.valueOf(producto));
+    
+    String flotanteTexto = "45.67f";
+    float numeroFloat = Float.parseFloat(flotanteTexto);
+    System.out.println("Parseando '" + flotanteTexto + "' a float: " + String.valueOf(numeroFloat));
+
+    // String.valueOf()
+    System.out.println("\n--- CONVERSIONES CON String.valueOf ---");
+    // Aunque ya se usó en los demás archivos varias veces
+    int entero = 42;
+    double decimal = 3.14159;
+    boolean verdadero = true;
+    char caracter = 'A';
+    
+    String strEntero = String.valueOf(entero);
+    String strDecimal = String.valueOf(decimal);
+    String strBoolean = String.valueOf(verdadero);
+    String strChar = String.valueOf(caracter);
+    
+    System.out.println("int " + String.valueOf(entero) + " como String: " + strEntero);
+    System.out.println("double " + String.valueOf(decimal) + " como String: " + strDecimal);
+    System.out.println("boolean " + String.valueOf(verdadero) + " como String: " + strBoolean);
+    System.out.println("char '" + String.valueOf(caracter) + "' como String: " + strChar);
+    
+    // System.out.println()
+    // Tambíen ya usado en los demás archivos
+    System.out.println("\n--- DEMOSTRACION System.out.println ---");
+    System.out.println("Esta función se ha usado extensivamente en todo el programa");
+    System.out.println("Imprime diferentes tipos de datos:");
+    System.out.println(123);
+    System.out.println(45.67);
+    System.out.println(true);
+    System.out.println('X');
+    
+    // Strings.join()
+    System.out.println("\n--- UNIR CADENAS CON Strings.join ---");
+    
+    String[] estudiantes = {"Ana", "Luis", "Maria", "Carlos"};
+    String listaEstudiantes = String.join(", ", estudiantes);
+    System.out.println("Lista de estudiantes: " + listaEstudiantes);
+    
+    String[] materias = {"Matematicas", "Fisica", "Quimica"};
+    String listaMaterias = String.join(" | ", materias);
+    System.out.println("Materias disponibles: " + listaMaterias);
+    
+    String[] calificacionesTexto = {"85", "92", "78", "95"};
+    String reporteCalificaciones = String.join(" - ", calificacionesTexto);
+    System.out.println("Reporte de calificaciones: " + reporteCalificaciones);
+
+}
+
+/*
+--- PARSEO DE ENTEROS ---
+Parseando '123' a entero: 123
+Parseando '456' a entero: 456
+Parseando '789' a entero: 789
+Suma de números parseados: 1368
+
+--- PARSEO DE FLOTANTES ---
+Parseando '3.14159' a double: 3.14159
+Parseando '2.71828' a double: 2.71828
+Producto PI * E: 8.539721265199999
+Parseando '45.67f' a float: 45.67
+
+--- CONVERSIONES CON String.valueOf ---
+int 42 como String: 42
+double 3.14159 como String: 3.14159
+boolean true como String: true
+char 'A' como String: A
+
+--- DEMOSTRACION System.out.println ---
+Esta función se ha usado extensivamente en todo el programa
+Imprime diferentes tipos de datos:
+123
+45.67
+true
+X
+
+--- UNIR CADENAS CON Strings.join ---
+Lista de estudiantes: Ana, Luis, Maria, Carlos
+Materias disponibles: Matematicas | Fisica | Quimica
+Reporte de calificaciones: 85 - 92 - 78 - 95
+
+ */
