@@ -1,2 +1,36 @@
-build
+# Binaries & Build Output
+build/
+javalang
+*.exe
+*.out
+*.app
 
+# Object files & Libraries
+*.o
+*.a
+*.so
+*.dylib
+
+# Generated Flex/Bison files (if in build or temp)
+*.tab.c
+*.tab.h
+lex.yy.c
+
+# Graphviz outputs
+ast-graph/*.svg
+ast-graph/*.pdf
+ast-graph/*.png
+
+# Assembly build artifacts
+arm/*.o
+arm/*.out
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
