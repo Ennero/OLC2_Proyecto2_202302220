@@ -1,26 +1,21 @@
 # Manual de Usuario - JavaLang Interpreter
 
 ## Índice
-- [Manual de Usuario - JavaLang Interpreter](#manual-de-usuario---javalang-interpreter)
-  - [Índice](#índice)
-  - [Objetivos](#objetivos)
-    - [General](#general)
-    - [Específicos](#específicos)
-  - [Introducción](#introducción)
-  - [Requisitos del Sistema](#requisitos-del-sistema)
-  - [Flujo de Funcionalidades del Programa](#flujo-de-funcionalidades-del-programa)
-    - [Nuevo](#nuevo)
-    - [Abrir](#abrir)
-    - [Guardar](#guardar)
-    - [Tabla de Errores](#tabla-de-errores)
-    - [Tabla de Símbolos](#tabla-de-símbolos)
-    - [Generar AST](#generar-ast)
-    - [Ejecutar](#ejecutar)
-  - [Funcionalidades Añadidas para esta fase](#funcionalidades-añadidas-para-esta-fase)
-    - [Flujo de las nuevas funcionalidades](#flujo-de-las-nuevas-funcionalidades)
-      - [Ejecutar código aarch64 desde la interfaz de usuario](#ejecutar-código-aarch64-desde-la-interfaz-de-usuario)
-      - [Ejecutar código aarch64 desde la consola](#ejecutar-código-aarch64-desde-la-consola)
-  - [Apéndice técnico (FAQ)](#apéndice-técnico-faq)
+- [Objetivos](#objetivos)
+  - [General](#general)
+  - [Específicos](#espec%C3%ADficos)
+- [Introducción](#introducci%C3%B3n)
+- [Requisitos del Sistema](#requisitos-del-sistema)
+- [Flujo de Funcionalidades del Programa](#flujo-de-funcionalidades-del-programa)
+  - [Nuevo](#nuevo)
+  - [Abrir](#abrir)
+  - [Guardar](#guardar)
+  - [Tabla de Errores](#tabla-de-errores)
+  - [Tabla de Símbolos](#tabla-de-s%C3%ADmbolos)
+  - [Generar AST](#generar-ast)
+  - [Ejecutar](#ejecutar)
+- [Apéndice técnico (FAQ)](#ap%C3%A9ndice-t%C3%A9cnico-faq)
+  - [Flujo de las nuevas funcionalidades](#flujo-de-las-nuevas-funcionalidades)
 
 ## Objetivos
 
@@ -149,7 +144,7 @@ Finalmente, está la opción de **Ejecutar**, que ejecuta el código de entrada 
 4) ¿Qué es el “stride” y por qué importa?
 
 - El stride es cuántos bytes avanzas para saltar de un elemento al siguiente. En `int[]` el stride es de 4B; en `String[]`, `double[]` o `int[][]` (punteros), es de 8B.
-- Usamos stride 4B u 8B en copias, direccionamiento y `Arrays.add`. Un ejemplo con ambos casos lo encuentras en: [Mini‑ejemplo: Arrays.add (4B vs 8B)](./informe_tecnico.md#mini%E2%80%91ejemplo-arraysadd-4b-vs-8b).
+- Usamos stride 4B u 8B en copias, direccionamiento y `Arrays.add`. El diseño general del lenguaje se documenta en el [informe técnico](./informe_tecnico.md).
 
 5) ¿Qué hace exactamente el botón “Ensamblar y Ejecutar”?
 
